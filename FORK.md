@@ -11,7 +11,7 @@ fork are listed by `git diff master...main`.
 - **`master`**: an exact mirror of upstream `master`. Never commit to it. The sync only
   fast-forwards it.
 - **`main`**: the default branch. Upstream `master`, plus the fork's own files (this one,
-  `.github/fork/`, `.github/workflows/fork-upstream-sync.yml`), plus merged fix branches.
+  `.github/fork/` and the `.github/workflows/fork-*.yml` workflows), plus merged fix branches.
 - **`fix/<name>`**: one fix each, branched from `master`, never from `main`, so each can be
   opened upstream as a pull request unchanged. Merge it into `main` with a pull request.
   Once upstream merges it, the next sync brings it back through `master`, and the branch
@@ -34,6 +34,14 @@ Monday at 06:17 UTC, and on demand from the Actions tab ("Run workflow"). It:
      and the run fails so GitHub emails you. The issue closes itself once `main`
      contains upstream.
 
+## Reviews
+
+`.github/workflows/fork-claude-review.yml` runs
+[anentropic-reviewbot](https://github.com/anentropic/github-reviewbot) when it is requested
+as a reviewer on a pull request, or when the pull request gets the `claude-review` label, as
+in dnd-battle-map. Use it on fix branches and fork tooling. The weekly sync pull requests
+are upstream's own commits, so they aren't reviewed.
+
 ## One-time setup
 
 1. **Default branch**: Settings, General, Default branch: `main`. Scheduled workflows run
@@ -47,7 +55,13 @@ Monday at 06:17 UTC, and on demand from the Actions tab ("Run workflow"). It:
    personal access token for `anentropic/5e-quint` only, with Contents, Pull requests,
    Issues and Workflows set to read and write. The built-in `GITHUB_TOKEN` can't push a
    merge that changes upstream's workflow files, and pull requests it opens don't run CI.
-6. **Optional, auto-merge**: protect `main` with upstream's Quality check required, turn on
+6. **Actions allowed** (Settings, Actions, General): allow actions created by GitHub, and
+   allow `pnpm/action-setup@*, jdx/mise-action@*` (upstream's Quality) and
+   `anthropics/claude-code-action@*` (the review bot). Don't require full-length SHA pins:
+   the review bot's reusable workflow pins by tag.
+7. **Review bot**: add `anentropic-reviewbot` as a collaborator, and the
+   `CLAUDE_CODE_OAUTH_TOKEN` secret, as on dnd-battle-map.
+8. **Optional, auto-merge**: protect `main` with upstream's Quality check required, turn on
    "Allow auto-merge" (Settings, General), and set the Actions variable
    `SYNC_AUTO_MERGE` to `true`. Each clean sync then merges itself once Quality passes.
    Without required checks, auto-merge would merge straight away, so leave it off until
