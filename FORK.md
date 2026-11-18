@@ -28,7 +28,9 @@ Monday at 06:17 UTC, and on demand from the Actions tab ("Run workflow"). It:
 2. stops if `main` already contains upstream;
 3. merges upstream into a fresh copy of `main` on `upstream-sync`:
    - **clean**: pushes it and opens (or refreshes) one pull request into `main`, whose CI
-     is upstream's own Quality workflow. Merge it when green;
+     is upstream's own Quality workflow. Merge it when green with "Create a merge
+     commit", never squash or rebase: the sync checks that upstream's commits are in
+     `main`'s history;
    - **conflict**: pushes nothing, opens (or refreshes) one issue titled "Upstream sync
      needs a manual merge" with the conflicting files and the commands to resolve them,
      and the run fails so GitHub emails you. The issue closes itself once `main`
