@@ -44,6 +44,25 @@ as a reviewer on a pull request, or when the pull request gets the `claude-revie
 in dnd-battle-map. Use it on fix branches and fork tooling. The weekly sync pull requests
 are upstream's own commits, so they aren't reviewed.
 
+## SDK releases
+
+`.github/workflows/fork-release-sdk.yml` ("Fork SDK release", run by hand from the Actions
+tab on `main`) runs `.github/fork/release-sdk.mjs`. It builds upstream's SDK package from
+`main` under the name `@anentropic/dnd-sdk`, checks it with upstream's own packed-consumer
+check, and attaches the tarball to a GitHub release tagged `sdk-v<version>`. The version is
+upstream's SDK version plus a fork counter, such as `0.2.0-anentropic.1`. The MCP package
+isn't released.
+
+Nothing is published to a registry, so installing needs no token. Consumers install the
+tarball under upstream's name, so their imports don't change:
+
+```json
+"@dearlordylord/dnd-sdk": "https://github.com/anentropic/5e-quint/releases/download/sdk-v0.2.0-anentropic.1/anentropic-dnd-sdk-0.2.0-anentropic.1.tgz"
+```
+
+Release after merging a fix branch or an upstream sync that the battle map needs, then bump
+the URL there.
+
 ## One-time setup
 
 1. **Default branch**: Settings, General, Default branch: `main`. Scheduled workflows run
