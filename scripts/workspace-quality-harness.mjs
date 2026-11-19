@@ -1219,16 +1219,21 @@ function selfTest() {
   assert.equal(
     (
       qualityWorkflow.match(
-        /^\s*run: pnpm quality:milestone --defer coverage\s*$/gm,
+        /^\s*run: pnpm quality:milestone --defer coverage,typecheck\s*$/gm,
       ) ?? []
     ).length,
     1,
-    "The quality workflow must run the milestone quality command exactly once, deferring only coverage.",
+    "The quality workflow must run the milestone quality command exactly once, deferring only coverage and typecheck.",
   );
   assert.equal(
     (qualityWorkflow.match(/pnpm quality:milestone/g) ?? []).length,
     1,
     "The quality workflow must not run the milestone in any other form.",
+  );
+  assert.match(
+    qualityWorkflow,
+    /^\s*run: pnpm typecheck\s*$/m,
+    "The quality workflow must run the deferred typecheck in its own job.",
   );
   assert.match(
     qualityWorkflow,
@@ -1332,6 +1337,15 @@ function selfTest() {
     qualityMilestonePlan.qualityMilestonePlan({ deferred: ["coverage"] }),
     QUALITY_MILESTONE_PLAN.slice(0, -1),
     "Deferring coverage must leave every other check unchanged.",
+  );
+  assert.deepEqual(
+    qualityMilestonePlan.qualityMilestonePlan({
+      deferred: ["coverage", "typecheck"],
+    }),
+    QUALITY_MILESTONE_PLAN.filter(
+      ({ id }) => id !== "coverage" && id !== "typecheck",
+    ),
+    "CI's deferred plan must keep every other check unchanged.",
   );
   assert.throws(
     () =>

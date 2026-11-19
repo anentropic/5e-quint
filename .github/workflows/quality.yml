@@ -30,8 +30,8 @@ jobs:
         uses: ./.github/actions/setup-workspace
 
       - name: Run workspace quality gate
-        # The coverage jobs below run the coverage check in parallel shards.
-        run: pnpm quality:milestone --defer coverage
+        # The typecheck and coverage jobs below run those checks in parallel.
+        run: pnpm quality:milestone --defer coverage,typecheck
 
       - name: Verify packed SDK and MCP consumers
         run: pnpm check:distribution
@@ -48,6 +48,29 @@ jobs:
             dist/npm/*.tgz
             dist/npm/verification.json
             dist/npm/source.txt
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOMEMLIMIT: 8GiB
+      GOGC: "75"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up the workspace
+        uses: ./.github/actions/setup-workspace
+
+      - name: Build
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
 
   coverage-shards:
     name: List coverage shards
@@ -102,13 +125,16 @@ jobs:
   quality-gate:
     name: Workspace quality gate
     if: always()
-    needs: [quality, coverage]
+    needs: [quality, typecheck, coverage]
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
-      - name: Require the milestone and every coverage shard to pass
-        if: needs.quality.result != 'success' || needs.coverage.result != 'success'
+      - name: Require the milestone, typecheck and every coverage shard to pass
+        if: >-
+          needs.quality.result != 'success' ||
+          needs.typecheck.result != 'success' ||
+          needs.coverage.result != 'success'
         run: |
-          echo "::error::Milestone result was ${{ needs.quality.result }}; coverage result was ${{ needs.coverage.result }}."
+          echo "::error::Milestone: ${{ needs.quality.result }}; typecheck: ${{ needs.typecheck.result }}; coverage: ${{ needs.coverage.result }}."
           exit 1
