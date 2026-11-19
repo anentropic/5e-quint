@@ -1187,6 +1187,11 @@ function assertDeferredChecksGated(workflow, deferred) {
   const jobs = workflowJobs(workflow);
   const gate = jobs.get("quality-gate");
   assert(gate, "The quality workflow must have a quality-gate job.");
+  assert.match(
+    gate,
+    /^ {4}if: always\(\)\s*$/m,
+    "The quality gate must run even when a job it needs fails.",
+  );
   const gateNeeds = gate
     .match(/^ {4}needs: \[([^\]]*)\]\s*$/m)?.[1]
     .split(",")
