@@ -1157,6 +1157,71 @@ function deadlineSelfTest() {
   );
 }
 
+// The workflow job that runs each check CI defers out of the milestone job, and
+// the step that runs it. The self-test reads the deferred ids from the workflow
+// and requires each one's job to build first and to feed the quality gate.
+const DEFERRED_CHECK_JOBS = Object.freeze({
+  coverage: Object.freeze({
+    job: "coverage",
+    run: /^\s*run: pnpm coverage --shard \$\{\{ matrix\.shard \}\}\s*$/m,
+  }),
+  typecheck: Object.freeze({
+    job: "typecheck",
+    run: /^\s*run: pnpm typecheck\s*$/m,
+  }),
+});
+
+// Splits a workflow's `jobs:` section into each job's text, keyed by job id.
+function workflowJobs(workflow) {
+  const jobsSection = workflow.slice(workflow.search(/^jobs:\s*$/m));
+  const headers = [...jobsSection.matchAll(/^ {2}([\w-]+):\s*$/gm)];
+  return new Map(
+    headers.map((header, index) => [
+      header[1],
+      jobsSection.slice(header.index, headers[index + 1]?.index),
+    ]),
+  );
+}
+
+function assertDeferredChecksGated(workflow, deferred) {
+  const jobs = workflowJobs(workflow);
+  const gate = jobs.get("quality-gate");
+  assert(gate, "The quality workflow must have a quality-gate job.");
+  const gateNeeds = gate
+    .match(/^ {4}needs: \[([^\]]*)\]\s*$/m)?.[1]
+    .split(",")
+    .map((need) => need.trim());
+  assert(gateNeeds, "The quality gate must list the jobs it needs.");
+  for (const needed of [
+    "quality",
+    ...deferred.map((id) => DEFERRED_CHECK_JOBS[id].job),
+  ]) {
+    assert(
+      gateNeeds.includes(needed),
+      `The quality gate must need the ${needed} job.`,
+    );
+    assert(
+      gate.includes(`needs.${needed}.result != 'success'`),
+      `The quality gate must fail when the ${needed} job does not succeed.`,
+    );
+  }
+  for (const id of deferred) {
+    const { job, run } = DEFERRED_CHECK_JOBS[id];
+    const text = jobs.get(job);
+    assert(
+      text,
+      `The quality workflow must run deferred ${id} in its ${job} job.`,
+    );
+    const checkStep = text.search(run);
+    assert(checkStep >= 0, `The ${job} job must run the deferred ${id} check.`);
+    const build = text.search(/^\s*run: pnpm build\s*$/m);
+    assert(
+      build >= 0 && build < checkStep,
+      `The ${job} job must run pnpm build before ${id}, as the milestone plan does.`,
+    );
+  }
+}
+
 function selfTest() {
   const workflowControls = run(process.execPath, [
     "--test",
@@ -1216,25 +1281,31 @@ function selfTest() {
     join(ROOT, ".github/workflows/quality.yml"),
     "utf8",
   );
+  const milestoneRuns = [
+    ...qualityWorkflow.matchAll(
+      /^\s*run: pnpm quality:milestone --defer (\S+)\s*$/gm,
+    ),
+  ];
   assert.equal(
-    (
-      qualityWorkflow.match(
-        /^\s*run: pnpm quality:milestone --defer coverage,typecheck\s*$/gm,
-      ) ?? []
-    ).length,
+    milestoneRuns.length,
     1,
-    "The quality workflow must run the milestone quality command exactly once, deferring only coverage and typecheck.",
+    "The quality workflow must run the milestone quality command exactly once, with --defer.",
   );
   assert.equal(
     (qualityWorkflow.match(/pnpm quality:milestone/g) ?? []).length,
     1,
     "The quality workflow must not run the milestone in any other form.",
   );
-  assert.match(
-    qualityWorkflow,
-    /^\s*run: pnpm typecheck\s*$/m,
-    "The quality workflow must run the deferred typecheck in its own job.",
+  const ciDeferred = parseQualityMilestoneArguments([
+    "--defer",
+    milestoneRuns[0][1],
+  ]).deferred;
+  assert.deepEqual(
+    [...ciDeferred].sort(),
+    Object.keys(DEFERRED_CHECK_JOBS).sort(),
+    "Every check the workflow defers must have its own job, and only those.",
   );
+  assertDeferredChecksGated(qualityWorkflow, ciDeferred);
   assert.match(
     qualityWorkflow,
     /^\s*run: pnpm coverage --shard \$\{\{ matrix\.shard \}\}\s*$/m,
@@ -1339,12 +1410,8 @@ function selfTest() {
     "Deferring coverage must leave every other check unchanged.",
   );
   assert.deepEqual(
-    qualityMilestonePlan.qualityMilestonePlan({
-      deferred: ["coverage", "typecheck"],
-    }),
-    QUALITY_MILESTONE_PLAN.filter(
-      ({ id }) => id !== "coverage" && id !== "typecheck",
-    ),
+    qualityMilestonePlan.qualityMilestonePlan({ deferred: ciDeferred }),
+    QUALITY_MILESTONE_PLAN.filter(({ id }) => !ciDeferred.includes(id)),
     "CI's deferred plan must keep every other check unchanged.",
   );
   assert.throws(
