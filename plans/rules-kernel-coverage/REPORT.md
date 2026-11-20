@@ -6,14 +6,14 @@ Generated detail; do not edit or read wholesale. Start with `plans/rules-kernel-
 
 ## Summary
 
-- Total obligations: 176
-- Covered obligations: 165
+- Total obligations: 177
+- Covered obligations: 166
 - Open transitional obligations: 5
 - Boundary or unsupported obligations: 6
 
 | Status                   | Count |
 | ------------------------ | ----: |
-| covered                  |   165 |
+| covered                  |   166 |
 | needs-qnt-owner          |     5 |
 | needs-parity-witness     |     0 |
 | needs-surface-evidence   |     0 |
@@ -23,7 +23,7 @@ Generated detail; do not edit or read wholesale. Start with `plans/rules-kernel-
 | Runtime            | Count |
 | ------------------ | ----: |
 | shared-algebras    |     1 |
-| battle             |   136 |
+| battle             |   137 |
 | character-creation |    20 |
 | character-sheet    |    15 |
 | character-battle   |     4 |
@@ -208,6 +208,7 @@ Generated detail; do not edit or read wholesale. Start with `plans/rules-kernel-
 | `BATTLE.STAT_BLOCK.SPELLCASTING_CONCENTRATION`                    | battle             | covered                  | `stat-block.spell-invocation.unrestricted`                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `BATTLE.FEATURE.WEAPON_MASTERY_GRAZE`                             | battle             | covered                  | `unit-feature.weapon-mastery-graze`                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `BATTLE.HELP.ABILITY_CHECK_ASSIST`                                | battle             | covered                  | _direct reducer entrypoint_                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL`                       | battle             | covered                  | _direct reducer entrypoint_                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ## Battle Hole Frontier
 
@@ -952,6 +953,8 @@ Generated detail; do not edit or read wholesale. Start with `plans/rules-kernel-
 | `packages/shared-algebras/proofs/rule-core/weapon-mastery-graze-core-examples.qnt`                                  | proof-only              | _none_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `packages/shared-algebras/proofs/rule-core/help-ability-check-core.qnt`                                             | semantic-core           | `BATTLE.HELP.ABILITY_CHECK_ASSIST`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `packages/shared-algebras/proofs/rule-core/help-ability-check-core-examples.qnt`                                    | proof-only              | _none_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core.qnt`                                      | semantic-core           | `BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core-examples.qnt`                             | proof-only              | _none_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 ## QNT Registry
 
@@ -1250,6 +1253,8 @@ Rows here inventory `packages/**/*.qnt` files excluding `.mbt.qnt` drivers and `
 | `packages/shared-algebras/proofs/rule-core/granted-choice-selection.qnt`                                            | qnt-owner-role | semantic-core                                                                                                                                                                                            |
 | `packages/shared-algebras/proofs/rule-core/help-ability-check-core-examples.qnt`                                    | qnt-owner-role | proof-only                                                                                                                                                                                               |
 | `packages/shared-algebras/proofs/rule-core/help-ability-check-core.qnt`                                             | qnt-owner-role | semantic-core                                                                                                                                                                                            |
+| `packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core-examples.qnt`                             | qnt-owner-role | proof-only                                                                                                                                                                                               |
+| `packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core.qnt`                                      | qnt-owner-role | semantic-core                                                                                                                                                                                            |
 | `packages/shared-algebras/proofs/rule-core/hit-point-damage-inductive.qnt`                                          | qnt-owner-role | proof-only                                                                                                                                                                                               |
 | `packages/shared-algebras/proofs/rule-core/hit-point-damage.qnt`                                                    | qnt-owner-role | semantic-core                                                                                                                                                                                            |
 | `packages/shared-algebras/proofs/rule-core/hit-point-maximum-examples.qnt`                                          | qnt-owner-role | proof-only                                                                                                                                                                                               |
@@ -1626,6 +1631,7 @@ Rows here are derived from `plans/unit-profile-coverage/profiles.jsonl` for prof
 | `BATTLE.STAT_BLOCK.SPELLCASTING_CONCENTRATION`                    | generation-subset-clean | `import`, `variant`, `record`, `pure-def`, `int`, `bool`, `if-expression`, `let-binding`, `comparison`, `boolean-connective`, `all-block`, `pattern-match`                                                                                                                                                         |          |           |
 | `BATTLE.FEATURE.WEAPON_MASTERY_GRAZE`                             | generation-subset-clean | `record`, `pure-def`, `int`, `bool`, `comparison`, `boolean-connective`, `all-block`, `set`, `if-expression`, `variant`                                                                                                                                                                                            |          |           |
 | `BATTLE.HELP.ABILITY_CHECK_ASSIST`                                | generation-subset-clean | `record`, `pure-def`, `int`, `bool`, `comparison`, `boolean-connective`, `all-block`, `set`, `set-operators`, `size`, `membership`, `exists`, `filter`                                                                                                                                                             |          |           |
+| `BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL`                       | generation-subset-clean | `import`, `variant`, `record`, `pure-def`, `int`, `bool`, `if-expression`, `comparison`, `boolean-connective`, `pattern-match`, `all-block`, `let-binding`                                                                                                                                                         |          |           |
 
 ### Generator Readiness Backlog
 
