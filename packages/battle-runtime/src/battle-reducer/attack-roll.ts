@@ -12,6 +12,7 @@ import {
 // KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.weapon-mastery-graze
 // KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_ATTACKER_ROLL_MODE
+// KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.CONDITION_ROLL_MODE
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.CREATURE_TYPE_PROTECTION_AND_CONDITION_PREVENTION
 // KERNEL-COVERAGE: runtime-owner BATTLE.RELATIONSHIP_DISCOVERY
 // KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.ORDINARY_OBJECT_PROCEDURE BATTLE.DAMAGE.OBJECT_DAMAGE_TRANSITION
@@ -179,6 +180,8 @@ import {
   mechanicalD20TestRollMode,
   mechanicalD20TestRollModeSources,
   proneAttackRollModeSources,
+  targetConditionAttackRollModeSources,
+  type D20TestRollModeSources,
 } from "../d20-test-circumstance.ts";
 import {
   attackActionBonusWithPassiveFeatureBonus,
@@ -252,7 +255,7 @@ type AttackRollSourceFlags = {
   readonly hasDisadvantage: boolean;
 };
 
-function targetConditionAttackRollModeSources(
+function proneTargetAttackRollModeSources(
   state: BattleState,
   attackerId: CombatantId,
   targetId: CombatantId,
@@ -284,6 +287,32 @@ function targetConditionAttackRollModeSources(
   return {
     advantage:
       proneSources.advantage || hasCondition(target.conditions, "unconscious"),
+    disadvantage: proneSources.disadvantage,
+  };
+}
+
+function targetCreatureConditionAttackRollModeSources(
+  state: BattleState,
+  attackerId: CombatantId,
+  targetId: CombatantId,
+  attack: SupportedAttackActionOption | undefined,
+  targetSpatialFacts: readonly BattleTargetSpatialFact[],
+  spellTargetDistanceFeet: MovementFeet | null,
+): D20TestRollModeSources {
+  const proneSources = proneTargetAttackRollModeSources(
+    state,
+    attackerId,
+    targetId,
+    attack,
+    targetSpatialFacts,
+    spellTargetDistanceFeet,
+  );
+  return {
+    advantage:
+      proneSources.advantage ||
+      targetConditionAttackRollModeSources(
+        state.combatants.get(targetId)?.conditions,
+      ).advantage,
     disadvantage: proneSources.disadvantage,
   };
 }
@@ -335,14 +364,15 @@ function attackRollSourceFlags(
     targetId,
     attack,
   );
-  const targetConditionRollModeSources = targetConditionAttackRollModeSources(
-    state,
-    attackerId,
-    targetId,
-    attack,
-    targetSpatialFacts,
-    spellTargetDistanceFeet,
-  );
+  const targetConditionRollModeSources =
+    targetCreatureConditionAttackRollModeSources(
+      state,
+      attackerId,
+      targetId,
+      attack,
+      targetSpatialFacts,
+      spellTargetDistanceFeet,
+    );
   const sightAdvantage = hasAttackSightFact(
     targetSpatialFacts,
     "attackTargetCannotSeeAttacker",
