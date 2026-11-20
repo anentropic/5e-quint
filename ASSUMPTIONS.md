@@ -223,6 +223,50 @@ requires someone within 5 feet, Hypnotic Pattern specifies no distance or
 general reachability procedure. Whether the acting creature can perform the
 physical shake is therefore supplied by the Table without authoring a distance.
 
+## A52: Command's Halt prevents Dropping Prone
+
+**Assumption:** While Command's Halt applies on its turn, the target can't drop
+Prone, even though its Speed isn't 0.
+
+**Rules basis / gap:** `.references/srd-5.2.1/spells.md`, "Command," says that
+under Halt the target "doesn't move and takes no action or Bonus Action."
+`.references/srd-5.2.1/playing-the-game.md`, "Dropping Prone," lets a creature
+give itself the Prone condition "without using an action or any of your Speed,
+but you can't do so if your Speed is 0." Halt doesn't set Speed to 0, and the
+SRD doesn't say whether lowering yourself to the ground counts as moving. The
+model reads "doesn't move" as covering any voluntary change of the target's
+position, so Halt suppresses Drop Prone as it suppresses Movement and Stand from
+Prone.
+
+## A53: Graze is not offered when it would deal 0 damage
+
+**Assumption:** After a missed attack roll with a Graze weapon, the attacker is
+asked whether to use Graze only when the ability modifier used for the attack
+roll is 1 or more. With a modifier of 0 or less, the miss ends the attack and no
+Graze decision is asked.
+
+**Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Graze" lets
+the attacker deal damage equal to the ability modifier used for the attack
+roll, and `.references/srd-5.2.1/playing-the-game.md`, "Damage Rolls" says
+"it's possible to deal 0 damage but not negative damage". So the SRD fixes the
+amount: a modifier of 0 or less deals 0. It doesn't say whether the attacker is
+still asked to choose. Since either answer leaves the battle unchanged, the
+model doesn't ask.
+
+## A54: Graze damage is still doubled by Vulnerability
+
+**Assumption:** A target with Vulnerability to the weapon's damage type takes
+double Graze damage, as it does any other damage of that type. Resistance and
+Immunity also apply as usual.
+
+**Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Graze" says
+"the damage can be increased only by increasing the ability modifier". The SRD
+doesn't say whether that limit covers the target's Vulnerability.
+`.references/srd-5.2.1/playing-the-game.md`, "Order of Application" applies
+"bonuses, penalties, or multipliers" first and Vulnerability last, as part of
+the damage the target takes. The model reads Graze's limit as excluding the
+first step (damage bonuses and riders on the attacker's side) and leaves the
+target's Resistance and Vulnerability as the general rule applies them.
 ## A55: A D20 Test roll is rerolled at most once, whatever its sources
 
 **Assumption:** When more than one reroll source applies to the same D20 Test

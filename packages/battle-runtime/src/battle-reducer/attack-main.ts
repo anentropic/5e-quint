@@ -7,6 +7,8 @@ import * as Result from "effect/Result";
 // KERNEL-COVERAGE: runtime-owner BATTLE.PROTOCOL.CONCENTRATION_BREAK_TEARDOWN
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.AFTER_HIT_DAMAGE_RIDERS BATTLE.SPELL.MARKED_DAMAGE_RIDER_TRANSFER
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.MIRROR_IMAGE_HIT_INTERCEPTION
+// KERNEL-COVERAGE: runtime-owner BATTLE.FEATURE.WEAPON_MASTERY_GRAZE
+// UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.weapon-mastery-graze
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.action-surge-resource unit-feature.attack-action-attack-count-scaling unit-feature.attack-damage-reduction-zero-damage-redirect unit-feature.attack-damage-rider unit-feature.attack-roll-miss-to-hit-replacement unit-feature.bonus-action-dash-temporary-hit-points unit-feature.bonus-action-ongoing-rage unit-feature.brutal-strike unit-feature.failed-ability-check-resource-boost unit-feature.first-attack-roll-reckless-advantage unit-feature.grappler unit-feature.hunters-prey unit-feature.open-hand-technique unit-feature.passive-ranged-attack-roll-bonus unit-feature.passive-speed-bonus unit-feature.passive-speed-kind-grants unit-feature.reaction-roll-or-damage-reduction unit-feature.remarkable-athlete unit-feature.save-damage-replacement unit-feature.self-bonus-action-healing unit-feature.stunning-strike unit-feature.weapon-damage-dice-roll-choice unit-feature.weapon-mastery-sap unit-feature.weapon-mastery-topple unit-feature.weapon-mastery-cleave unit-feature.weapon-mastery-push unit-feature.weapon-mastery-slow unit-feature.fighter-tactical-master unit-feature.zero-hit-point-replacement spell.creature-type-protection-and-charm spell.invocation-attack-roll-advantage-save spell.invocation-chained-attack-damage spell.invocation-damage-reduction spell.invocation-damage-save-or-attack spell.invocation-condition-save spell.hit-point-restoration spell.invocation-marked-damage-rider spell.invocation-roll-modifier spell.invocation-weapon-damage-rider spell.reaction-shield spell.readied-action-time-spell spell.scalar-buff
 // UNIT-PROFILE-COVERAGE: runtime-owner spell.invocation-ray-of-enfeeblement-damage-penalty
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.d20-test-natural-one-reroll
@@ -78,6 +80,7 @@ import {
   tacticalMasterReplacementDecisionHole,
 } from "./attack-roll.ts";
 import { weaponMasteryToppleSavingThrowHole } from "./weapon-mastery-topple-hole.ts";
+import { resolveWeaponMasteryGraze } from "./weapon-mastery-graze.ts";
 
 import {
   activeEffectArmorClass,
@@ -111,6 +114,7 @@ import {
   sourceDamageRollPenaltyRollForDamageRoll,
   sourceDamageRollPenaltyRollFillMatchesDamageRoll,
   unexpectedSourceDamageRollPenaltyRoll,
+  type DamageAmountByTypeEntry,
 } from "./damage-helpers.ts";
 
 import {
@@ -418,6 +422,7 @@ type BrutalStrikeSelection = {
 };
 
 const byKind = Match.discriminator("kind");
+const byTag = Match.discriminator("tag");
 
 function brutalStrikeSelection(
   state: BattleState,
@@ -2398,6 +2403,17 @@ export function resolveSelectedAttackProcedure<
       })
     : [];
 
+  const grazeMissDamage = weaponMasteryGrazeMissDamage({
+    invalidFillState: input.state,
+    state: attackRolledState,
+    subject: input.subject,
+    attackerId,
+    targetId: target.combatantId,
+    attack,
+    hit,
+    decision: fillSet.weaponMasteryGrazeDecision,
+  });
+  if (grazeMissDamage.tag === "result") return grazeMissDamage.result;
   const fixedBaseDamageByTypeEntries = hit
     ? fixedAttackDamageByTypeEntries(
         attackRolledState,
@@ -2406,13 +2422,14 @@ export function resolveSelectedAttackProcedure<
         effectiveAttackRoll,
       )
     : null;
+  // A miss deals damage only through Graze, whose fixed amount takes no riders.
   const fixedDamageByTypeBeforeTargetAdjustments = hit
     ? eligibleDamageRiders.length > 0 ||
       spellMarkedDamageRiders.length > 0 ||
       spellWeaponDamageRiders.length > 0
       ? null
       : fixedBaseDamageByTypeEntries
-    : null;
+    : grazeMissDamage.damageByType;
   const fixedDamageAmount =
     fixedDamageByTypeBeforeTargetAdjustments === null
       ? null
@@ -2664,7 +2681,6 @@ export function resolveSelectedAttackProcedure<
       : weaponHitAppliedState;
   const damageTarget = requireCurrentAttackTarget(hitAppliedState, target);
   if (
-    hit &&
     fixedDamageAmount !== null &&
     fixedDamageByTypeBeforeTargetAdjustments !== null
   ) {
@@ -2789,6 +2805,8 @@ export function resolveSelectedAttackProcedure<
         ]);
       }
     }
+    // A Graze miss reaches here with a weapon attack, which Punch and Grab's
+    // Unarmed Strike eligibility already excludes.
     const grapplerPunchAndGrab = resolveGrapplerPunchAndGrabAfterHit({
       state: sapRedirectState,
       subject: input.subject,
@@ -2941,6 +2959,8 @@ export function resolveSelectedAttackProcedure<
       spatialFacts: fillSet.targetSpatialFacts,
       relationshipDecisions: relationshipCheck.decisions,
     });
+    // A weapon has one mastery property per attack, so Slow never applies to
+    // Graze miss damage.
     const fixedDamageWithWeaponMasterySpeedReductionState =
       applyWeaponMasterySlowAfterDamage({
         state: fixedDamageAppliedState,
@@ -3621,6 +3641,48 @@ export function resolveSelectedAttackProcedure<
   );
 }
 
+/**
+ * The damage a missed attack roll deals through Weapon Mastery Graze, or the
+ * result that stops the attack first: the Graze decision hole, or a Graze fill
+ * the attack can't take.
+ */
+function weaponMasteryGrazeMissDamage(input: {
+  readonly invalidFillState: BattleState;
+  readonly state: BattleState;
+  readonly subject: BattleAttackHostSubject;
+  readonly attackerId: CombatantId;
+  readonly targetId: CombatantId;
+  readonly attack: SupportedAttackActionOption;
+  readonly hit: boolean;
+  readonly decision: Extract<
+    AttackFillSet,
+    { readonly tag: "ok" }
+  >["weaponMasteryGrazeDecision"];
+}):
+  | { readonly tag: "result"; readonly result: BattleResolutionResult }
+  | {
+      readonly tag: "ok";
+      readonly damageByType: readonly DamageAmountByTypeEntry[] | null;
+    } {
+  return Match.value(resolveWeaponMasteryGraze(input)).pipe(
+    byTag("needsDecision", ({ hole }) => ({
+      tag: "result" as const,
+      result: needsHolesResult(input.state, input.subject, [hole]),
+    })),
+    byTag("invalid", ({ message }) => ({
+      tag: "result" as const,
+      result: invalidResult(input.invalidFillState, "invalidFill", message),
+    })),
+    byTag("damage", ({ damageByType }) => ({
+      tag: "ok" as const,
+      damageByType,
+    })),
+    byTag("declined", () => ({ tag: "ok" as const, damageByType: null })),
+    byTag("notApplicable", () => ({ tag: "ok" as const, damageByType: null })),
+    Match.exhaustive,
+  );
+}
+
 function requireCurrentAttackTarget(
   state: BattleState,
   resolvedTarget: BattleCreatureState,
@@ -3652,6 +3714,7 @@ function attackPostDuplicateHitInterceptionFillsArePresent(
   fillSet: Extract<AttackFillSet, { readonly tag: "ok" }>,
 ): boolean {
   return (
+    weaponMasteryFillsArePresent(fillSet) ||
     fillSet.damageRoll !== undefined ||
     fillSet.damageDispositionFilled ||
     fillSet.brutalStrikeEffectDecision !== undefined ||
@@ -3660,7 +3723,6 @@ function attackPostDuplicateHitInterceptionFillsArePresent(
     fillSet.attackDamageReductionRedirectTarget !== undefined ||
     fillSet.attackDamageReductionRedirectSave !== undefined ||
     fillSet.attackDamageReductionRedirectDamage !== undefined ||
-    fillSet.weaponMasteryToppleSavingThrow !== undefined ||
     fillSet.brutalStrikeForcefulBlowMovementDecision !== undefined ||
     fillSet.brutalStrikeForcefulBlowMovement !== undefined ||
     fillSet.openHandTechniqueDecision !== undefined ||
@@ -3669,15 +3731,6 @@ function attackPostDuplicateHitInterceptionFillsArePresent(
     fillSet.stunningStrikeSavingThrow !== undefined ||
     fillSet.saveGatedConditionWithRepeatDamageRepeatSaves.length > 0 ||
     fillSet.concentrationSavingThrows.length > 0 ||
-    fillSet.weaponMasteryCleaveDecision !== undefined ||
-    fillSet.weaponMasteryCleaveTarget !== undefined ||
-    fillSet.weaponMasteryCleaveAttackRoll !== undefined ||
-    fillSet.weaponMasteryCleaveDamageRoll !== undefined ||
-    fillSet.weaponMasteryCleaveDamageDispositionFilled ||
-    fillSet.weaponMasteryCleaveRemarkableAthleteCriticalHitMovementDecision !==
-      undefined ||
-    fillSet.weaponMasteryCleaveRemarkableAthleteCriticalHitMovement !==
-      undefined ||
     fillSet.remarkableAthleteCriticalHitMovementDecision !== undefined ||
     fillSet.remarkableAthleteCriticalHitMovement !== undefined ||
     fillSet.huntersPreyHordeBreakerDecision !== undefined ||
@@ -3687,6 +3740,36 @@ function attackPostDuplicateHitInterceptionFillsArePresent(
     fillSet.huntersPreyHordeBreakerDamageDispositionFilled ||
     fillSet.grapplerPunchAndGrabDecision !== undefined ||
     fillSet.grapplerPunchAndGrabOutcome !== undefined
+  );
+}
+
+/**
+ * Whether any Weapon Mastery fill (Topple, Graze or Cleave) is present. None of
+ * them applies once duplicate-hit interception redirects the hit.
+ */
+function weaponMasteryFillsArePresent(
+  fillSet: Extract<AttackFillSet, { readonly tag: "ok" }>,
+): boolean {
+  return (
+    fillSet.weaponMasteryToppleSavingThrow !== undefined ||
+    fillSet.weaponMasteryGrazeDecision !== undefined ||
+    weaponMasteryCleaveFillsArePresent(fillSet)
+  );
+}
+
+function weaponMasteryCleaveFillsArePresent(
+  fillSet: Extract<AttackFillSet, { readonly tag: "ok" }>,
+): boolean {
+  return (
+    fillSet.weaponMasteryCleaveDecision !== undefined ||
+    fillSet.weaponMasteryCleaveTarget !== undefined ||
+    fillSet.weaponMasteryCleaveAttackRoll !== undefined ||
+    fillSet.weaponMasteryCleaveDamageRoll !== undefined ||
+    fillSet.weaponMasteryCleaveDamageDispositionFilled ||
+    fillSet.weaponMasteryCleaveRemarkableAthleteCriticalHitMovementDecision !==
+      undefined ||
+    fillSet.weaponMasteryCleaveRemarkableAthleteCriticalHitMovement !==
+      undefined
   );
 }
 

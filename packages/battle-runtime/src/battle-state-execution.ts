@@ -770,12 +770,22 @@ export type BattleReadiedResponse = {
 // SRD 5.2.1 Help [Action], "Assist an Attack Roll": helper distracts an
 // enemy within 5 feet, granting Advantage to one ally's next attack roll
 // against that enemy; the benefit expires at the start of the helper's
-// next turn. This runtime slice models that attack-roll branch only, not
-// Help's ability-check branch or first-aid action summary.
+// next turn. BattleHelpAbilityCheck owns Help's "Assist an Ability Check"
+// branch.
 export type BattleHelpAttack = {
   readonly helperId: CombatantId;
   readonly allyId: CombatantId;
   readonly targetEnemyId: CombatantId;
+  readonly expiresAt: TurnAnchoredBattleActiveEffectExpiration;
+};
+// SRD 5.2.1 Help [Action], "Assist an Ability Check": the helper chooses one
+// of its skill proficiencies and one ally it can assist; that ally has
+// Advantage on the next ability check it makes with the chosen skill. The
+// benefit expires if unused before the start of the helper's next turn.
+export type BattleHelpAbilityCheck = {
+  readonly helperId: CombatantId;
+  readonly allyId: CombatantId;
+  readonly skill: Skill;
   readonly expiresAt: TurnAnchoredBattleActiveEffectExpiration;
 };
 export type GlyphStoredSpellReleaseReplayContext = {
@@ -4479,6 +4489,7 @@ export type BattleState = {
   readonly readiedSpells: ReadonlyMap<CombatantId, BattleReadiedSpell>;
   readonly readiedResponses: ReadonlyMap<CombatantId, BattleReadiedResponse>;
   readonly helpAttacks: readonly BattleHelpAttack[];
+  readonly helpAbilityChecks: readonly BattleHelpAbilityCheck[];
   readonly grapples: readonly BattleGrappleLink[];
   readonly interruptStack: readonly BattleInterruptFrame[];
   readonly legendaryActionWindow: LegendaryActionWindow | null;
@@ -4957,6 +4968,15 @@ export type BattleHelpAttackEnemyDecisionHole = {
   readonly helperId: CombatantId;
   readonly allyId: CombatantId;
   readonly choices: readonly CombatantId[];
+};
+export type BattleHelpAbilityCheckDecisionHole = {
+  readonly kind: "helpAbilityCheckDecision";
+  readonly holeId: BattleHoleId;
+  readonly holeInstanceKey: BattleHoleInstanceKey;
+  readonly label: string;
+  readonly helperId: CombatantId;
+  readonly allyChoices: ReadonlyNonEmptyArray<CombatantId>;
+  readonly skillChoices: ReadonlyNonEmptyArray<Skill>;
 };
 export type BattleObjectTargetChoiceHole = {
   readonly holeInstanceKey: HoleInstanceKey;
@@ -6905,6 +6925,7 @@ export type BattleHole =
   | BattleTargetChoiceHole
   | BattleHelpAttackAllyDecisionHole
   | BattleHelpAttackEnemyDecisionHole
+  | BattleHelpAbilityCheckDecisionHole
   | BattleSpellCastReactionFactsHole
   | BattleTurnConstraintSomaticSpellFailureOutcomeHole
   | BattleLinkedEffectSeparationFactsHole
@@ -7152,6 +7173,13 @@ export type BattleFill =
       readonly holeId: BattleHoleId;
       readonly targetEnemyId: CombatantId;
       readonly targetWithinFiveFeetOfHelper: boolean;
+    }
+  | {
+      readonly kind: "helpAbilityCheckDecision";
+      readonly holeId: BattleHoleId;
+      readonly allyId: CombatantId;
+      readonly skill: Skill;
+      readonly allyCanBeAssisted: boolean;
     }
   | {
       readonly kind: "attackRoll";
@@ -8005,6 +8033,7 @@ export type BattleSnapshot = {
     readonly actionsOrMovements: readonly BattleReadiedResponseSnapshot[];
   };
   readonly helpAttackMarkers: readonly BattleHelpAttackSnapshot[];
+  readonly helpAbilityCheckMarkers: readonly BattleHelpAbilityCheckSnapshot[];
 };
 
 /**
@@ -8159,6 +8188,8 @@ export type BattleReadiedResponseSnapshot = Omit<
 };
 
 export type BattleHelpAttackSnapshot = BattleHelpAttack;
+
+export type BattleHelpAbilityCheckSnapshot = BattleHelpAbilityCheck;
 
 export type BattleCreatureOriginSnapshot =
   | {
