@@ -83,10 +83,7 @@ import {
 import { maybeOpenInterruptWindow } from "./interrupt-execution.ts";
 import { snapshotBattle } from "./battle-snapshot.ts";
 import { attackTargetFactsIssue } from "./attack-spatial.ts";
-import {
-  withThrownWeaponDroppedOutcome,
-  withThrownWeaponReleased,
-} from "./thrown-weapon-attack.ts";
+import { withThrownWeaponReleased } from "./thrown-weapon-release.ts";
 
 import { attackTargetHole, revealHidden } from "./hole-helpers.ts";
 import { needsHolesResult } from "./needs-holes-result.ts";
@@ -140,7 +137,7 @@ import {
 export function resolveOffHandAttack(
   input: OffHandAttackBattleResolutionInput,
 ): BattleResolutionResult {
-  const config: BonusActionAttackConfig = {
+  return resolveBonusActionAttack(input, {
     label: "Light Property Bonus Action Attack",
     unavailableMessage:
       "Light Property Bonus Action Attack requires a prior Attack action attack with a different Light weapon.",
@@ -151,21 +148,7 @@ export function resolveOffHandAttack(
     prerequisiteMet: (state, actorId, attack) =>
       attack.kind === "weapon" &&
       offHandAttackPrerequisiteMet(state, actorId, attack),
-  };
-  const attack = config.attackForInput(
-    input.state,
-    input.subject.actorId,
-    input.subject,
-  );
-  const result = resolveBonusActionAttack(input, config);
-  return attack === undefined
-    ? result
-    : withThrownWeaponDroppedOutcome({
-        stateBefore: input.state,
-        result,
-        attackerId: input.subject.actorId,
-        attack,
-      });
+  });
 }
 
 export function resolveMartialArtsBonusUnarmedStrike(
