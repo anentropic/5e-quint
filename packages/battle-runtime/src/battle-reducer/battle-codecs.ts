@@ -46,6 +46,8 @@ import { AttackOnceOrDashDisengageHideUtilizeActionRestrictionSchema } from "@dn
 import { RETAINED_COMPANION_PROTOCOL_TAGS } from "@dnd/shared-algebras/companion-protocol-algebra";
 import {
   AmmunitionKindSchema,
+  HEROIC_INSPIRATION_AVAILABLE,
+  NO_HEROIC_INSPIRATION,
   STANDARD_ACTION_KINDS,
   StatBlockId,
   UnitId,
@@ -57,6 +59,7 @@ import {
   CreatureId,
   DeathSavingThrowCount,
   D20Roll,
+  DieRollResultSchema,
   ResourceCount,
   SIZES,
 } from "@dnd/shared/types";
@@ -210,7 +213,10 @@ import {
   BRUTAL_STRIKE_EFFECT_DECISION_CHOICES,
   TACTICAL_MASTER_REPLACEMENT_DECISION_CHOICES,
 } from "../unit-feature-support.ts";
-import { BONUS_ACTION_HEALING_MOVEMENT_ORDER_CHOICES } from "../battle-state-execution.ts";
+import {
+  BONUS_ACTION_HEALING_MOVEMENT_ORDER_CHOICES,
+  HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+} from "../battle-state-execution.ts";
 import type {
   BattleCreatureOriginSnapshot,
   BattleCreatureSnapshot,
@@ -1721,6 +1727,24 @@ const D20TestNaturalOneRerollHoleOptionsFields = (() => {
   };
 })();
 
+const HeroicInspirationRerollHoleOptionsFields = (() => {
+  const member = pairedBattleHoleNestedMember({
+    effectKind: Schema.Literal(HEROIC_INSPIRATION_REROLL_EFFECT_KIND),
+  });
+  return {
+    labeled: {
+      heroicInspirationRerolls: Schema.optionalKey(
+        Schema.Tuple([member.labeled]),
+      ),
+    },
+    mechanical: {
+      heroicInspirationRerolls: Schema.optionalKey(
+        Schema.Tuple([member.mechanical]),
+      ),
+    },
+  };
+})();
+
 const AttackRollFeatureActivationFields = (() => {
   const schemas = pairedBattleHoleNestedMemberVariants(
     {
@@ -2290,6 +2314,13 @@ const BattleHolePayloadMembers = [
   }),
   pairedBattleHoleMember({
     ...BattleHoleBaseFieldsSchema,
+    kind: Schema.Literal("helpAbilityCheckDecision"),
+    helperId: CombatantId,
+    allyChoices: Schema.NonEmptyArray(CombatantId),
+    skillChoices: Schema.NonEmptyArray(Schema.Literals(BATTLE_SURFACE_SKILLS)),
+  }),
+  pairedBattleHoleMember({
+    ...BattleHoleBaseFieldsSchema,
     kind: Schema.Literal("damageRelationshipDecisions"),
     damageEventHoleId: BattleHoleIdSchema,
     damageSourceId: CombatantId,
@@ -2600,7 +2631,10 @@ const BattleHolePayloadMembers = [
       ),
       mergeBattleHoleFieldPairs(
         AttackRollMissToHitReplacementFields,
-        D20TestNaturalOneRerollHoleOptionsFields,
+        mergeBattleHoleFieldPairs(
+          D20TestNaturalOneRerollHoleOptionsFields,
+          HeroicInspirationRerollHoleOptionsFields,
+        ),
       ),
     ),
   ),
@@ -2616,7 +2650,10 @@ const BattleHolePayloadMembers = [
       AttackRollMissToHitReplacementFields,
       mergeBattleHoleFieldPairs(
         SpellAttackRerollHoleOptionsFields,
-        D20TestNaturalOneRerollHoleOptionsFields,
+        mergeBattleHoleFieldPairs(
+          D20TestNaturalOneRerollHoleOptionsFields,
+          HeroicInspirationRerollHoleOptionsFields,
+        ),
       ),
     ),
   ),
@@ -3613,12 +3650,7 @@ export const BattleMechanicalHoleSchema: BattleMechanicalHoleCodec =
     BattleMechanicalOrdinaryHoleSchema,
   ]).annotate({ identifier: "BattleMechanicalHole" });
 
-const BattleDieRollResultSchema = Schema.Number.pipe(
-  Schema.check(Schema.isInt()),
-  Schema.check(Schema.isGreaterThan(0)),
-  Schema.brand("PositiveInteger"),
-  Schema.brand("DieRollResult"),
-);
+const BattleDieRollResultSchema = DieRollResultSchema;
 
 const BattleD6RollResultSchema = Schema.Number.pipe(
   Schema.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 6 })),
@@ -3656,22 +3688,31 @@ const BattleD20TestRolledDieRollReplacementSchema = Schema.Struct({
   result: BattleD20TestRollReplacementSchema,
 }).annotate({ parseOptions: { onExcessProperty: "error" } });
 
-const BattleD20TestNaturalOneRerollDecisionSchema = Schema.Union([
-  Schema.Struct({
-    kind: Schema.Literal("decline"),
-    effectKind: Schema.Literal("d20_test_natural_one_reroll"),
-  }),
-  Schema.Struct({
-    kind: Schema.Literal("reroll"),
-    effectKind: Schema.Literal("d20_test_natural_one_reroll"),
-    replacement: BattleD20TestRollReplacementSchema,
-  }),
-  Schema.Struct({
-    kind: Schema.Literal("rerollRolledDie"),
-    effectKind: Schema.Literal("d20_test_natural_one_reroll"),
-    replacement: BattleD20TestRolledDieRollReplacementSchema,
-  }),
-]);
+function battleD20TestRollRerollDecisionSchema<const EffectKind extends string>(
+  effectKind: EffectKind,
+) {
+  return Schema.Union([
+    Schema.Struct({
+      kind: Schema.Literal("decline"),
+      effectKind: Schema.Literal(effectKind),
+    }),
+    Schema.Struct({
+      kind: Schema.Literal("reroll"),
+      effectKind: Schema.Literal(effectKind),
+      replacement: BattleD20TestRollReplacementSchema,
+    }),
+    Schema.Struct({
+      kind: Schema.Literal("rerollRolledDie"),
+      effectKind: Schema.Literal(effectKind),
+      replacement: BattleD20TestRolledDieRollReplacementSchema,
+    }),
+  ]);
+}
+
+const BattleD20TestNaturalOneRerollDecisionSchema =
+  battleD20TestRollRerollDecisionSchema("d20_test_natural_one_reroll");
+const BattleHeroicInspirationRerollDecisionSchema =
+  battleD20TestRollRerollDecisionSchema(HEROIC_INSPIRATION_REROLL_EFFECT_KIND);
 
 const BattleD20TestRolledDieOutcomeReplacementSchema = Schema.Struct({
   die: Schema.Literals(D20_TEST_ROLLED_DIE_KEYS),
@@ -3777,6 +3818,9 @@ const BattleAttackRollResultSchema = Schema.Struct({
   ),
   d20TestNaturalOneReroll: Schema.optionalKey(
     BattleD20TestNaturalOneRerollDecisionSchema,
+  ),
+  heroicInspirationReroll: Schema.optionalKey(
+    BattleHeroicInspirationRerollDecisionSchema,
   ),
 }).annotate({ parseOptions: { onExcessProperty: "error" } });
 
@@ -3951,6 +3995,13 @@ type BattleFillEncoded =
       readonly holeId: string;
       readonly targetEnemyId: string;
       readonly targetWithinFiveFeetOfHelper: boolean;
+    }
+  | {
+      readonly kind: "helpAbilityCheckDecision";
+      readonly holeId: string;
+      readonly allyId: string;
+      readonly skill: Skill;
+      readonly allyCanBeAssisted: boolean;
     }
   | {
       readonly kind: "targetChoice";
@@ -5178,6 +5229,13 @@ export const BattleFillSchema: Schema.Codec<
       holeId: BattleHoleIdSchema,
       targetEnemyId: CombatantId,
       targetWithinFiveFeetOfHelper: Schema.Boolean,
+    }),
+    Schema.Struct({
+      kind: Schema.Literal("helpAbilityCheckDecision"),
+      holeId: BattleHoleIdSchema,
+      allyId: CombatantId,
+      skill: Schema.Literals(BATTLE_SURFACE_SKILLS),
+      allyCanBeAssisted: Schema.Boolean,
     }),
     Schema.Struct({
       kind: Schema.Literal("targetChoice"),
@@ -6989,6 +7047,11 @@ type CharacterProcedureBindingSnapshotCodec = Schema.Union<
 const CharacterProcedureBindingSnapshotSchema: CharacterProcedureBindingSnapshotCodec =
   Schema.Union(CharacterProcedureBindingSnapshotMembers);
 
+const HeroicInspirationSchema = Schema.Union([
+  Schema.Struct({ tag: Schema.Literal(NO_HEROIC_INSPIRATION.tag) }),
+  Schema.Struct({ tag: Schema.Literal(HEROIC_INSPIRATION_AVAILABLE.tag) }),
+]);
+
 const CharacterBattleCreatureOriginSnapshotSchema = Schema.Struct({
   kind: Schema.Literal("character"),
   characterId: CharacterIdSchema,
@@ -7013,6 +7076,7 @@ const CharacterBattleCreatureOriginSnapshotSchema = Schema.Struct({
     ]),
   }),
   resources: Schema.Array(BattleCharacterResourceSnapshotSchema),
+  heroicInspiration: HeroicInspirationSchema,
   druidWildShapeAvailableForms: Schema.Array(
     Schema.Struct({
       statBlockId: StatBlockId,
@@ -7445,6 +7509,13 @@ const BattleHelpAttackSnapshotSchema = Schema.Struct({
   helperId: CombatantId,
   allyId: CombatantId,
   targetEnemyId: CombatantId,
+  expiresAt: OngoingFeatureExpirationSchema,
+});
+
+const BattleHelpAbilityCheckSnapshotSchema = Schema.Struct({
+  helperId: CombatantId,
+  allyId: CombatantId,
+  skill: Schema.Literals(BATTLE_SURFACE_SKILLS),
   expiresAt: OngoingFeatureExpirationSchema,
 });
 
@@ -8396,6 +8467,7 @@ function serializedBattleHoleExecutionReferences(
         ),
       helpAttackAllyDecision: noSerializedExecutionReferences,
       helpAttackEnemyDecision: noSerializedExecutionReferences,
+      helpAbilityCheckDecision: noSerializedExecutionReferences,
       areaWindStrength: noSerializedExecutionReferences,
       damageRelationshipDecisions: (value) =>
         value.questions.flatMap((question) =>
@@ -8820,6 +8892,7 @@ function serializedRuntimeCommandReferencePolicy(
       }),
       persistentAreaSaveCompositeSave: actorOwned,
       standFromProne: actorOwned,
+      dropProne: actorOwned,
       linkedDefenseResistanceDamageShareSeparation: actorOwned,
       endPersistentAreaSaveConditionEscapeForAreaRemoval: actorOwned,
       endPersistentAreaSaveConditionEscapeForDeparture: actorOwned,
@@ -10022,6 +10095,7 @@ const BattleSnapshotCommonFields = {
     actionsOrMovements: Schema.Array(BattleReadiedResponseSnapshotSchema),
   }),
   helpAttackMarkers: Schema.Array(BattleHelpAttackSnapshotSchema),
+  helpAbilityCheckMarkers: Schema.Array(BattleHelpAbilityCheckSnapshotSchema),
 };
 
 const BattleSnapshotExcludedFields = {
@@ -10266,6 +10340,7 @@ type EncodedCharacterBattleCreatureOriginSnapshot = {
       | null;
   };
   readonly resources: readonly (typeof BattleCharacterResourceSnapshotSchema.Encoded)[];
+  readonly heroicInspiration: typeof HeroicInspirationSchema.Encoded;
   readonly druidWildShapeAvailableForms: readonly {
     readonly statBlockId: typeof StatBlockId.Encoded;
     readonly execution: typeof StatBlockExecutionSnapshotSchema.Encoded;

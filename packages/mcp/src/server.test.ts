@@ -1526,6 +1526,9 @@ describe("MCP server route", () => {
           {
             classUnitId: wizardClassUnitId,
             hitPointRule: { tag: "fixedHigherLevelGain" },
+            constitutionModifierAtGain: Math.floor(
+              (build.abilityScores.con - 10) / 2,
+            ),
           },
         ],
       },
@@ -2910,6 +2913,7 @@ describe("MCP server route", () => {
       "Adrenaline Rush: Dash",
       "Second Wind",
       "Move",
+      "Drop Prone",
       "Ready",
       "End Turn",
     ]);
@@ -3614,7 +3618,13 @@ describe("MCP server route", () => {
       afterDamage.envelope.frontier.acts.map(
         (act: { label: string }) => act.label,
       ),
-    ).toEqual(["Adrenaline Rush: Dash", "Second Wind", "Move", "End Turn"]);
+    ).toEqual([
+      "Adrenaline Rush: Dash",
+      "Second Wind",
+      "Move",
+      "Drop Prone",
+      "End Turn",
+    ]);
     expect(root.sessionStore.getPendingBattleTransaction()).toBeNull();
 
     const battleBeforeWrongActorEnd = root.sessionStore.battleSession;
@@ -3703,10 +3713,12 @@ describe("MCP server route", () => {
         .map(({ label }) => label),
     ).toEqual([
       ...GENERIC_COMBAT_ACTION_LABELS,
+      "Help (Ability Check)",
       "Unarmed Strike (Grapple)",
       "Unarmed Strike (Shove)",
       "Nimble Escape",
       "Move",
+      "Drop Prone",
       "Ready",
       "End Turn",
     ]);
@@ -8136,10 +8148,13 @@ describe("MCP server route", () => {
     ).toEqual([
       "Attack",
       "Attack",
-      ...GENERIC_COMBAT_ACTION_LABELS_WITH_SHOVE,
+      ...GENERIC_COMBAT_ACTION_LABELS,
+      "Help (Ability Check)",
+      "Unarmed Strike (Shove)",
       "Adrenaline Rush: Dash",
       "Second Wind",
       "Move",
+      "Drop Prone",
       "Ready",
       "End Turn",
     ]);
@@ -8243,10 +8258,12 @@ describe("MCP server route", () => {
       "Attack",
       "Attack",
       ...GENERIC_COMBAT_ACTION_LABELS,
+      "Help (Ability Check)",
       "Unarmed Strike (Grapple)",
       "Unarmed Strike (Shove)",
       "Nimble Escape",
       "Move",
+      "Drop Prone",
       "Ready",
       "End Turn",
     ]);
@@ -12094,6 +12111,9 @@ function characterBuildForClassProgression(input: {
     advancements: Array.from({ length: classLevel - 1 }, () => ({
       classUnitId,
       hitPointRule: { tag: "fixedHigherLevelGain" as const },
+      constitutionModifierAtGain: Math.floor(
+        (input.base.abilityScores.con - 10) / 2,
+      ),
     })),
   };
   return {
