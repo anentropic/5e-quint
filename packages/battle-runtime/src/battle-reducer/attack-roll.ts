@@ -158,6 +158,7 @@ import { combatantEffectiveSize } from "./druid-wild-shape.ts";
 import {
   attackExecutionSelectionMatchesOption,
   attackCloseCombatDisadvantage,
+  attackEnemyProximityQualificationIssue,
   attackTargetIsLegal,
   attackTargetDistanceFeet,
   attackTargetRangeBand,
@@ -1758,6 +1759,12 @@ export function huntersPreyHordeBreakerTargetIsLegal(input: {
       input.attack,
       input.targetSpatialFacts,
     ) &&
+    attackEnemyProximityQualificationIssue(
+      input.state,
+      input.attackerId,
+      input.attack,
+      input.targetSpatialFacts,
+    ) === null &&
     input.targetSpatialFacts.some(
       (fact) =>
         fact.kind === "hordeBreakerSecondTargetEligible" &&
