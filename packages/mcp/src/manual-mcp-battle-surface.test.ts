@@ -1138,11 +1138,11 @@ describe("manual MCP battle surface coverage", () => {
         5,
         [
           {
-            kind: "rangedSpellAttackEnemyProximity",
-            casterId: "fighter",
-            sourceProcedureRef: adjacentAct.subject.procedureRef,
+            kind: "rangedAttackEnemyProximity",
+            attackerId: "fighter",
+            procedureRef: adjacentAct.subject.procedureRef,
             enemies: [
-              { enemyId: "goblin", distanceFeet: 5, enemyCanSeeCaster: true },
+              { enemyId: "goblin", distanceFeet: 5, enemyCanSeeAttacker: true },
             ],
           },
         ],
@@ -1211,7 +1211,7 @@ describe("manual MCP battle surface coverage", () => {
     {
       scenario: "visible adjacent enemy",
       distanceFeet: 5,
-      enemyCanSeeCaster: true,
+      enemyCanSeeAttacker: true,
       enemyIncapacitated: false,
       targetCannotSeeCaster: false,
       expectedRollMode: "disadvantage",
@@ -1219,7 +1219,7 @@ describe("manual MCP battle surface coverage", () => {
     {
       scenario: "distant enemy",
       distanceFeet: 10,
-      enemyCanSeeCaster: true,
+      enemyCanSeeAttacker: true,
       enemyIncapacitated: false,
       targetCannotSeeCaster: false,
       expectedRollMode: undefined,
@@ -1227,7 +1227,7 @@ describe("manual MCP battle surface coverage", () => {
     {
       scenario: "enemy cannot see caster",
       distanceFeet: 5,
-      enemyCanSeeCaster: false,
+      enemyCanSeeAttacker: false,
       enemyIncapacitated: false,
       targetCannotSeeCaster: false,
       expectedRollMode: undefined,
@@ -1235,7 +1235,7 @@ describe("manual MCP battle surface coverage", () => {
     {
       scenario: "Incapacitated enemy",
       distanceFeet: 5,
-      enemyCanSeeCaster: true,
+      enemyCanSeeAttacker: true,
       enemyIncapacitated: true,
       targetCannotSeeCaster: false,
       expectedRollMode: undefined,
@@ -1243,7 +1243,7 @@ describe("manual MCP battle surface coverage", () => {
     {
       scenario: "Advantage cancels proximity Disadvantage",
       distanceFeet: 5,
-      enemyCanSeeCaster: true,
+      enemyCanSeeAttacker: true,
       enemyIncapacitated: false,
       targetCannotSeeCaster: true,
       expectedRollMode: "normal",
@@ -1252,7 +1252,7 @@ describe("manual MCP battle surface coverage", () => {
     "qualifies enemies independently of the selected target: $scenario",
     ({
       distanceFeet,
-      enemyCanSeeCaster,
+      enemyCanSeeAttacker,
       enemyIncapacitated,
       targetCannotSeeCaster,
       expectedRollMode,
@@ -1288,31 +1288,29 @@ describe("manual MCP battle surface coverage", () => {
         5,
       );
       const qualification = {
-        kind: "rangedSpellAttackEnemyProximity",
-        casterId: "fighter",
-        sourceProcedureRef: allyAct.subject.procedureRef,
+        kind: "rangedAttackEnemyProximity",
+        attackerId: "fighter",
+        procedureRef: allyAct.subject.procedureRef,
         enemies: [],
       };
       const nearbyEnemy = {
         enemyId: "goblin",
         distanceFeet: 5,
-        enemyCanSeeCaster: true,
+        enemyCanSeeAttacker: true,
       };
       const targetFacts = omittedQualification.spatialFacts.filter(
         (fact) =>
-          !("kind" in fact) || fact.kind !== "rangedSpellAttackEnemyProximity",
+          !("kind" in fact) || fact.kind !== "rangedAttackEnemyProximity",
       );
       for (const invalidQualifications of [
         [],
         [qualification, qualification],
-        [{ ...qualification, casterId: "ally" }],
+        [{ ...qualification, attackerId: "ally" }],
         [
           {
             ...qualification,
-            sourceProcedureRef: requireSpellAct(
-              selectedAllyRoot,
-              "ray_of_frost",
-            ).subject.procedureRef,
+            procedureRef: requireSpellAct(selectedAllyRoot, "ray_of_frost")
+              .subject.procedureRef,
           },
         ],
         [{ ...qualification, enemies: [nearbyEnemy, nearbyEnemy] }],
@@ -1424,10 +1422,10 @@ describe("manual MCP battle surface coverage", () => {
           30,
           [
             {
-              kind: "rangedSpellAttackEnemyProximity",
-              casterId: "fighter",
-              sourceProcedureRef: distantAct.subject.procedureRef,
-              enemies: [{ enemyId: "ally", distanceFeet, enemyCanSeeCaster }],
+              kind: "rangedAttackEnemyProximity",
+              attackerId: "fighter",
+              procedureRef: distantAct.subject.procedureRef,
+              enemies: [{ enemyId: "ally", distanceFeet, enemyCanSeeAttacker }],
             },
             ...(targetCannotSeeCaster
               ? [
@@ -2565,9 +2563,9 @@ function spellTargetFill(
       ...(additionalSpatialFacts.length === 0 && distanceFeet !== undefined
         ? [
             {
-              kind: "rangedSpellAttackEnemyProximity",
-              casterId,
-              sourceProcedureRef,
+              kind: "rangedAttackEnemyProximity",
+              attackerId: casterId,
+              procedureRef: sourceProcedureRef,
               enemies: [],
             },
           ]
