@@ -1,34 +1,39 @@
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL
 // Every D20 Test reroll source on one attack roll: the natural-1 reroll and
-// Heroic Inspiration. Each source the attacker has for the roll needs an
-// explicit decision, and at most one of them (or a Spell Attack reroll) takes
-// the reroll. See ASSUMPTIONS.md on one reroll per roll.
+// Heroic Inspiration. The roller decides for each source it has, in the order
+// it chooses, and each decision applies to the roll as the decisions before it
+// left it. See ASSUMPTIONS.md A55 on sequential rerolls from different sources.
 
 import { NO_HEROIC_INSPIRATION } from "@dnd/shared/game-facts";
-import type { AttackRollMode } from "@dnd/shared-algebras/runtime-hole-algebra";
+import type {
+  AttackRollMode,
+  HoleId,
+} from "@dnd/shared-algebras/runtime-hole-algebra";
 import { Brand, Match } from "effect";
 
-import type { BattleInterruptTrigger } from "../battle-interrupt-triggers.ts";
-import type {
-  BattleAttackRollHole,
-  BattleAttackRollResult,
-  BattleCreatureState,
-  BattleSpellAttackRollHole,
-  BattleState,
+import {
+  D20_TEST_NATURAL_ONE_REROLL_EFFECT_KIND,
+  HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+  type BattleAttackRollD20TestRerollDecision,
+  type BattleAttackRollHole,
+  type BattleAttackRollResult,
+  type BattleSpellAttackRollHole,
+  type BattleState,
+  type BattleTurnResources,
 } from "../battle-state-execution.ts";
 import type { CombatantId } from "../identity.ts";
 import {
   attackRollHoleWithD20TestNaturalOneRerollOption,
   d20TestNaturalOneRerollRollDecisionRequired,
   d20TestNaturalOneRerollRollIssue,
-  effectiveD20TestNaturalOneRerollAttackRoll,
 } from "./d20-test-natural-one-reroll.ts";
+import { attackRollAfterD20TestRollReroll } from "./d20-test-roll-reroll.ts";
 import {
   attackRollHoleWithHeroicInspirationRerollOption,
   combatantHasHeroicInspiration,
   d20TestRerollDecisionTakesReroll,
-  effectiveHeroicInspirationRerollAttackRoll,
   heroicInspirationRerollRollIssue,
+  type HeroicInspirationRerollAvailability,
 } from "./heroic-inspiration-reroll.ts";
 
 /** The reroll sources an attack roll is asked again with. */
@@ -42,7 +47,12 @@ export type AttackRollD20TestRerollOptions = {
  * attackRollD20TestRerolls makes one, so the spend follows a checked decision.
  */
 export type AttackRollHeroicInspirationUse = Brand.Branded<
-  { readonly spends: boolean },
+  | { readonly spends: false }
+  | {
+      readonly spends: true;
+      readonly actorId: CombatantId;
+      readonly attackRollHoleId: HoleId;
+    },
   "AttackRollHeroicInspirationUse"
 >;
 const AttackRollHeroicInspirationUse =
@@ -62,158 +72,248 @@ export type AttackRollD20TestRerolls =
     };
 
 type AttackRollD20TestRerollInput = {
-  readonly attacker: BattleCreatureState | undefined;
+  readonly state: BattleState;
+  readonly attackerId: CombatantId;
+  /** The hole this attack roll fills, which names the roll within its subject. */
+  readonly attackRollHoleId: HoleId;
   readonly attackRoll: BattleAttackRollResult;
   readonly requiredRollMode: AttackRollMode | undefined;
-  /** See attackRollAdmittedBeforeInterrupt. */
-  readonly admittedBeforeInterrupt: boolean;
 };
 
 /**
- * Whether a replay follows a reaction window that opened after this attack
- * roll was admitted. Its reroll decisions were checked, and Heroic
- * Inspiration spent, before that window, and the replay keeps the same fill.
+ * Where the attacker's Heroic Inspiration stands for this roll. A replay after
+ * a reaction window resolves the subject's rolls again from the state after a
+ * spend, so the roll that spent it can take it again, and an earlier roll's
+ * decline still stands.
  */
-export function attackRollAdmittedBeforeInterrupt(
-  handledInterruptTrigger: BattleInterruptTrigger | undefined,
-): boolean {
-  return handledInterruptTrigger === undefined
-    ? false
-    : Match.value(handledInterruptTrigger).pipe(
-        Match.when("attackHit", () => true),
-        Match.when("attackDamage", () => true),
-        Match.when("afterDamage", () => true),
-        Match.when("saveFailed", () => true),
-        Match.when("creatureFalls", () => true),
-        Match.when("spellCast", () => false),
-        Match.when("opportunityAttack", () => false),
-        Match.when("reportedReadyTrigger", () => false),
-        Match.exhaustive,
-      );
+function heroicInspirationRerollAvailabilityForRoll(
+  input: AttackRollD20TestRerollInput,
+): HeroicInspirationRerollAvailability {
+  if (
+    combatantHasHeroicInspiration(input.state.combatants.get(input.attackerId))
+  ) {
+    return "available";
+  }
+  const spent =
+    input.state.currentTurnResources.heroicInspirationAttackRollReroll;
+  if (spent?.actorId !== input.attackerId) {
+    return "unavailable";
+  }
+  return spent.attackRollHoleId === input.attackRollHoleId
+    ? "available"
+    : "spentOnAnotherRoll";
 }
 
 /**
- * Checks an attack roll's reroll decisions and gives the roll that stands.
- * When a decision is missing, the roll is asked again with an option for
- * every source the attacker has for it.
+ * Checks an attack roll's reroll decisions in the order the roller made them
+ * and gives the roll that stands. Each decision is checked against the roll as
+ * the decisions before it left it. While a source the attacker has is still
+ * undecided on that roll, the roll is asked again with its option.
  */
 export function attackRollD20TestRerolls(
   input: AttackRollD20TestRerollInput,
 ): AttackRollD20TestRerolls {
-  const { attacker, attackRoll } = input;
-  const heroicInspirationRerollAvailable =
-    combatantHasHeroicInspiration(attacker) ||
-    (input.admittedBeforeInterrupt &&
-      d20TestRerollDecisionTakesReroll(attackRoll.heroicInspirationReroll));
-  const options = {
-    naturalOne: d20TestNaturalOneRerollRollDecisionRequired({
-      actor: attacker,
-      originalD20TestRoll: attackRoll.d20TestRoll,
-      decision: undefined,
-    }),
-    heroicInspiration: heroicInspirationRerollAvailable,
-  } as const satisfies AttackRollD20TestRerollOptions;
-  if (
-    (options.naturalOne && attackRoll.d20TestNaturalOneReroll === undefined) ||
-    (options.heroicInspiration &&
-      attackRoll.heroicInspirationReroll === undefined)
-  ) {
-    return { tag: "decisionsRequired", options };
-  }
-  const issue = attackRollD20TestRerollIssue(
+  const heroicInspirationRerollAvailability =
+    heroicInspirationRerollAvailabilityForRoll(input);
+  const sequence = attackRollD20TestRerollSequence(
     input,
-    heroicInspirationRerollAvailable,
+    heroicInspirationRerollAvailability,
   );
-  if (issue !== null) {
-    return { tag: "invalid", issue };
+  if (sequence.tag === "invalid") {
+    return sequence;
+  }
+  const options = {
+    naturalOne:
+      !sequence.decided.naturalOne &&
+      d20TestNaturalOneRerollRollDecisionRequired({
+        actor: input.state.combatants.get(input.attackerId),
+        originalD20TestRoll: sequence.attackRoll.d20TestRoll,
+        decision: undefined,
+      }),
+    heroicInspiration:
+      !sequence.decided.heroicInspiration &&
+      heroicInspirationRerollAvailability === "available",
+  } as const satisfies AttackRollD20TestRerollOptions;
+  if (options.naturalOne || options.heroicInspiration) {
+    return { tag: "decisionsRequired", options };
   }
   return {
     tag: "resolved",
-    effectiveAttackRoll: attackRollAfterD20TestRerolls(attackRoll),
-    heroicInspirationUse: AttackRollHeroicInspirationUse({
-      spends: d20TestRerollDecisionTakesReroll(
-        attackRoll.heroicInspirationReroll,
-      ),
-    }),
+    effectiveAttackRoll: sequence.attackRoll,
+    heroicInspirationUse: AttackRollHeroicInspirationUse(
+      sequence.heroicInspirationTaken
+        ? {
+            spends: true,
+            actorId: input.attackerId,
+            attackRollHoleId: input.attackRollHoleId,
+          }
+        : { spends: false },
+    ),
   };
 }
 
-/**
- * Whether a D20 Test reroll source (the natural-1 reroll or Heroic
- * Inspiration) took this roll's reroll, so no other source can.
- */
-export function attackRollD20TestRerollTaken(
-  attackRoll: BattleAttackRollResult,
-): boolean {
-  return (
-    d20TestRerollDecisionTakesReroll(attackRoll.d20TestNaturalOneReroll) ||
-    d20TestRerollDecisionTakesReroll(attackRoll.heroicInspirationReroll)
+export const ATTACK_ROLL_D20_TEST_REROLL_SOURCE_REPEATED_MESSAGE =
+  "A reroll source decides only once on a D20 Test roll; only a different source may reroll the new roll.";
+
+/** Which reroll sources have decided on a roll. Each decides at most once. */
+type AttackRollD20TestRerollSourcesDecided = {
+  readonly [Source in keyof AttackRollD20TestRerollOptions]: boolean;
+};
+
+type AttackRollD20TestRerollSequence =
+  | { readonly tag: "invalid"; readonly issue: string }
+  | {
+      readonly tag: "applied";
+      /** The roll after every decision so far. */
+      readonly attackRoll: BattleAttackRollResult;
+      readonly decided: AttackRollD20TestRerollSourcesDecided;
+      readonly heroicInspirationTaken: boolean;
+    };
+
+type AttackRollD20TestRerollStep = {
+  readonly source: keyof AttackRollD20TestRerollOptions;
+  readonly issue: string | null;
+};
+
+/** Applies an attack roll's reroll decisions in order, checking each one. */
+function attackRollD20TestRerollSequence(
+  input: AttackRollD20TestRerollInput,
+  heroicInspirationRerollAvailability: HeroicInspirationRerollAvailability,
+): AttackRollD20TestRerollSequence {
+  const initial: AttackRollD20TestRerollSequence = {
+    tag: "applied",
+    attackRoll: input.attackRoll,
+    decided: { naturalOne: false, heroicInspiration: false },
+    heroicInspirationTaken: false,
+  };
+  return (input.attackRoll.d20TestRerolls ?? []).reduce(
+    (sequence: AttackRollD20TestRerollSequence, decision) => {
+      if (sequence.tag === "invalid") {
+        return sequence;
+      }
+      const step = attackRollD20TestRerollStep(
+        input,
+        heroicInspirationRerollAvailability,
+        sequence.attackRoll,
+        decision,
+      );
+      if (sequence.decided[step.source]) {
+        return {
+          tag: "invalid",
+          issue: ATTACK_ROLL_D20_TEST_REROLL_SOURCE_REPEATED_MESSAGE,
+        };
+      }
+      if (step.issue !== null) {
+        return { tag: "invalid", issue: step.issue };
+      }
+      return {
+        tag: "applied",
+        attackRoll: attackRollAfterD20TestRollReroll(
+          sequence.attackRoll,
+          decision,
+        ),
+        decided: { ...sequence.decided, [step.source]: true },
+        heroicInspirationTaken:
+          sequence.heroicInspirationTaken ||
+          (step.source === "heroicInspiration" &&
+            d20TestRerollDecisionTakesReroll(decision)),
+      };
+    },
+    initial,
   );
 }
 
-/** Spends the attacker's Heroic Inspiration when the admitted attack roll took its reroll. */
+/** One decision's source, checked against the roll as it stands. */
+function attackRollD20TestRerollStep(
+  input: AttackRollD20TestRerollInput,
+  heroicInspirationRerollAvailability: HeroicInspirationRerollAvailability,
+  roll: BattleAttackRollResult,
+  decision: BattleAttackRollD20TestRerollDecision,
+): AttackRollD20TestRerollStep {
+  return Match.value(decision).pipe(
+    Match.discriminatorsExhaustive("effectKind")({
+      [D20_TEST_NATURAL_ONE_REROLL_EFFECT_KIND]: (naturalOne) => ({
+        source: "naturalOne" as const,
+        issue: d20TestNaturalOneRerollRollIssue({
+          actor: input.state.combatants.get(input.attackerId),
+          total: roll.total,
+          originalD20TestRoll: roll.d20TestRoll,
+          decision: naturalOne,
+          requiredRollMode: input.requiredRollMode,
+        }),
+      }),
+      [HEROIC_INSPIRATION_REROLL_EFFECT_KIND]: (heroicInspiration) => ({
+        source: "heroicInspiration" as const,
+        issue: heroicInspirationRerollRollIssue({
+          availability: heroicInspirationRerollAvailability,
+          total: roll.total,
+          originalD20TestRoll: roll.d20TestRoll,
+          decision: heroicInspiration,
+          requiredRollMode: input.requiredRollMode,
+        }),
+      }),
+    }),
+  );
+}
+
+/**
+ * Spends the attacker's Heroic Inspiration when the admitted attack roll took
+ * its reroll, and records the roll for the rest of the subject. On a replay
+ * of the subject the same roll finds it already spent and changes nothing.
+ */
 export function battleStateAfterHeroicInspirationReroll(
   state: BattleState,
-  actorId: CombatantId,
   use: AttackRollHeroicInspirationUse,
 ): BattleState {
   if (!use.spends) {
     return state;
   }
-  const actor = state.combatants.get(actorId);
+  const actor = state.combatants.get(use.actorId);
   /* v8 ignore next -- @preserve -- A validated Heroic Inspiration reroll belongs to a character. */
   if (actor?.origin.kind !== "character") return state;
+  if (actor.origin.heroicInspiration.tag === "none") {
+    return state;
+  }
   return {
     ...state,
-    combatants: new Map(state.combatants).set(actorId, {
+    combatants: new Map(state.combatants).set(use.actorId, {
       ...actor,
       origin: { ...actor.origin, heroicInspiration: NO_HEROIC_INSPIRATION },
     }),
+    currentTurnResources: {
+      ...state.currentTurnResources,
+      heroicInspirationAttackRollReroll: {
+        actorId: use.actorId,
+        attackRollHoleId: use.attackRollHoleId,
+      },
+    },
   };
 }
 
-/** The first issue with an attack roll's reroll decisions, if any. */
-function attackRollD20TestRerollIssue(
-  input: AttackRollD20TestRerollInput,
-  heroicInspirationRerollAvailable: boolean,
-): string | null {
-  const { attacker, attackRoll } = input;
-  const spellAttackRerollPresent = d20TestRerollDecisionTakesReroll(
-    attackRoll.spellAttackReroll,
-  );
-  return (
-    d20TestNaturalOneRerollRollIssue({
-      actor: attacker,
-      total: attackRoll.total,
-      originalD20TestRoll: attackRoll.d20TestRoll,
-      decision: attackRoll.d20TestNaturalOneReroll,
-      requiredRollMode: input.requiredRollMode,
-      otherD20RerollPresent:
-        spellAttackRerollPresent ||
-        d20TestRerollDecisionTakesReroll(attackRoll.heroicInspirationReroll),
-    }) ??
-    heroicInspirationRerollRollIssue({
-      rerollAvailable: heroicInspirationRerollAvailable,
-      total: attackRoll.total,
-      originalD20TestRoll: attackRoll.d20TestRoll,
-      decision: attackRoll.heroicInspirationReroll,
-      requiredRollMode: input.requiredRollMode,
-      otherD20RerollPresent:
-        spellAttackRerollPresent ||
-        d20TestRerollDecisionTakesReroll(attackRoll.d20TestNaturalOneReroll),
-    })
-  );
+/**
+ * Turn resources once no subject is pending: the record of the roll that spent
+ * Heroic Inspiration belongs to the subject that made it.
+ */
+export function turnResourcesWithoutHeroicInspirationAttackRollReroll(
+  resources: BattleTurnResources,
+): BattleTurnResources {
+  const {
+    heroicInspirationAttackRollReroll: _completedSubjectReroll,
+    ...withoutReroll
+  } = resources;
+  return withoutReroll;
 }
 
 /**
- * The attack roll after its D20 Test reroll decisions. At most one of them
- * takes the reroll, so the order doesn't change the result.
+ * The attack roll after its D20 Test reroll decisions, each applied to the
+ * roll the decisions before it left.
  */
 export function attackRollAfterD20TestRerolls(
   attackRoll: BattleAttackRollResult,
 ): BattleAttackRollResult {
-  return effectiveHeroicInspirationRerollAttackRoll(
-    effectiveD20TestNaturalOneRerollAttackRoll(attackRoll),
+  return (attackRoll.d20TestRerolls ?? []).reduce(
+    attackRollAfterD20TestRollReroll,
+    attackRoll,
   );
 }
 

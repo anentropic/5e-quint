@@ -4153,6 +4153,12 @@ export type PendingAttackRollMissToHitReplacementContext = {
   readonly targetId: CombatantId;
   readonly attackRoll: BattleAttackRollResult;
 };
+/** The attack roll that spent a creature's Heroic Inspiration on its reroll. */
+export type BattleHeroicInspirationAttackRollReroll = {
+  readonly actorId: CombatantId;
+  readonly attackRollHoleId: HoleId;
+};
+
 type PendingAttackRollMissToHitReplacementSelection = {
   readonly attackerId: CombatantId;
   readonly procedureRef: BattleProcedureExecutionRef;
@@ -4192,6 +4198,12 @@ export type BattleTurnResources = ActionEconomyState & {
   readonly huntersPreyHordeBreakerUsedThisTurn: readonly AttackDamageRiderUsage[];
   readonly grapplerPunchAndGrabUsedThisTurn: readonly CombatantId[];
   readonly pendingAttackRollMissToHitReplacementSelection?: PendingAttackRollMissToHitReplacementSelection;
+  /**
+   * The attack roll whose reroll spent Heroic Inspiration in the subject still
+   * being resolved. A replay of that subject admits that roll's decision again;
+   * no other roll can use it. Absent when no pending subject spent it.
+   */
+  readonly heroicInspirationAttackRollReroll?: BattleHeroicInspirationAttackRollReroll;
   readonly lightWeaponAttackMade?: {
     readonly weaponItemId: BattleObjectId;
   };
@@ -5486,6 +5498,19 @@ export type BattleHeroicInspirationRerollOption = {
 };
 export type BattleHeroicInspirationRerollDecision =
   BattleD20TestRollRerollDecision<typeof HEROIC_INSPIRATION_REROLL_EFFECT_KIND>;
+/** One reroll source's decision on an attack roll's d20, named by its effect kind. */
+export type BattleAttackRollD20TestRerollDecision =
+  | BattleD20TestNaturalOneRerollDecision
+  | BattleHeroicInspirationRerollDecision;
+/**
+ * An attack roll's D20 Test reroll decisions in the order the roller made
+ * them. Each source decides at most once, on the roll as the decisions before
+ * it left it (ASSUMPTIONS.md A55).
+ */
+export type BattleAttackRollD20TestRerollDecisions = readonly [
+  BattleAttackRollD20TestRerollDecision,
+  ...BattleAttackRollD20TestRerollDecision[],
+];
 export type BattleD20TestOutcomeReplacement = {
   readonly succeeded: boolean;
   readonly d20TestRoll: BattleD20TestRoll;
@@ -7026,8 +7051,7 @@ export type BattleAttackRollResult = AttackRollResult & {
   readonly activatedOngoingFeatureProcedureRef?: BattleProcedureExecutionRef;
   readonly missToHitReplacementProcedureRef?: BattleProcedureExecutionRef;
   readonly spellAttackReroll?: BattleSpellAttackRerollDecision;
-  readonly d20TestNaturalOneReroll?: BattleD20TestNaturalOneRerollDecision;
-  readonly heroicInspirationReroll?: BattleHeroicInspirationRerollDecision;
+  readonly d20TestRerolls?: BattleAttackRollD20TestRerollDecisions;
 };
 export type BattleRolledDiceFill = {
   readonly kind: "rolledDice";

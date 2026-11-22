@@ -122,13 +122,10 @@ import {
   sourceDamageRollPenaltyRollForDamageRoll,
   unexpectedSourceDamageRollPenaltyRoll,
 } from "./damage-helpers.ts";
-import type { BattleInterruptTrigger } from "../battle-interrupt-triggers.ts";
 import {
   attackRollAfterD20TestRerolls,
-  attackRollAdmittedBeforeInterrupt,
   attackRollD20TestRerolls,
   attackRollHoleWithD20TestRerollOptions,
-  attackRollD20TestRerollTaken,
   battleStateAfterHeroicInspirationReroll,
   type AttackRollHeroicInspirationUse,
 } from "./attack-roll-d20-test-rerolls.ts";
@@ -425,7 +422,6 @@ function resolveInitialSpellAttackRoll(input: {
   readonly targetId: CombatantId;
   readonly invocation: Parameters<typeof spellAttackRollHole>[2];
   readonly fillSet: Extract<SpellFillSet, { readonly tag: "ok" }>;
-  readonly handledInterruptTrigger: BattleInterruptTrigger | undefined;
 }): InitialSpellAttackRollResolution {
   const requiredRollMode = requiredSpellAttackRollMode(
     input.castingState,
@@ -473,12 +469,11 @@ function resolveInitialSpellAttackRoll(input: {
   /* v8 ignore stop -- @preserve */
   const actor = input.castingState.combatants.get(input.actorId);
   const d20TestRerolls = attackRollD20TestRerolls({
-    attacker: actor,
+    state: input.castingState,
+    attackerId: input.actorId,
+    attackRollHoleId: ATTACK_ROLL_HOLE_ID,
     attackRoll: input.fillSet.attackRoll,
     requiredRollMode,
-    admittedBeforeInterrupt: attackRollAdmittedBeforeInterrupt(
-      input.handledInterruptTrigger,
-    ),
   });
   if (d20TestRerolls.tag === "decisionsRequired") {
     return {
@@ -1664,7 +1659,6 @@ function spellAttackNeedsSeekingRerollDecision(input: {
     input.invocation.procedure === "spellAttackDamage" &&
     !input.originalHit &&
     input.attackRoll.spellAttackReroll === undefined &&
-    !attackRollD20TestRerollTaken(input.attackRoll) &&
     seekingApplication !== null &&
     seekingSpellCombinedUseIssue({
       actor: input.actor,
@@ -2454,7 +2448,6 @@ function resolveSpellActInternal(
       targetId: target.combatantId,
       invocation: invocationForResolution,
       fillSet,
-      handledInterruptTrigger: input.handledInterruptTrigger,
     });
     if (initialAttackRoll.tag === "result") {
       return initialAttackRoll.result;
@@ -2558,7 +2551,6 @@ function resolveSpellActInternal(
         recordAttackRollOngoingFeatures(
           battleStateAfterHeroicInspirationReroll(
             attackRollState,
-            subject.actorId,
             initialAttackRoll.heroicInspirationUse,
           ),
           subject.actorId,
