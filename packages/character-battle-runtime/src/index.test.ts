@@ -11073,6 +11073,27 @@ describe("Character Build battle projection", () => {
     },
   );
 
+  test("keeps a two-handed Spear's one-handed damage for its thrown attack", () => {
+    const attack = expectSuccess(
+      characterWeaponAttackActionOptions({
+        build: equippedFighterBuild({
+          weaponUnitId: authoredUnitId("weapon_spear"),
+          str: 16,
+          dex: 10,
+          grip: "two_handed",
+        }),
+        unitLibrary,
+        weaponMasteries: [],
+        classLevels: [{ className: "fighter", level: 1 }],
+      }),
+    ).attack;
+
+    expect(attack?.weapon).toMatchObject({
+      damage: { kind: "dice", dice: 1, dieSize: 8 },
+      oneHandedDamage: { kind: "dice", dice: 1, dieSize: 6 },
+    });
+  });
+
   test("keeps a level 1 Monk's two-handed Quarterstaff at its Versatile d8", () => {
     const attack = expectSuccess(
       characterWeaponAttackActionOptions({

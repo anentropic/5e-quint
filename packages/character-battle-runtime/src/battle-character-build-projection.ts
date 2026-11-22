@@ -1454,8 +1454,9 @@ function martialArtsChosenAbility<FallbackAbility extends Ability>(
  * that damage when used with two hands to make a melee attack." (SRD 5.2.1,
  * Weapon properties). Battle takes the grip from the loadout, so the main-hand
  * melee attack of a weapon held with the `two_handed` grip deals the damage
- * the Versatile property names. Martial Arts then compares its die against
- * that damage.
+ * the Versatile property names, and keeps its own damage as `oneHandedDamage`
+ * for a thrown attack, which isn't a melee attack. Martial Arts then compares
+ * its die against both.
  */
 function weaponWithGripDamage(
   weapon: CharacterWeaponAttackActionOption["weapon"],
@@ -1482,28 +1483,45 @@ function weaponWithGripDamage(
     );
   }
   /* v8 ignore stop -- @preserve */
-  return Result.succeed({ ...weapon, damage: versatile.damage });
+  return Result.succeed({
+    ...weapon,
+    damage: versatile.damage,
+    oneHandedDamage: weapon.damage,
+  });
 }
 
 function weaponWithMartialArtsDamage(
   weapon: CharacterWeaponAttackActionOption["weapon"],
   projection: MartialArtsAttackProjection,
 ): CharacterWeaponAttackActionOption["weapon"] {
+  const { oneHandedDamage, ...facts } = weapon;
+  return {
+    ...facts,
+    damage: damageWithMartialArts(weapon.damage, projection),
+    ...(oneHandedDamage === undefined
+      ? {}
+      : {
+          oneHandedDamage: damageWithMartialArts(oneHandedDamage, projection),
+        }),
+  };
+}
+
+function damageWithMartialArts(
+  damage: CharacterWeaponAttackActionOption["weapon"]["damage"],
+  projection: MartialArtsAttackProjection,
+): CharacterWeaponAttackActionOption["weapon"]["damage"] {
   const damageReplacement = projection.martialArts.damageReplacement;
   if (
-    weapon.damage.kind !== "dice" ||
-    weapon.damage.dice !== 1 ||
-    weapon.damage.dieSize >= damageReplacement.dieSize
+    damage.kind !== "dice" ||
+    damage.dice !== 1 ||
+    damage.dieSize >= damageReplacement.dieSize
   ) {
-    return weapon;
+    return damage;
   }
   return {
-    ...weapon,
-    damage: {
-      ...weapon.damage,
-      dice: damageReplacement.dice,
-      dieSize: damageReplacement.dieSize,
-    },
+    ...damage,
+    dice: damageReplacement.dice,
+    dieSize: damageReplacement.dieSize,
   };
 }
 

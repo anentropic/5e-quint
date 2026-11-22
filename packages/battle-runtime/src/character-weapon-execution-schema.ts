@@ -32,15 +32,28 @@ export const WeaponExecutionFactsSchema = Schema.Union([
   Schema.Struct(WeaponExecutionFactFields),
 ]);
 
+/**
+ * `oneHandedDamage` is present only when `damage` carries the Versatile damage
+ * of a Versatile weapon held with the `two_handed` grip. It keeps the damage
+ * the weapon deals otherwise, which a thrown attack with it uses: Versatile
+ * damage applies only "to make a melee attack" (SRD 5.2.1 equipment.md,
+ * Versatile; ASSUMPTIONS.md A57).
+ */
+const CharacterWeaponAttackGripFields = {
+  oneHandedDamage: Schema.optionalKey(WeaponDamageSchema),
+} as const;
+
 export const CharacterWeaponAttackExecutionWeaponSchema = Schema.Union([
   Schema.Struct({
     weaponUnitId: UnitId,
     ...WeaponExecutionFactFields,
+    ...CharacterWeaponAttackGripFields,
     masteryProperty: WeaponMasteryNameSchema,
   }),
   Schema.Struct({
     weaponUnitId: UnitId,
     ...WeaponExecutionFactFields,
+    ...CharacterWeaponAttackGripFields,
   }),
 ]);
 
