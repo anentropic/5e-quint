@@ -3,7 +3,7 @@
 // make a ranged attack with the ability modifier of its melee attack, and the
 // thrown weapon lands where the table says, out of its owner's hand.
 import { unitId as parseSharedUnitId } from "@dnd/shared/game-facts";
-import { movementFeet } from "@dnd/shared/types";
+import { movementFeet, type WeaponGrip } from "@dnd/shared/types";
 import { describe, expect, test } from "vitest";
 import {
   attackActionOptionsForActor,
@@ -11,9 +11,13 @@ import {
 } from "./battle-reducer/attack-damage-apply.ts";
 import { discoverBattleActs } from "./battle-act-composition.ts";
 import { ATTACK_TARGET_HOLE_ID } from "./battle-reducer/battle-runtime-protocol.ts";
+import { battleCreatureStateAdmissionFromInit } from "./battle-reducer/creature-state.ts";
 import { attackHitTriggerKind } from "./battle-reducer/movement-speed.ts";
+import { battleProjectedCombatantAdmissionLeafIssueMessage } from "./battle-initialization-issue.ts";
+import type { CharacterBattleCombatantInit } from "./battle-init.ts";
 import {
   type BattleAttackProcedureExecutionRef,
+  battleExecutionScopeOrdinal,
   battleObjectId,
   battleTablePositionId,
   type CombatantId,
@@ -150,10 +154,14 @@ const spearId = battleObjectId("main:weapon_spear");
 /**
  * A Spear goes through Battle's own weapon admission, with no synthetic
  * mastery: of the published Thrown weapons, it is the one Battle admits today.
+ * `heldDamage` picks the projected weapon: as admitted, or with the Versatile
+ * swap the Character Build projection gives a Versatile weapon held two-handed
+ * (its Versatile damage, with the one-handed damage kept).
  */
-function battleWithSpear(
-  grip: "one_handed" | "two_handed" = "one_handed",
-): BattleState {
+function spearCharacterInit(
+  grip: WeaponGrip,
+  heldDamage: "admitted" | "versatile",
+): CharacterBattleCombatantInit {
   const spear = unitLibrary.requireUnit("weapon_spear");
   if (spear.kind !== "weapon") {
     throw new Error("Expected Spear weapon Unit.");
@@ -162,36 +170,44 @@ function battleWithSpear(
   const versatile = admitted.weapon.properties.find(
     (property) => property.kind === "versatile",
   );
-  // The shape the Character Build projection gives a Versatile weapon held
-  // two-handed: its Versatile damage, with the one-handed damage kept.
+  if (versatile === undefined) {
+    throw new Error("Expected the Spear to be Versatile.");
+  }
   const weapon =
-    grip === "two_handed" && versatile !== undefined
+    heldDamage === "versatile"
       ? {
           ...admitted.weapon,
           damage: versatile.damage,
           oneHandedDamage: admitted.weapon.damage,
         }
       : admitted.weapon;
+  return characterSeed({
+    initiative: 20,
+    attack: {
+      kind: "weapon",
+      ...admitted,
+      weapon,
+      ability: "str",
+      abilityModifier: battleAbilityModifier(3),
+    },
+    selectedLoadout: {
+      weapon: {
+        itemId: spearId,
+        unitId: parseSharedUnitId("weapon_spear"),
+        grip,
+      },
+    },
+  });
+}
+
+function battleWithSpear(grip: WeaponGrip = "one_handed"): BattleState {
   return startBattleSessionRight({
     battleId: battleId("battle-thrown-spear"),
     combatants: [
-      characterSeed({
-        initiative: 20,
-        attack: {
-          kind: "weapon",
-          ...admitted,
-          weapon,
-          ability: "str",
-          abilityModifier: battleAbilityModifier(3),
-        },
-        selectedLoadout: {
-          weapon: {
-            itemId: spearId,
-            unitId: parseSharedUnitId("weapon_spear"),
-            grip,
-          },
-        },
-      }),
+      spearCharacterInit(
+        grip,
+        grip === "two_handed" ? "versatile" : "admitted",
+      ),
       statBlockCreatureInit({ initiative: 10 }),
     ],
   }).state;
@@ -570,6 +586,26 @@ describe("battle runtime: thrown weapon attacks", () => {
           attack.kind === "weapon" && attack.weaponDelivery === "thrown",
       ),
     ).not.toHaveProperty("weapon.oneHandedDamage");
+  });
+
+  test("a weapon's kept one-handed damage is refused unless it is held two-handed", () => {
+    const result = battleCreatureStateAdmissionFromInit(
+      battleId("battle-thrown-spear-one-handed-damage"),
+      spearCharacterInit("one_handed", "versatile"),
+      battleExecutionScopeOrdinal(0),
+    );
+
+    expect(result.tag).toBe("invalid");
+    if (result.tag !== "invalid") return;
+    expect(
+      result.issues.map((issue) =>
+        issue.tag === "battleUnitSupportProfileIssue"
+          ? issue.message
+          : battleProjectedCombatantAdmissionLeafIssueMessage(issue),
+      ),
+    ).toEqual([
+      "Character weapon one-handed damage requires a Versatile weapon held two-handed with its Versatile damage.",
+    ]);
   });
 
   test("a thrown Dagger also leaves the hand on a miss", () => {
