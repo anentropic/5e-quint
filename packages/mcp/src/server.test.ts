@@ -3079,7 +3079,7 @@ describe("MCP server route", () => {
       ["rolled,rolled", "rolled,static", "static,rolled", "static,static"],
     ]);
 
-    function missAttackThroughMcp(attackName: string) {
+    function missAttackThroughMcp(attackName: string, ranged: boolean) {
       const subject = battleAttackSubjectForName(root, "goblin", attackName);
       const afterTarget = readPayload(
         handleToolCall(root, "fill_battle_hole", {
@@ -3096,6 +3096,22 @@ describe("MCP server route", () => {
                 distanceFeet: movementFeet(5),
                 ...battleAttackSelection(subject, attackName),
               },
+              ...(ranged
+                ? [
+                    {
+                      kind: "rangedAttackEnemyProximity",
+                      attackerId: "goblin",
+                      procedureRef: subject.procedureRef,
+                      enemies: [
+                        {
+                          enemyId: "fighter",
+                          distanceFeet: 5,
+                          enemyCanSeeAttacker: true,
+                        },
+                      ],
+                    },
+                  ]
+                : []),
             ],
           },
         }),
@@ -3124,7 +3140,7 @@ describe("MCP server route", () => {
       return resolved;
     }
 
-    const firstAttack = missAttackThroughMcp("Scimitar");
+    const firstAttack = missAttackThroughMcp("Scimitar", false);
     const betweenAttacks = readPayload(
       handleToolCall(root, "discover_battle_acts", {}),
     );
@@ -3181,7 +3197,7 @@ describe("MCP server route", () => {
       }),
     );
 
-    const secondAttack = missAttackThroughMcp("Shortbow");
+    const secondAttack = missAttackThroughMcp("Shortbow", true);
     expect(secondAttack.envelope.checkpoint.currentActorId).toBe("goblin");
     expect(
       secondAttack.envelope.checkpoint.turn.actionResources.some(
