@@ -20,6 +20,7 @@ import {
   type ReadonlyNonEmptyArray,
 } from "@dnd/shared/types";
 import type { HandUse } from "@dnd/shared/types";
+import { canonicalStructuralKey } from "@dnd/shared/structural-value";
 import {
   applyCondition,
   EMPTY_CONDITION_STATE,
@@ -35,7 +36,11 @@ import {
   resetDeathSaveRuntimeState,
 } from "@dnd/shared-algebras/death-saves-algebra";
 import { initiativeEntries } from "@dnd/shared-algebras/initiative-algebra";
-import type { UnitId } from "@dnd/shared/game-facts";
+import {
+  NO_HEROIC_INSPIRATION,
+  type HeroicInspiration,
+  type UnitId,
+} from "@dnd/shared/game-facts";
 import type { UnitRecord } from "@dnd/surface/surface/types";
 import type { ZeroHpLifecycle } from "../zero-hp-lifecycle.ts";
 import {
@@ -680,6 +685,7 @@ export function battleCreatureStateAdmissionFromInit(
           attackExecution.execution.offHandAttack,
         ),
         resources,
+        heroicInspiration: heroicInspirationAtBattleEntry(creatureInit),
         ...optionalProperty("metamagic", metamagic),
         ...(spellcastingPresentationSource === undefined
           ? {}
@@ -994,7 +1000,36 @@ function characterBattleLoadoutIssues(
     ...characterBattleLoadoutShieldOffhandIssues(creatureInit),
     ...characterBattleLoadoutTwoHandedGripIssues(creatureInit),
     ...characterBattleLoadoutHandStateIssues(creatureInit),
+    ...characterBattleOneHandedDamageIssues(creatureInit),
   ];
+}
+
+/**
+ * `oneHandedDamage` belongs only to a Versatile weapon held with the
+ * `two_handed` grip whose `damage` is its Versatile damage, as the Character
+ * Build projection makes it. Anything else would give a thrown attack damage
+ * the weapon doesn't deal.
+ */
+function characterBattleOneHandedDamageIssues(
+  creatureInit: CharacterBattleCreatureInit,
+): BattleStateInitLeafIssue[] {
+  const weapon = creatureInit.attack?.weapon;
+  if (weapon?.oneHandedDamage === undefined) return [];
+  const versatile = weapon.properties.find(
+    (property) => property.kind === "versatile",
+  );
+  return creatureInit.selectedLoadout.weapon?.grip === "two_handed" &&
+    versatile !== undefined &&
+    canonicalStructuralKey(versatile.damage) ===
+      canonicalStructuralKey(weapon.damage)
+    ? []
+    : [
+        {
+          tag: "battleStateInitIssue",
+          message:
+            "Character weapon one-handed damage requires a Versatile weapon held two-handed with its Versatile damage.",
+        },
+      ];
 }
 
 function characterBattleLoadoutShieldOffhandIssues(
@@ -1433,4 +1468,11 @@ export function combatantKnockedOutUnconscious(
   }
   /* v8 ignore stop -- @preserve */
   return Result.succeed(combatant.positiveHpUnconscious);
+}
+
+/** A character init that omits Heroic Inspiration enters battle without it. */
+function heroicInspirationAtBattleEntry(
+  creatureInit: Pick<CharacterBattleCreatureInit, "heroicInspiration">,
+): HeroicInspiration {
+  return creatureInit.heroicInspiration ?? NO_HEROIC_INSPIRATION;
 }

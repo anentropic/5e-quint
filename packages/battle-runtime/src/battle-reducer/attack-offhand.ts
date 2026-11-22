@@ -1,6 +1,7 @@
 // Light-property off-hand attack resolution extracted from attack-resolution.ts.
 
 // RAW-COVERAGE: runtime-owner RAW-QCORE7-MOVEMENT-GRAPPLE-001 RAW-PTG-REACTIONS-002 RAW-PTG-REACTIONS-004 RAW-PTG-REACTIONS-005 RAW-PTG-REACTIONS-006 RAW-QCORE9-UNIT-FEATURE-PROFILES-001 RAW-QCORE10-SPELL-PROCEDURE-PROFILES-001
+// KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.THROWN_WEAPON_ATTACK
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.action-surge-resource unit-feature.attack-action-attack-count-scaling unit-feature.attack-damage-reduction-zero-damage-redirect unit-feature.attack-damage-rider unit-feature.attack-roll-miss-to-hit-replacement unit-feature.bonus-action-dash-temporary-hit-points unit-feature.bonus-action-ongoing-rage unit-feature.failed-ability-check-resource-boost unit-feature.martial-arts-attack-projection unit-feature.first-attack-roll-reckless-advantage unit-feature.passive-ranged-attack-roll-bonus unit-feature.passive-speed-bonus unit-feature.passive-speed-kind-grants unit-feature.reaction-roll-or-damage-reduction unit-feature.save-damage-replacement unit-feature.self-bonus-action-healing unit-feature.weapon-damage-dice-roll-choice unit-feature.zero-hit-point-replacement spell.creature-type-protection-and-charm spell.invocation-attack-roll-advantage-save spell.invocation-chained-attack-damage spell.invocation-damage-reduction spell.invocation-damage-save-or-attack spell.invocation-condition-save spell.hit-point-restoration spell.invocation-marked-damage-rider spell.invocation-roll-modifier spell.invocation-weapon-damage-rider spell.reaction-shield spell.readied-action-time-spell spell.scalar-buff
 // UNIT-PROFILE-COVERAGE: runtime-owner spell.invocation-ray-of-enfeeblement-damage-penalty
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.d20-test-natural-one-reroll
@@ -8,6 +9,7 @@
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.cunning-strike-option-grant
 
 import { optionalProperty } from "../optional-property.ts";
+import type { CharacterAttackExecutionSelection } from "../battle-action-options.ts";
 import { spendActivationResource } from "@dnd/shared-algebras/action-economy-algebra";
 
 import { attackRollResultIsValid } from "@dnd/shared-algebras/attack-roll-algebra";
@@ -39,11 +41,10 @@ import { normalizeBattleGrapples } from "./creature-state-leaves.ts";
 
 import { weaponAttackArmorClass } from "./attack-target-cover.ts";
 import {
-  attackRollHoleWithD20TestNaturalOneRerollOption,
-  d20TestNaturalOneRerollRollDecisionRequired,
-  d20TestNaturalOneRerollRollIssue,
-  effectiveD20TestNaturalOneRerollAttackRoll,
-} from "./d20-test-natural-one-reroll.ts";
+  attackRollD20TestRerolls,
+  attackRollHoleWithD20TestRerollOptions,
+  battleStateAfterHeroicInspirationReroll,
+} from "./attack-roll-d20-test-rerolls.ts";
 
 import {
   applyAttackDamageAmount,
@@ -79,6 +80,8 @@ import {
 } from "./attack-damage-events.ts";
 import { maybeOpenInterruptWindow } from "./interrupt-execution.ts";
 import { snapshotBattle } from "./battle-snapshot.ts";
+import { attackTargetFactsIssue } from "./attack-spatial.ts";
+import { withThrownWeaponReleased } from "./thrown-weapon-release.ts";
 
 import { attackTargetHole, revealHidden } from "./hole-helpers.ts";
 import { needsHolesResult } from "./needs-holes-result.ts";
@@ -94,7 +97,6 @@ import {
 import {
   attackHitTriggerKind,
   attackKindForDeflectRedirect,
-  attackTargetIsLegal,
 } from "./movement-speed.ts";
 
 import { attackFillSet } from "./attack-fill-set.ts";
@@ -137,18 +139,9 @@ export function resolveOffHandAttack(
     label: "Light Property Bonus Action Attack",
     unavailableMessage:
       "Light Property Bonus Action Attack requires a prior Attack action attack with a different Light weapon.",
-    attackForInput: (
-      state,
-      actorId,
-      procedureRef,
-      attackAbility,
-      attackDamageType,
-    ) =>
+    attackForInput: (state, actorId, selection) =>
       offHandAttackActionOptionsForActor(state, actorId).find((attack) =>
-        boundAttackExecutionSelectionMatchesOption(
-          { procedureRef, attackAbility, attackDamageType },
-          attack,
-        ),
+        boundAttackExecutionSelectionMatchesOption(selection, attack),
       ),
     prerequisiteMet: (state, actorId, attack) =>
       attack.kind === "weapon" &&
@@ -163,22 +156,13 @@ export function resolveMartialArtsBonusUnarmedStrike(
     label: "Martial Arts Bonus Unarmed Strike",
     unavailableMessage:
       "Martial Arts Bonus Unarmed Strike requires Martial Arts support and an unarmored, unshielded Monk loadout.",
-    attackForInput: (
-      state,
-      actorId,
-      procedureRef,
-      attackAbility,
-      attackDamageType,
-    ) => {
+    attackForInput: (state, actorId, selection) => {
       const attack = martialArtsBonusUnarmedStrikeActionOptionForActor(
         state,
         actorId,
       );
       return attack !== undefined &&
-        boundAttackExecutionSelectionMatchesOption(
-          { procedureRef, attackAbility, attackDamageType },
-          attack,
-        )
+        boundAttackExecutionSelectionMatchesOption(selection, attack)
         ? attack
         : undefined;
     },
@@ -196,9 +180,7 @@ type BonusActionAttackConfig = {
   readonly attackForInput: (
     state: BattleState,
     actorId: BonusActionAttackBattleResolutionInput["subject"]["actorId"],
-    procedureRef: BonusActionAttackBattleResolutionInput["subject"]["procedureRef"],
-    attackAbility: BonusActionAttackBattleResolutionInput["subject"]["attackAbility"],
-    attackDamageType: BonusActionAttackBattleResolutionInput["subject"]["attackDamageType"],
+    selection: CharacterAttackExecutionSelection,
   ) => BoundSupportedAttackActionOption | undefined;
   readonly prerequisiteMet: (
     state: BattleState,
@@ -211,17 +193,15 @@ function resolveBonusActionAttack(
   input: BonusActionAttackBattleResolutionInput,
   config: BonusActionAttackConfig,
 ): BattleResolutionResult {
+  const attack = config.attackForInput(
+    input.state,
+    input.subject.actorId,
+    input.subject,
+  );
   const { label } = config;
   const pendingAttackDamageReductions =
     input.pendingAttackDamageReductions ?? [];
   const pendingAttackDamageAdditions = input.pendingAttackDamageAdditions ?? [];
-  const attack = config.attackForInput(
-    input.state,
-    input.subject.actorId,
-    input.subject.procedureRef,
-    input.subject.attackAbility,
-    input.subject.attackDamageType,
-  );
   if (
     attack == null ||
     !config.prerequisiteMet(input.state, input.subject.actorId, attack)
@@ -255,17 +235,7 @@ function resolveBonusActionAttack(
   }
   const target = input.state.combatants.get(fillSet.targetId);
   /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
-  if (
-    target == null ||
-    target.combatantId === input.subject.actorId ||
-    !attackTargetIsLegal(
-      input.state,
-      input.subject.actorId,
-      target.combatantId,
-      attack,
-      fillSet.targetSpatialFacts,
-    )
-  ) {
+  if (target == null || target.combatantId === input.subject.actorId) {
     return invalidResult(
       input.state,
       "invalidFill",
@@ -273,6 +243,23 @@ function resolveBonusActionAttack(
     );
   }
   /* v8 ignore stop -- @preserve */
+  const targetFactsIssue = attackTargetFactsIssue(
+    input.state,
+    input.subject.actorId,
+    target.combatantId,
+    attack,
+    fillSet.targetSpatialFacts,
+  );
+  if (targetFactsIssue !== null) {
+    return invalidResult(input.state, "invalidFill", targetFactsIssue);
+  }
+  const spendBonusActionAttack = (state: BattleState) =>
+    withThrownWeaponReleased({
+      result: spendOffHandBonusAction(state),
+      attackerId: input.subject.actorId,
+      attack,
+      facts: fillSet.targetSpatialFacts,
+    });
   if (fillSet.attackRoll == null) {
     /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
     if (fillSet.damageRoll != null || fillSet.damageDispositionFilled) {
@@ -369,15 +356,16 @@ function resolveBonusActionAttack(
   }
   /* v8 ignore stop -- @preserve */
   const attacker = input.state.combatants.get(input.subject.actorId);
-  if (
-    d20TestNaturalOneRerollRollDecisionRequired({
-      actor: attacker,
-      originalD20TestRoll: fillSet.attackRoll.d20TestRoll,
-      decision: fillSet.attackRoll.d20TestNaturalOneReroll,
-    })
-  ) {
+  const d20TestRerolls = attackRollD20TestRerolls({
+    state: input.state,
+    attackerId: input.subject.actorId,
+    attackRollHoleId: ATTACK_ROLL_HOLE_ID,
+    attackRoll: fillSet.attackRoll,
+    requiredRollMode,
+  });
+  if (d20TestRerolls.tag === "decisionsRequired") {
     return needsHolesResult(input.state, input.subject, [
-      attackRollHoleWithD20TestNaturalOneRerollOption(
+      attackRollHoleWithD20TestRerollOptions(
         attackRollHole(
           attacker,
           attack,
@@ -388,28 +376,16 @@ function resolveBonusActionAttack(
             attack,
           ),
         ),
+        d20TestRerolls.options,
       ),
     ]);
   }
-  const d20TestNaturalOneRerollIssue = d20TestNaturalOneRerollRollIssue({
-    actor: attacker,
-    total: fillSet.attackRoll.total,
-    originalD20TestRoll: fillSet.attackRoll.d20TestRoll,
-    decision: fillSet.attackRoll.d20TestNaturalOneReroll,
-    requiredRollMode,
-  });
   /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
-  if (d20TestNaturalOneRerollIssue !== null) {
-    return invalidResult(
-      input.state,
-      "invalidFill",
-      d20TestNaturalOneRerollIssue,
-    );
+  if (d20TestRerolls.tag === "invalid") {
+    return invalidResult(input.state, "invalidFill", d20TestRerolls.issue);
   }
   /* v8 ignore stop -- @preserve */
-  const effectiveAttackRoll = effectiveD20TestNaturalOneRerollAttackRoll(
-    fillSet.attackRoll,
-  );
+  const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
   const hiddenBeforeAttack =
     input.state.combatants.get(input.subject.actorId)?.hidden ?? null;
   const criticalThreshold = criticalThresholdForAttack(
@@ -430,7 +406,13 @@ function resolveBonusActionAttack(
   );
   let attackRolledState = consumeHelpAttackForAttackRoll(
     recordAttackRollOngoingFeatures(
-      revealHidden(input.state, input.subject.actorId),
+      revealHidden(
+        battleStateAfterHeroicInspirationReroll(
+          input.state,
+          d20TestRerolls.heroicInspirationUse,
+        ),
+        input.subject.actorId,
+      ),
       input.subject.actorId,
       target.combatantId,
       activatedOngoingFeatureProfile,
@@ -621,7 +603,7 @@ function resolveBonusActionAttack(
       return invalidResult(input.state, "invalidFill", relationshipIssue);
     }
     /* v8 ignore stop -- @preserve */
-    return spendOffHandBonusAction(attackRolledState);
+    return spendBonusActionAttack(attackRolledState);
   }
   if (hit && fillSet.damageRoll != null) {
     const damageValidation = validateAttackDamageFill(
@@ -862,7 +844,7 @@ function resolveBonusActionAttack(
       input.handledInterruptTrigger,
     );
     if (attackDamageReactionWindow !== null) {
-      const spent = spendOffHandBonusAction(attackDamageReactionWindow.state);
+      const spent = spendBonusActionAttack(attackDamageReactionWindow.state);
       return spent.tag === "invalid"
         ? spent
         : {
@@ -967,7 +949,7 @@ function resolveBonusActionAttack(
       return invalidResult(input.state, "invalidFill", cunningStrike.message);
     }
     /* v8 ignore stop -- @preserve */
-    const spent = spendOffHandBonusAction(cunningStrike.state);
+    const spent = spendBonusActionAttack(cunningStrike.state);
     if (spent.tag === "invalid") {
       return spent;
     }
@@ -996,7 +978,7 @@ function resolveBonusActionAttack(
     return spent;
   }
 
-  return spendOffHandBonusAction(attackRolledState);
+  return spendBonusActionAttack(attackRolledState);
 }
 
 export function spendOffHandBonusAction(

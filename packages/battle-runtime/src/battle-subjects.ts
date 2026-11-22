@@ -59,7 +59,10 @@ import {
   TRANSMUTED_METAMAGIC_EFFECT_KIND,
   TRANSMUTED_SPELL_DAMAGE_TYPES,
 } from "./battle-reducer/metamagic-transmuted-facts.ts";
-import { attackExecutionSelectionKey } from "./battle-action-options.ts";
+import {
+  attackExecutionSelectionKey,
+  WEAPON_ATTACK_DELIVERIES,
+} from "./battle-action-options.ts";
 import {
   StatBlockAttackDamageSelection,
   statBlockAttackDamageSelectionKey,
@@ -570,10 +573,15 @@ export const BattleAttackExecutionAbilitySchema = Schema.Union([
   Schema.Literal("spellcasting"),
 ]);
 
+export const WeaponAttackDeliverySchema = Schema.Literals(
+  WEAPON_ATTACK_DELIVERIES,
+);
+
 export const CharacterAttackExecutionSelectionSchema = Schema.Struct({
   procedureRef: BattleAttackProcedureExecutionRef,
   attackAbility: BattleAttackExecutionAbilitySchema,
   attackDamageType: DamageTypeSchema,
+  weaponDelivery: Schema.optionalKey(WeaponAttackDeliverySchema),
   attackName: Schema.optionalKey(Schema.Never),
   statBlockDamageSelection: Schema.optionalKey(Schema.Never),
 });
@@ -789,6 +797,7 @@ export const BattleSubjectSchema = Schema.Union([
     procedureRef: BattleAttackProcedureExecutionRef,
     attackAbility: BattleAttackExecutionAbilitySchema,
     attackDamageType: DamageTypeSchema,
+    weaponDelivery: Schema.optionalKey(WeaponAttackDeliverySchema),
     attackName: Schema.optionalKey(Schema.Never),
     statBlockSection: Schema.optionalKey(Schema.Never),
     statBlockDamageSelection: Schema.optionalKey(Schema.Never),
@@ -831,6 +840,7 @@ export const BattleSubjectSchema = Schema.Union([
       procedureRef: BattleAttackProcedureExecutionRef,
       attackAbility: BattleAttackExecutionAbilitySchema,
       attackDamageType: DamageTypeSchema,
+      weaponDelivery: Schema.optionalKey(WeaponAttackDeliverySchema),
     }),
     Schema.Struct({
       tag: Schema.Literal("bonusAction"),

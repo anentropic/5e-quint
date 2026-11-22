@@ -1,18 +1,18 @@
 {
   "summary": {
-    "total": 176,
-    "covered": 165,
+    "total": 180,
+    "covered": 169,
     "open": 5,
     "nonSemantic": 6,
     "byRuntime": {
       "shared-algebras": 1,
-      "battle": 136,
+      "battle": 140,
       "character-creation": 20,
       "character-sheet": 15,
       "character-battle": 4
     },
     "byStatus": {
-      "covered": 165,
+      "covered": 169,
       "needs-qnt-owner": 5,
       "needs-parity-witness": 0,
       "needs-surface-evidence": 0,
@@ -3923,11 +3923,14 @@
         "packages/character-battle-runtime/src/index.ts",
         "packages/character-battle-runtime/src/battle-creature-init.ts",
         "packages/character-battle-runtime/src/battle-character-build-projection.ts",
-        "packages/character-battle-runtime/src/battle-support-profiles.ts"
+        "packages/character-battle-runtime/src/battle-support-profiles.ts",
+        "packages/character-sheet-runtime/src/equipment-ownership.ts"
       ],
       "status": "covered",
       "surfaceEvidence": [
         ".references/srd-5.2.1/character-creation.md#Fill In Numbers",
+        ".references/srd-5.2.1/equipment.md#Two-Handed",
+        ".references/srd-5.2.1/equipment.md#Versatile",
         ".references/srd-5.2.1/playing-the-game.md#The Order of Combat",
         ".references/srd-5.2.1/playing-the-game.md#Armor Class",
         ".references/srd-5.2.1/playing-the-game.md#Hit Points",
@@ -3935,7 +3938,8 @@
         ".references/srd-5.2.1/rules-glossary.md#Condition",
         ".references/srd-5.2.1/rules-glossary.md#Stable",
         ".references/srd-5.2.1/spells.md#Spell Slots",
-        "ASSUMPTIONS.md#a26-stable-recovery-timers-do-not-cross-the-battle-handoff-boundary"
+        "ASSUMPTIONS.md#a26-stable-recovery-timers-do-not-cross-the-battle-handoff-boundary",
+        "ASSUMPTIONS.md#a58-a-loadout-grip-holds-the-main-weapon-for-the-whole-battle"
       ],
       "title": "Character Sheet and Character Build projection into Battle initialization for identity, HP, Armor Class, conditions, Spell Slots, and supported Unit profiles"
     },
@@ -4188,6 +4192,7 @@
         ".references/srd-5.2.1/character-creation.md#Hit Points",
         ".references/srd-5.2.1/character-creation.md#Level 1 Hit Points by Class",
         ".references/srd-5.2.1/character-creation.md#Fixed Hit Points by Class",
+        ".references/srd-5.2.1/character-creation.md#Level Advancement",
         ".references/srd-5.2.1/character-origins.md#Dwarven Toughness",
         ".references/srd-5.2.1/rules-glossary.md#Hit Points",
         ".references/srd-5.2.1/rules-glossary.md#Long Rest"
@@ -5390,6 +5395,35 @@
       "title": "A Prone attacker's attack rolls have Disadvantage against creature and object targets, composed with every other source before cancellation"
     },
     {
+      "id": "BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE",
+      "kind": "boundary-protocol",
+      "parityWitnesses": [
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-ranged-close-combat.test.ts"
+        }
+      ],
+      "profiles": [],
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/d20-test-circumstance-core.qnt"
+      ],
+      "reason": "The QNT owner models each listed enemy as a Disadvantage source when it is within 5 feet, can see the attacker and isn't Incapacitated, joined with the other mechanical sources, including a Prone target's, before cancellation. ranged-attack-close-combat owns the one rangedAttackEnemyProximity fact, scoped by attacker and procedure ref, which every ranged attack requires (enemies: [] means checked-none) and the Disadvantage it gives; attack-spatial applies it to weapon and Stat Block attacks on creatures, and attack-roll to them and to ranged Spell Attacks. The executable parity witness covers a qualifying target and a non-target enemy, a Prone target cancelling it, an enemy too far, unseeing or Incapacitated, the missing, duplicated or misscoped fact, and a melee attack needing none.",
+      "runtime": "battle",
+      "runtimeOwners": [
+        "packages/battle-runtime/src/battle-reducer/ranged-attack-close-combat.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-spatial.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-roll.ts"
+      ],
+      "status": "covered",
+      "surfaceEvidence": [
+        ".references/srd-5.2.1/playing-the-game.md#Ranged Attacks in Close Combat",
+        ".references/srd-5.2.1/rules-glossary.md#Incapacitated [Condition]",
+        ".references/srd-5.2.1/playing-the-game.md#Advantage/Disadvantage",
+        "UBIQUITOUS_LANGUAGE.md#Advantage-and-Disadvantage"
+      ],
+      "title": "A ranged attack roll on a creature, with a weapon, a Stat Block attack or a spell, has Disadvantage while an enemy within 5 feet can see the attacker and isn't Incapacitated, from one required table-supplied enemy proximity fact, composed with every other source before cancellation"
+    },
+    {
       "id": "BATTLE.ATTACK.CONDITION_ROLL_MODE",
       "kind": "boundary-protocol",
       "parityWitnesses": [
@@ -6344,6 +6378,33 @@
       "title": "Stat Block source concentration"
     },
     {
+      "id": "BATTLE.FEATURE.WEAPON_MASTERY_GRAZE",
+      "kind": "state-transition",
+      "parityWitnesses": [
+        {
+          "kind": "runtime-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-weapon-mastery-graze.test.ts"
+        }
+      ],
+      "profiles": ["unit-feature.weapon-mastery-graze"],
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/weapon-mastery-graze-core.qnt"
+      ],
+      "reason": "The QNT owner models when Graze is offered (an unlocked Graze weapon, a missed attack roll against a creature, and a positive attack ability modifier) and the optional damage it deals: the ability modifier the attack roll used, in the weapon's damage type, with no damage bonus added. The runtime offers the use-or-decline decision after the miss and routes the chosen damage through the attack's fixed-damage application, so the target's damage adjustments, zero-hit-point disposition, Concentration and after-damage reactions apply as for any other attack damage.",
+      "runtime": "battle",
+      "runtimeOwners": [
+        "packages/battle-runtime/src/battle-reducer/weapon-mastery-graze.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-main.ts",
+        "packages/battle-runtime/src/procedure-admission/weapon-mastery.ts"
+      ],
+      "status": "covered",
+      "surfaceEvidence": [
+        ".references/srd-5.2.1/equipment.md#Graze",
+        ".references/srd-5.2.1/equipment.md#Mastery Properties"
+      ],
+      "title": "Weapon Mastery Graze: a missed attack roll against a creature with an unlocked Graze weapon may deal the attack's ability modifier as the weapon's damage type"
+    },
+    {
       "id": "BATTLE.HELP.ABILITY_CHECK_ASSIST",
       "kind": "state-transition",
       "parityWitnesses": [
@@ -6375,6 +6436,65 @@
         "UBIQUITOUS_LANGUAGE.md#Advantage and Disadvantage"
       ],
       "title": "Help's Assist an Ability Check option: the helper's skill proficiency and a table-decided ally give Advantage on that ally's next check with the skill, used by that check or expired at the start of the helper's next turn"
+    },
+    {
+      "id": "BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL",
+      "kind": "boundary-protocol",
+      "parityWitnesses": [
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/heroic-inspiration-reroll.test.ts"
+        }
+      ],
+      "profiles": [],
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core.qnt"
+      ],
+      "reason": "The QNT owner admits a Heroic Inspiration reroll only for a player character who has it and when no other source rerolls the same roll; an admitted reroll replaces the roll, or under Advantage or Disadvantage one chosen d20 of any face, and spends Heroic Inspiration, while a decline keeps both. heroic-inspiration-reroll owns availability, the option, the decision checks and the spend; attack-roll-d20-test-rerolls checks it with the natural-1 reroll and Seeking Spell on every weapon, Unarmed Strike, Opportunity, additional and spell attack roll. The executable parity witness covers the offer, decline, reroll and spend on hit and miss, the chosen die under Advantage, the shared stacking rule with the natural-1 reroll, Opportunity and spell attacks, fill equality and the codec.",
+      "runtime": "battle",
+      "runtimeOwners": [
+        "packages/battle-runtime/src/battle-reducer/heroic-inspiration-reroll.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-roll-d20-test-rerolls.ts"
+      ],
+      "status": "covered",
+      "surfaceEvidence": [
+        ".references/srd-5.2.1/rules-glossary.md#Heroic-Inspiration",
+        ".references/srd-5.2.1/playing-the-game.md#Interactions-with-Rerolls",
+        "UBIQUITOUS_LANGUAGE.md#D20-Rolls",
+        "ASSUMPTIONS.md#A55-A-D20-Test-roll-is-rerolled-at-most-once-whatever-its-sources"
+      ],
+      "title": "A player character who has Heroic Inspiration can expend it to reroll an attack roll and must use the new roll, with one reroll per roll"
+    },
+    {
+      "id": "BATTLE.ATTACK.THROWN_WEAPON_ATTACK",
+      "kind": "state-transition",
+      "parityWitnesses": [
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-thrown-weapon-attacks.test.ts"
+        }
+      ],
+      "profiles": [],
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack.qnt"
+      ],
+      "reason": "The QNT owner models the thrown option a Melee weapon with Thrown adds beside its melee one, that the throw is a ranged attack using the melee ability, that an accepted throw (but not one prevented before its roll, nor a melee or Ammunition attack) leaves the weapon on the ground, and that the Light extra attack needs only its own weapon in hand. statblock-attacks adds the thrown variant and its Thrown range; thrown-weapon-attack owns the one thrownWeaponLanding fact, scoped by attacker and procedure ref, and the release onto the owner's ground objects; attack-main and attack-offhand release it when an Attack action or Light extra attack roll is accepted. The executable parity witness covers the thrown option and its range, a hit and a miss landing and the pickup, a melee attack keeping its weapon, the missing, misscoped or stray landing fact, long range and close-combat Disadvantage, and a thrown Light extra attack before and after a main-hand throw.",
+      "runtime": "battle",
+      "runtimeOwners": [
+        "packages/battle-runtime/src/battle-reducer/thrown-weapon-attack.ts",
+        "packages/battle-runtime/src/battle-reducer/statblock-attacks.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-main.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-offhand.ts"
+      ],
+      "status": "covered",
+      "surfaceEvidence": [
+        ".references/srd-5.2.1/equipment.md#Thrown",
+        ".references/srd-5.2.1/equipment.md#Range",
+        ".references/srd-5.2.1/equipment.md#Light",
+        ".references/srd-5.2.1/equipment.md#Melee or Ranged",
+        "UBIQUITOUS_LANGUAGE.md#Equipment"
+      ],
+      "title": "A held Melee weapon with the Thrown property also offers a thrown ranged attack with its Thrown range and melee ability, and an accepted thrown attack roll, hit or miss, puts the weapon on the ground at one required table-supplied landing position"
     },
     {
       "id": "BATTLE.ATTACK.TARGET_COVER",
@@ -9485,6 +9605,13 @@
     {
       "obligationIds": ["BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS"],
       "profileId": "unit-feature.ongoing-feature-activation-movement-rider"
+    },
+    {
+      "obligationIds": [
+        "BATTLE.FEATURE.WEAPON_MASTERY_GRAZE",
+        "BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS"
+      ],
+      "profileId": "unit-feature.weapon-mastery-graze"
     }
   ],
   "qntOwnerRoles": [
@@ -10369,10 +10496,16 @@
       "role": "mbt-fixture"
     },
     {
-      "evidence": "packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt carries executable Character Sheet Hit Point Maximum derivation semantics from class Hit Dice, Constitution modifier, fixed higher-level gains, deterministic maximum bonuses, and maximum reductions.",
+      "evidence": "packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt carries executable Character Sheet Hit Point Maximum derivation semantics from class Hit Dice, Constitution modifier, fixed or rolled higher-level gains, deterministic maximum bonuses, and maximum reductions.",
       "obligationIds": ["SHEET.HIT_POINTS.MAXIMUM_DERIVATION"],
       "ownerPath": "packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt",
       "role": "semantic-core"
+    },
+    {
+      "evidence": "Executable closed examples cover fixed and rolled higher-level Hit Point gains, the minimum of 1, a Constitution increase over rolled levels, and rolls outside the Hit Die for the Hit Point maximum core.",
+      "obligationIds": [],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/hit-point-maximum-examples.qnt",
+      "role": "proof-only"
     },
     {
       "evidence": "packages/character-sheet-runtime/character-sheet-hit-point-maximum.mbt.qnt is a bounded replay owner for Character Sheet Hit Point Maximum parity evidence; the reusable semantics live in packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt.",
@@ -12705,6 +12838,7 @@
         "BATTLE.ATTACK.CONDITION_ROLL_MODE",
         "BATTLE.ATTACK.PRONE_ATTACKER_ROLL_MODE",
         "BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE",
+        "BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE",
         "BATTLE.D20_TEST.TABLE_CIRCUMSTANCE_DECISION"
       ],
       "ownerPath": "packages/shared-algebras/proofs/rule-core/d20-test-circumstance-core.qnt",
@@ -13225,6 +13359,24 @@
       "role": "proof-only"
     },
     {
+      "evidence": "Owns when Weapon Mastery Graze is offered after an attack roll and the miss damage it deals, independently of battle or authored identity.",
+      "obligationIds": ["BATTLE.FEATURE.WEAPON_MASTERY_GRAZE"],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/weapon-mastery-graze-core.qnt",
+      "profileScopes": [
+        {
+          "obligationIds": ["BATTLE.FEATURE.WEAPON_MASTERY_GRAZE"],
+          "profileId": "unit-feature.weapon-mastery-graze"
+        }
+      ],
+      "role": "semantic-core"
+    },
+    {
+      "evidence": "Executable closed examples cover the Graze offer and its rejections (a hit, another mastery, no unlock, a non-creature target, a modifier of 0 or less), the use and decline choices, and that a damage bonus does not add to Graze damage.",
+      "obligationIds": [],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/weapon-mastery-graze-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
       "evidence": "Owns Help's Assist an Ability Check admission, the Advantage it gives the ally's next check with the chosen skill, the use of every matching benefit by that check, expiry at the start of the helper's next turn, and the Wild Shape skill proficiency union, independently of battle or authored identity.",
       "obligationIds": ["BATTLE.HELP.ABILITY_CHECK_ASSIST"],
       "ownerPath": "packages/shared-algebras/proofs/rule-core/help-ability-check-core.qnt",
@@ -13234,6 +13386,30 @@
       "evidence": "Executable closed examples cover Help ability check admission and its rejections, the chosen-skill Advantage, two helpers' benefits used by one check, and start-of-turn expiry for the Help ability check core.",
       "obligationIds": [],
       "ownerPath": "packages/shared-algebras/proofs/rule-core/help-ability-check-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
+      "evidence": "Owns Heroic Inspiration reroll admission, the effective roll after a whole-roll or chosen-die replacement, the one-reroll-per-roll rule and the spend, independently of battle or authored identity.",
+      "obligationIds": ["BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL"],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "evidence": "Executable closed examples cover reroll, forced lower roll, decline, availability, stacking and the chosen die under Advantage and Disadvantage for the Heroic Inspiration reroll core.",
+      "obligationIds": [],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
+      "evidence": "Owns the thrown delivery a Melee weapon with Thrown adds, the throw's ranged attack and melee ability, the accepted-throw release onto the ground, and the Light extra attack's own-weapon custody.",
+      "obligationIds": ["BATTLE.ATTACK.THROWN_WEAPON_ATTACK"],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "evidence": "Focused run-block proof evidence for thrown deliveries, ranged thrown attacks with the melee ability, release on an accepted roll only, a Dart's release, and the Light extra attack after a throw.",
+      "obligationIds": [],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack-tests.qnt",
       "role": "proof-only"
     },
     {
@@ -14747,6 +14923,16 @@
     },
     {
       "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "classification": "qnt-owner-role",
       "ownerPath": "packages/shared-algebras/proofs/rule-core/hit-point-damage-inductive.qnt",
       "role": "proof-only"
     },
@@ -14754,6 +14940,11 @@
       "classification": "qnt-owner-role",
       "ownerPath": "packages/shared-algebras/proofs/rule-core/hit-point-damage.qnt",
       "role": "semantic-core"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/hit-point-maximum-examples.qnt",
+      "role": "proof-only"
     },
     {
       "classification": "qnt-owner-role",
@@ -15198,6 +15389,11 @@
     },
     {
       "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "classification": "qnt-owner-role",
       "ownerPath": "packages/shared-algebras/proofs/rule-core/triggered-armor-defense.qnt",
       "role": "semantic-core"
     },
@@ -15509,6 +15705,16 @@
     {
       "classification": "qnt-owner-role",
       "ownerPath": "packages/shared-algebras/proofs/rule-core/use-count-resource-recovery.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/weapon-mastery-graze-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/weapon-mastery-graze-core.qnt",
       "role": "semantic-core"
     },
     {
@@ -16100,6 +16306,16 @@
         {
           "obligationIds": ["BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS"],
           "ownerPath": "packages/battle-runtime/battle-runtime-weapon-attacks.qnt",
+          "role": "semantic-core"
+        }
+      ]
+    },
+    {
+      "profileId": "unit-feature.weapon-mastery-graze",
+      "qntOwners": [
+        {
+          "obligationIds": ["BATTLE.FEATURE.WEAPON_MASTERY_GRAZE"],
+          "ownerPath": "packages/shared-algebras/proofs/rule-core/weapon-mastery-graze-core.qnt",
           "role": "semantic-core"
         }
       ]
@@ -18908,6 +19124,7 @@
       "blockedBy": [],
       "generatorSubset": [
         "import",
+        "variant",
         "record",
         "pure-def",
         "int",
@@ -18919,11 +19136,13 @@
         "arithmetic",
         "comparison",
         "boolean-connective",
+        "pattern-match",
         "all-block"
       ],
       "obligationId": "SHEET.HIT_POINTS.MAXIMUM_DERIVATION",
       "proofOnly": [
-        "packages/character-sheet-runtime/character-sheet-hit-point-maximum.mbt.qnt"
+        "packages/character-sheet-runtime/character-sheet-hit-point-maximum.mbt.qnt",
+        "packages/shared-algebras/proofs/rule-core/hit-point-maximum-examples.qnt"
       ],
       "semanticCore": [
         "packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt"
@@ -19931,6 +20150,32 @@
         "comparison",
         "boolean-connective",
         "pattern-match",
+        "all-block",
+        "list",
+        "fold"
+      ],
+      "obligationId": "BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE",
+      "proofOnly": [
+        "packages/shared-algebras/proofs/rule-core/d20-test-circumstance-core-examples.qnt"
+      ],
+      "semanticCore": [
+        "packages/shared-algebras/proofs/rule-core/d20-test-circumstance-core.qnt"
+      ],
+      "status": "generation-subset-clean"
+    },
+    {
+      "blockedBy": [],
+      "generatorSubset": [
+        "variant",
+        "record",
+        "pure-def",
+        "constant-val",
+        "int",
+        "bool",
+        "if-expression",
+        "comparison",
+        "boolean-connective",
+        "pattern-match",
         "all-block"
       ],
       "obligationId": "BATTLE.ATTACK.CONDITION_ROLL_MODE",
@@ -20539,6 +20784,29 @@
         "boolean-connective",
         "all-block",
         "set",
+        "if-expression",
+        "variant"
+      ],
+      "obligationId": "BATTLE.FEATURE.WEAPON_MASTERY_GRAZE",
+      "proofOnly": [
+        "packages/shared-algebras/proofs/rule-core/weapon-mastery-graze-core-examples.qnt"
+      ],
+      "semanticCore": [
+        "packages/shared-algebras/proofs/rule-core/weapon-mastery-graze-core.qnt"
+      ],
+      "status": "generation-subset-clean"
+    },
+    {
+      "blockedBy": [],
+      "generatorSubset": [
+        "record",
+        "pure-def",
+        "int",
+        "bool",
+        "comparison",
+        "boolean-connective",
+        "all-block",
+        "set",
         "set-operators",
         "size",
         "membership",
@@ -20551,6 +20819,53 @@
       ],
       "semanticCore": [
         "packages/shared-algebras/proofs/rule-core/help-ability-check-core.qnt"
+      ],
+      "status": "generation-subset-clean"
+    },
+    {
+      "blockedBy": [],
+      "generatorSubset": [
+        "import",
+        "variant",
+        "record",
+        "pure-def",
+        "int",
+        "bool",
+        "if-expression",
+        "comparison",
+        "boolean-connective",
+        "pattern-match",
+        "all-block",
+        "let-binding"
+      ],
+      "obligationId": "BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL",
+      "proofOnly": [
+        "packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core-examples.qnt"
+      ],
+      "semanticCore": [
+        "packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core.qnt"
+      ],
+      "status": "generation-subset-clean"
+    },
+    {
+      "blockedBy": [],
+      "generatorSubset": [
+        "variant",
+        "record",
+        "pure-def",
+        "bool",
+        "if-expression",
+        "comparison",
+        "boolean-connective",
+        "all-block",
+        "set"
+      ],
+      "obligationId": "BATTLE.ATTACK.THROWN_WEAPON_ATTACK",
+      "proofOnly": [
+        "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack-tests.qnt"
+      ],
+      "semanticCore": [
+        "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack.qnt"
       ],
       "status": "generation-subset-clean"
     },
@@ -21003,6 +21318,7 @@
     "unit-feature.weapon-critical-range-19",
     "unit-feature.weapon-damage-dice-roll-choice",
     "unit-feature.weapon-mastery-cleave",
+    "unit-feature.weapon-mastery-graze",
     "unit-feature.weapon-mastery-push",
     "unit-feature.weapon-mastery-sap",
     "unit-feature.weapon-mastery-slow",

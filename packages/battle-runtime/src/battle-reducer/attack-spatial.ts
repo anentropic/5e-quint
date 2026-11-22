@@ -1,4 +1,4 @@
-// KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE BATTLE.ATTACK.TARGET_COVER
+// KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE BATTLE.ATTACK.TARGET_COVER
 import { directTargetCover } from "@dnd/shared-algebras/cover-algebra";
 import type { CombatantId } from "../identity.ts";
 import type {
@@ -13,7 +13,13 @@ import {
   type SupportedAttackActionOption,
 } from "../battle-action-options.ts";
 import { attackTargetConstraint } from "./statblock-attacks.ts";
+import {
+  rangedAttackCloseCombatDisadvantage,
+  rangedAttackEnemyProximityQualificationIssue,
+  type RangedAttackEnemyProximityScope,
+} from "./ranged-attack-close-combat.ts";
 import type { CoverType, MovementFeet } from "@dnd/shared/types";
+import { thrownWeaponLandingIssue } from "./thrown-weapon-attack.ts";
 
 export function attackExecutionSelectionMatchesOption(
   selection: BattleAttackExecutionSelection,
@@ -60,6 +66,44 @@ export function creatureAttackTargetIsLegal(
     (constraint.kind === "meleeReach"
       ? Number(distanceFeet) <= Number(constraint.reachFeet)
       : attackTargetRangeBand(facts, actorId, targetId, attack) !== null)
+  );
+}
+
+/** A ranged attack's proximity scope; a melee or unbound attack has none. */
+function rangedAttackProximityScope(
+  actorId: CombatantId,
+  attack: SupportedAttackActionOption,
+): RangedAttackEnemyProximityScope | null {
+  return attackTargetConstraint(attack).kind === "rangedRange" &&
+    "procedureRef" in attack
+    ? { attackerId: actorId, procedureRef: attack.procedureRef }
+    : null;
+}
+
+/** A ranged attack's missing or malformed enemy proximity fact. */
+export function attackEnemyProximityQualificationIssue(
+  state: BattleState,
+  actorId: CombatantId,
+  attack: SupportedAttackActionOption,
+  facts: readonly BattleTargetSpatialFact[],
+): { readonly tag: "invalid"; readonly message: string } | null {
+  const scope = rangedAttackProximityScope(actorId, attack);
+  return scope === null
+    ? null
+    : rangedAttackEnemyProximityQualificationIssue({ state, scope, facts });
+}
+
+/** Ranged Attacks in Close Combat Disadvantage for a weapon or stat block attack. */
+export function attackCloseCombatDisadvantage(
+  state: BattleState,
+  actorId: CombatantId,
+  attack: SupportedAttackActionOption | undefined,
+  facts: readonly BattleTargetSpatialFact[],
+): boolean {
+  const scope =
+    attack === undefined ? null : rangedAttackProximityScope(actorId, attack);
+  return (
+    scope !== null && rangedAttackCloseCombatDisadvantage(state, scope, facts)
   );
 }
 
@@ -133,4 +177,41 @@ export function attackTargetStatedCover(
   attack: SupportedAttackActionOption,
 ): CoverType | undefined {
   return attackTargetDistanceFact(facts, actorId, targetId, attack)?.cover;
+}
+
+/**
+ * The table's target facts must qualify a ranged attack's enemy proximity,
+ * give a thrown weapon its landing, and place the target inside the attack's
+ * target constraint.
+ */
+export function attackTargetFactsIssue(
+  state: BattleState,
+  attackerId: CombatantId,
+  targetId: CombatantId,
+  attack: SupportedAttackActionOption,
+  targetSpatialFacts: readonly BattleTargetSpatialFact[],
+): string | null {
+  const proximityIssue = attackEnemyProximityQualificationIssue(
+    state,
+    attackerId,
+    attack,
+    targetSpatialFacts,
+  );
+  if (proximityIssue !== null) return proximityIssue.message;
+  const landingIssue = thrownWeaponLandingIssue(
+    attackerId,
+    attack,
+    targetSpatialFacts,
+  );
+  if (landingIssue !== null) return landingIssue;
+  return attackTargetIsLegal(
+    state,
+    attackerId,
+    targetId,
+    attack,
+    targetSpatialFacts,
+  )
+    ? null
+    : /* v8 ignore next -- @preserve -- Malformed resolution input: this branch rejects fills that contradict the admitted subject's discovered holes or current typed runtime constraints. */
+      "Attack target is outside the selected attack's supported target constraint.";
 }

@@ -1,4 +1,7 @@
-import { battleResolutionHolesForTest } from "./battle-runtime.test-support.ts";
+import {
+  battleResolutionHolesForTest,
+  rangedAttackEnemyProximityFactsForTest,
+} from "./battle-runtime.test-support.ts";
 import { assertStatBlockForTest } from "@dnd/surface/surface/stat-block-catalog.test-support";
 import {
   abilityModifier,
@@ -21,6 +24,7 @@ import type {
 import { expect } from "vitest";
 import { statBlockId, unitId as parseUnitId } from "@dnd/shared/game-facts";
 import weaponClubInput from "../../surface/content/weapon_club.json";
+import weaponDartInput from "../../surface/content/weapon_dart.json";
 import weaponGreatswordInput from "../../surface/content/weapon_greatsword.json";
 import {
   characterId,
@@ -64,6 +68,7 @@ import {
 
 const testUnitRecords = [
   decodeUnitRecordSync(weaponClubInput),
+  decodeUnitRecordSync(weaponDartInput),
   decodeUnitRecordSync(weaponGreatswordInput),
 ] satisfies ReadonlyArray<UnitRecord>;
 
@@ -758,6 +763,7 @@ export function attackTargetFill(
         ...hole.attack.selection,
         distanceFeet: movementFeet(5),
       },
+      ...rangedAttackEnemyProximityFactsForTest(hole, extraSpatialFacts),
       ...extraSpatialFacts,
     ],
   };

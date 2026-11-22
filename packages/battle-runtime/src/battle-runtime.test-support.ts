@@ -314,6 +314,7 @@ import {
   TACTICAL_MASTER_REPLACEMENT_MASTERY_PROPERTIES,
   TACTICAL_MASTER_REPLACEMENT_SUPPORT_PROFILE,
   WEAPON_MASTERY_CLEAVE_SUPPORT_PROFILE,
+  WEAPON_MASTERY_GRAZE_SUPPORT_PROFILE,
   WEAPON_MASTERY_PUSH_SUPPORT_PROFILE,
   WEAPON_MASTERY_SAP_SUPPORT_PROFILE,
   WEAPON_MASTERY_SLOW_SUPPORT_PROFILE,
@@ -1403,6 +1404,18 @@ export function masteryCleaveUnitRefs(): Extract<
   ];
 }
 
+export function masteryGrazeUnitRefs(): Extract<
+  CharacterBattleCombatantInit["creatureInit"],
+  { readonly kind: "character" }
+>["characterUnitRefs"] {
+  return [
+    {
+      unit: unitLibrary.requireUnit("mastery_graze"),
+      supportProfiles: [WEAPON_MASTERY_GRAZE_SUPPORT_PROFILE],
+    },
+  ];
+}
+
 export function tacticalMasterReplacementUnitRefs(): Extract<
   CharacterBattleCombatantInit["creatureInit"],
   { readonly kind: "character" }
@@ -1499,6 +1512,17 @@ export function longbowWeaponMasterySelections(): Extract<
   return [
     {
       weaponUnitId: parseUnitId("weapon_longbow"),
+    },
+  ];
+}
+
+export function grazeWeaponMasterySelections(): Extract<
+  CharacterBattleCombatantInit["creatureInit"],
+  { readonly kind: "character" }
+>["weaponMasteries"] {
+  return [
+    {
+      weaponUnitId: testGrazeWeaponUnitRef().unit.id,
     },
   ];
 }
@@ -1779,6 +1803,7 @@ export function characterAttackSubjectForTest(
         .find((entry) => entry.id === candidate.weapon.weaponUnitId);
       return (
         unit?.name === attackName ||
+        candidate.weapon.weaponUnitId === attackName ||
         candidate.weapon.weaponUnitId ===
           `weapon_${attackName.toLowerCase().replaceAll(" ", "_")}`
       );
@@ -1829,6 +1854,9 @@ export function attackExecutionSelectionForSubjectForTest(
         procedureRef: subject.procedureRef,
         attackAbility: subject.attackAbility,
         attackDamageType: subject.attackDamageType,
+        ...(subject.weaponDelivery === undefined
+          ? {}
+          : { weaponDelivery: subject.weaponDelivery }),
       };
 }
 
@@ -2576,11 +2604,12 @@ function bindSelectedSpellSpatialFactsForTest(
       return {
         ...fill,
         spatialFacts: fill.spatialFacts.map((fact) =>
-          fact.kind === "spellTarget" ||
-          fact.kind === "spellLeapTargetWithinRange" ||
-          fact.kind === "rangedSpellAttackEnemyProximity"
-            ? { ...fact, sourceProcedureRef: procedureRef }
-            : fact,
+          fact.kind === "rangedAttackEnemyProximity"
+            ? { ...fact, procedureRef }
+            : fact.kind === "spellTarget" ||
+                fact.kind === "spellLeapTargetWithinRange"
+              ? { ...fact, sourceProcedureRef: procedureRef }
+              : fact,
         ),
       };
     }
@@ -2588,10 +2617,11 @@ function bindSelectedSpellSpatialFactsForTest(
       return {
         ...fill,
         spatialFacts: fill.spatialFacts.map((fact) =>
-          fact.kind === "spellObjectTarget" ||
-          fact.kind === "rangedSpellAttackEnemyProximity"
-            ? { ...fact, sourceProcedureRef: procedureRef }
-            : fact,
+          fact.kind === "rangedAttackEnemyProximity"
+            ? { ...fact, procedureRef }
+            : fact.kind === "spellObjectTarget"
+              ? { ...fact, sourceProcedureRef: procedureRef }
+              : fact,
         ),
       };
     }
@@ -2859,30 +2889,32 @@ export function targetFill(
   const qualifiedSpatialFacts =
     qualification?.requiresEnemyProximityQualification === true &&
     !selectedSpatialFacts.some(
-      (fact) => fact.kind === "rangedSpellAttackEnemyProximity",
+      (fact) => fact.kind === "rangedAttackEnemyProximity",
     )
       ? [
           ...selectedSpatialFacts,
           {
-            kind: "rangedSpellAttackEnemyProximity" as const,
-            casterId: qualification.casterId,
-            sourceProcedureRef: qualification.sourceProcedureRef,
+            kind: "rangedAttackEnemyProximity" as const,
+            attackerId: qualification.casterId,
+            procedureRef: qualification.sourceProcedureRef,
             enemies: [],
           },
         ]
-      : selectedSpatialFacts;
+      : [
+          ...selectedSpatialFacts,
+          ...rangedAttackEnemyProximityFactsForTest(hole, selectedSpatialFacts),
+          ...thrownWeaponLandingFactsForTest(hole, selectedSpatialFacts),
+        ];
   const executionBoundSpatialFacts = qualifiedSpatialFacts.map((fact) => {
-    if (
-      (fact.kind !== "spellTarget" &&
-        fact.kind !== "rangedSpellAttackEnemyProximity") ||
-      hole.spellTargetSpatialFactRequest === undefined
-    ) {
-      return fact;
+    const request = hole.spellTargetSpatialFactRequest;
+    if (request === undefined) return fact;
+    if (fact.kind === "spellTarget") {
+      return { ...fact, sourceProcedureRef: request.sourceProcedureRef };
     }
-    return {
-      ...fact,
-      sourceProcedureRef: hole.spellTargetSpatialFactRequest.sourceProcedureRef,
-    };
+    if (fact.kind === "rangedAttackEnemyProximity") {
+      return { ...fact, procedureRef: request.sourceProcedureRef };
+    }
+    return fact;
   });
   return {
     kind: "targetChoice",
@@ -2972,13 +3004,13 @@ function qualifySpellObjectTargetFactsForTest(
 ): ObjectTargetChoiceFill["spatialFacts"] {
   const request = hole.spellObjectTargetSpatialFactRequest;
   return request?.requiresEnemyProximityQualification === true &&
-    !facts.some((fact) => fact.kind === "rangedSpellAttackEnemyProximity")
+    !facts.some((fact) => fact.kind === "rangedAttackEnemyProximity")
     ? [
         ...facts,
         {
-          kind: "rangedSpellAttackEnemyProximity",
-          casterId: request.casterId,
-          sourceProcedureRef: request.sourceProcedureRef,
+          kind: "rangedAttackEnemyProximity",
+          attackerId: request.casterId,
+          procedureRef: request.sourceProcedureRef,
           enemies: [],
         },
       ]
@@ -3080,8 +3112,90 @@ export function attackTargetFill(
       targetDistanceFeet,
     ),
     ...commonAdjacentAllySpatialFacts(actorId, targetId),
+    ...rangedAttackEnemyProximityFactsForTest(hole, extraFacts ?? []),
+    ...thrownWeaponLandingFactsForTest(hole, extraFacts ?? []),
     ...(extraFacts ?? []),
   ]);
+}
+
+type AttackTargetSpatialFactForTest = NonNullable<
+  Extract<BattleFill, { readonly kind: "targetChoice" }>["spatialFacts"]
+>[number];
+
+/**
+ * A ranged attack target hole's default enemy proximity fact: the table checked
+ * and found no qualifying enemy. Absent for a melee attack, or when the test
+ * supplies its own proximity fact.
+ */
+export function rangedAttackEnemyProximityFactsForTest(
+  hole: BattleHole,
+  suppliedFacts: readonly AttackTargetSpatialFactForTest[] = [],
+  enemies: Extract<
+    AttackTargetSpatialFactForTest,
+    { readonly kind: "rangedAttackEnemyProximity" }
+  >["enemies"] = [],
+): readonly Extract<
+  AttackTargetSpatialFactForTest,
+  { readonly kind: "rangedAttackEnemyProximity" }
+>[] {
+  return hole.kind === "targetChoice" &&
+    hole.attack?.targetConstraint.kind === "rangedRange" &&
+    !suppliedFacts.some((fact) => fact.kind === "rangedAttackEnemyProximity")
+    ? [
+        {
+          kind: "rangedAttackEnemyProximity",
+          attackerId: hole.attack.actorId,
+          procedureRef: hole.attack.selection.procedureRef,
+          enemies,
+        },
+      ]
+    : [];
+}
+
+/** The table position where these tests' thrown weapons land by default. */
+export const THROWN_WEAPON_LANDING_POSITION_FOR_TEST = battleTablePositionId(
+  "thrown-weapon-landing",
+);
+
+/**
+ * A thrown attack target hole's default landing fact, absent for any other
+ * attack or when the test supplies its own landing fact.
+ */
+export function thrownWeaponLandingFactsForTest(
+  hole: BattleHole,
+  suppliedFacts: readonly AttackTargetSpatialFactForTest[] = [],
+  positionId = THROWN_WEAPON_LANDING_POSITION_FOR_TEST,
+): readonly Extract<
+  AttackTargetSpatialFactForTest,
+  { readonly kind: "thrownWeaponLanding" }
+>[] {
+  if (
+    hole.kind !== "targetChoice" ||
+    hole.attack?.requiresThrownWeaponLanding !== true ||
+    suppliedFacts.some((fact) => fact.kind === "thrownWeaponLanding")
+  ) {
+    return [];
+  }
+  const selection = hole.attack.selection;
+  return isCharacterAttackSelectionForTest(selection)
+    ? [
+        {
+          kind: "thrownWeaponLanding",
+          attackerId: hole.attack.actorId,
+          procedureRef: selection.procedureRef,
+          positionId,
+        },
+      ]
+    : [];
+}
+
+function isCharacterAttackSelectionForTest(
+  selection: BattleAttackExecutionSelection,
+): selection is Extract<
+  BattleAttackExecutionSelection,
+  { readonly attackAbility: unknown }
+> {
+  return selection.attackAbility !== undefined;
 }
 
 export function attackTargetSpatialFact(
@@ -3234,6 +3348,10 @@ export function attackRollFill(
       BattleFill,
       { readonly kind: "attackRoll" }
     >["value"]["d20TestNaturalOneReroll"];
+    readonly heroicInspirationReroll?: Extract<
+      BattleFill,
+      { readonly kind: "attackRoll" }
+    >["value"]["heroicInspirationReroll"];
   },
 ): Extract<BattleFill, { readonly kind: "attackRoll" }> {
   if (hole.kind !== "attackRoll") {
@@ -3277,6 +3395,9 @@ export function attackRollFill(
       ...(value.d20TestNaturalOneReroll === undefined
         ? {}
         : { d20TestNaturalOneReroll: value.d20TestNaturalOneReroll }),
+      ...(value.heroicInspirationReroll === undefined
+        ? {}
+        : { heroicInspirationReroll: value.heroicInspirationReroll }),
     },
   };
 }
@@ -3996,6 +4117,10 @@ export function characterSeed(input: {
     { readonly kind: "character" }
   >["spellcasting"];
   readonly size?: Size;
+  readonly heroicInspiration?: Extract<
+    CharacterBattleCombatantInit["creatureInit"],
+    { readonly kind: "character" }
+  >["heroicInspiration"];
 }): CharacterBattleCombatantInit {
   const selectedLoadout =
     input.selectedLoadout ??
@@ -4138,6 +4263,9 @@ export function characterSeed(input: {
     creatureInit: {
       kind: "character",
       characterId: characterId("fighter-character"),
+      ...(input.heroicInspiration === undefined
+        ? {}
+        : { heroicInspiration: input.heroicInspiration }),
       characterUnitRefs,
       classLevels,
       knownLanguages: input.knownLanguages ?? ["Common"],
@@ -4391,6 +4519,99 @@ export function testRangedCleaveLongbowUnitRef(): BattleUnitRef {
       masteryUnitId: parseUnitId("mastery_cleave"),
     } satisfies WeaponRecord,
     supportProfiles: [],
+  };
+}
+
+/** A Hunter's Prey unit ref with the chosen option's support profile. */
+export function huntersPreyUnitRef(
+  optionId: "colossusSlayer" | "hordeBreaker",
+): BattleUnitRef {
+  const unit = unitLibrary.requireUnit("ranger_hunters_prey");
+  const huntersPrey =
+    optionId === "colossusSlayer"
+      ? {
+          kind: "woundedTargetWeaponDamage" as const,
+          trigger: "hitCreatureWithWeapon" as const,
+          targetPredicate: "missingAnyHitPoints" as const,
+          usageLimit: "oncePerTurn" as const,
+          damage: {
+            kind: "addAttackDamageDice" as const,
+            dice: { dice: 1 as const, dieSize: 8 as const },
+            damageType: "sameAsAttack" as const,
+          },
+        }
+      : {
+          kind: "nearbyDifferentTargetSameWeaponAttack" as const,
+          trigger: "makeWeaponAttack" as const,
+          usageLimit: "oncePerTurn" as const,
+          extraAttack: {
+            weapon: "sameWeapon" as const,
+            target: {
+              kind: "differentCreatureNearOriginalTarget" as const,
+              withinFeetOfOriginalTarget: movementFeet(5),
+              withinWeaponRange: true as const,
+              notAttackedThisTurn: true as const,
+            },
+          },
+        };
+  return {
+    unit: unitLibrary.requireUnit(unit.id),
+    supportProfiles: [
+      {
+        kind: "huntersPrey",
+        huntersPrey,
+      },
+    ],
+  };
+}
+
+/**
+ * A synthetic heavy, two-handed slashing weapon whose mastery is Graze. The
+ * shipped weapon catalog has no Graze weapon, so the Greataxe record is renamed
+ * and pointed at the SRD Graze mastery.
+ */
+export function testGrazeWeaponUnitRef(): BattleUnitRef {
+  const weapon = unitLibrary.requireUnit("weapon_greataxe");
+  if (weapon.kind !== "weapon") {
+    throw new Error("Expected Greataxe weapon Unit.");
+  }
+  const grazeWeapon = decodeUnitRecordSync({
+    ...weapon,
+    id: parseUnitId("synthetic:battle-fixture-graze-weapon"),
+    name: "Synthetic Graze Weapon",
+    masteryUnitId: parseUnitId("mastery_graze"),
+    provenance: {
+      kind: "synthetic-test",
+      section: "battle Graze weapon fixture",
+    },
+  });
+  if (grazeWeapon.kind !== "weapon") {
+    throw new Error("Expected a synthetic Graze weapon test fixture.");
+  }
+  return { unit: grazeWeapon, supportProfiles: [] };
+}
+
+export function testGrazeWeaponAttack(
+  ability = battleAbilityModifier(3),
+): TestCharacterWeaponAttack {
+  const unit = testGrazeWeaponUnitRef().unit;
+  if (unit.kind !== "weapon") {
+    throw new Error("Expected the synthetic Graze weapon Unit.");
+  }
+  const resolution = Result.getOrThrow(
+    resolveWeaponMasteryReference(unit, unitLibrary),
+  );
+  return {
+    kind: "weapon",
+    ...Result.getOrThrow(
+      admitResolvedCharacterWeaponAttackExecutionWeapon(
+        resolution,
+        battleObjectId(`main:${unit.id}`),
+        [{ weaponUnitId: unit.id }],
+      ),
+    ),
+    ability: "str",
+    abilityModifier: ability,
   };
 }
 

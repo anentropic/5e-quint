@@ -10,37 +10,14 @@ import {
   jsonSchemaHasKind as hasKind,
 } from "../json-schema-sharing.ts";
 import type { McpOutputSchema } from "../schema-codec.ts";
-
-function pinFact<const Facts extends object>(
-  schema: McpOutputSchema,
-  facts: Facts,
-): McpOutputSchema {
-  return {
-    ...schema,
-    properties: {
-      ...record(schema.properties),
-      ...Object.fromEntries(
-        Object.entries(facts).map(([field, value]) => [
-          field,
-          { const: value },
-        ]),
-      ),
-    },
-  };
-}
+import {
+  enemyProximityConstraint,
+  pinFact,
+  targetFactMembers,
+  thrownWeaponLandingConstraint,
+} from "./battle-target-fact-schema.ts";
 
 const ATTACK_SUPPLEMENTAL_FACT_DEFINITION = "AttackSupplementalSpatialFact";
-
-function targetFactMembers(
-  member: McpOutputSchema,
-  definitions: McpOutputSchema,
-) {
-  const spatial = resolveLocalSchemaReference(
-    record(record(member.properties).spatialFacts),
-    definitions,
-  );
-  return alternatives(record(spatial.items), definitions);
-}
 
 type AttackTargetRequest = NonNullable<
   Extract<BattleHole, { readonly kind: "targetChoice" }>["attack"]
@@ -102,6 +79,19 @@ function attackTargetSchemas(
   attack: AttackTargetRequest,
   definitions: McpOutputSchema,
 ): readonly McpOutputSchema[] {
+  const scope = {
+    attackerId: attack.actorId,
+    procedureRef: attack.selection.procedureRef,
+  };
+  const facts = targetFactMembers(member, definitions);
+  const supplemental = [
+    ...(attack.targetConstraint.kind === "rangedRange"
+      ? [enemyProximityConstraint(facts, definitions, scope)]
+      : []),
+    ...(attack.requiresThrownWeaponLanding === true
+      ? [thrownWeaponLandingConstraint(facts, definitions, scope)]
+      : []),
+  ];
   return hole.choices.flatMap((targetId) =>
     attackDistanceWitnesses(member, attack, targetId, definitions).map(
       (witness) => ({
@@ -117,9 +107,10 @@ function attackTargetSchemas(
           value: { const: targetId },
           spatialFacts: {
             type: "array",
-            minItems: 1,
+            minItems: 1 + supplemental.length,
             prefixItems: [witness],
             items: { $ref: `#/$defs/${ATTACK_SUPPLEMENTAL_FACT_DEFINITION}` },
+            ...(supplemental.length === 0 ? {} : { allOf: supplemental }),
           },
         },
       }),
@@ -291,9 +282,6 @@ function rangedSpellTargetSchema(
       (hole.kind !== "targetChoice" ||
         !("objectId" in record(candidate.properties))),
   );
-  const qualification = facts.filter((fact) =>
-    hasKind(fact, "rangedSpellAttackEnemyProximity", definitions),
-  );
   return {
     ...member,
     required: [
@@ -309,18 +297,10 @@ function rangedSpellTargetSchema(
         items: { anyOf: facts },
         allOf: [
           ...(Array.isArray(spatial.allOf) ? spatial.allOf : []),
-          {
-            contains: {
-              anyOf: qualification.map((fact) =>
-                pinFact(fact, {
-                  kind: "rangedSpellAttackEnemyProximity",
-                  casterId: request.casterId,
-                  sourceProcedureRef: request.sourceProcedureRef,
-                }),
-              ),
-            },
-            maxContains: 1,
-          },
+          enemyProximityConstraint(facts, definitions, {
+            attackerId: request.casterId,
+            procedureRef: request.sourceProcedureRef,
+          }),
           ...(hole.kind === "objectTargetChoice"
             ? [
                 {

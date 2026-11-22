@@ -46,6 +46,8 @@ import { AttackOnceOrDashDisengageHideUtilizeActionRestrictionSchema } from "@dn
 import { RETAINED_COMPANION_PROTOCOL_TAGS } from "@dnd/shared-algebras/companion-protocol-algebra";
 import {
   AmmunitionKindSchema,
+  HEROIC_INSPIRATION_AVAILABLE,
+  NO_HEROIC_INSPIRATION,
   STANDARD_ACTION_KINDS,
   StatBlockId,
   UnitId,
@@ -57,6 +59,7 @@ import {
   CreatureId,
   DeathSavingThrowCount,
   D20Roll,
+  DieRollResultSchema,
   ResourceCount,
   SIZES,
 } from "@dnd/shared/types";
@@ -121,6 +124,7 @@ import {
   battleSubjectProcedureRefs,
   BattleAttackExecutionAbilitySchema,
   BattleAttackExecutionSelectionSchema,
+  WeaponAttackDeliverySchema,
   BattleReadyResponseSnapshotSchema,
   BattleReadyResponseSchema,
   BattleInterruptAttackExecutionSelectionSchema,
@@ -210,7 +214,10 @@ import {
   BRUTAL_STRIKE_EFFECT_DECISION_CHOICES,
   TACTICAL_MASTER_REPLACEMENT_DECISION_CHOICES,
 } from "../unit-feature-support.ts";
-import { BONUS_ACTION_HEALING_MOVEMENT_ORDER_CHOICES } from "../battle-state-execution.ts";
+import {
+  BONUS_ACTION_HEALING_MOVEMENT_ORDER_CHOICES,
+  HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+} from "../battle-state-execution.ts";
 import type {
   BattleCreatureOriginSnapshot,
   BattleCreatureSnapshot,
@@ -817,6 +824,13 @@ const UnitFeatureAreaInputRequestSchema = Schema.Struct({
     AttackActionAreaSaveDamageReplacementProcedureExecutionSchema.fields.breath
       .fields.area.fields.shapeChoice,
 });
+const ThrownWeaponLandingFactSchema = Schema.Struct({
+  kind: Schema.Literal("thrownWeaponLanding"),
+  attackerId: CombatantId,
+  procedureRef: BattleAttackProcedureExecutionRef,
+  positionId: BattleTablePositionId,
+});
+
 const BattleTargetSpatialFactSchema = Schema.Union([
   BattleAttackObjectTargetSpatialFactSchema,
   Schema.Struct({
@@ -837,6 +851,7 @@ const BattleTargetSpatialFactSchema = Schema.Union([
     procedureRef: BattleAttackProcedureExecutionRef,
     attackAbility: BattleAttackExecutionAbilitySchema,
     attackDamageType: DamageTypeSchema,
+    weaponDelivery: Schema.optionalKey(WeaponAttackDeliverySchema),
     attackName: Schema.optionalKey(Schema.Never),
     statBlockDamageSelection: Schema.optionalKey(Schema.Never),
     disposition: BattleImmediateAreaPushDispositionSchema,
@@ -849,6 +864,7 @@ const BattleTargetSpatialFactSchema = Schema.Union([
       procedureRef: BattleAttackProcedureExecutionRef,
       attackAbility: BattleAttackExecutionAbilitySchema,
       attackDamageType: DamageTypeSchema,
+      weaponDelivery: Schema.optionalKey(WeaponAttackDeliverySchema),
       attackName: Schema.optionalKey(Schema.Never),
       statBlockDamageSelection: Schema.optionalKey(Schema.Never),
       distanceFeet: MovementFeet,
@@ -900,17 +916,18 @@ const BattleTargetSpatialFactSchema = Schema.Union([
     cover: Schema.optionalKey(Schema.Literals(COVER_TYPES)),
   }),
   Schema.Struct({
-    kind: Schema.Literal("rangedSpellAttackEnemyProximity"),
-    casterId: CombatantId,
-    sourceProcedureRef: BattleProcedureExecutionRef,
+    kind: Schema.Literal("rangedAttackEnemyProximity"),
+    attackerId: CombatantId,
+    procedureRef: BattleProcedureExecutionRef,
     enemies: Schema.Array(
       Schema.Struct({
         enemyId: CombatantId,
         distanceFeet: MovementFeet,
-        enemyCanSeeCaster: Schema.Boolean,
+        enemyCanSeeAttacker: Schema.Boolean,
       }),
     ),
   }),
+  ThrownWeaponLandingFactSchema,
   Schema.Struct({
     ...UnitFeatureVisibleTargetFactRequestFields,
     targetId: CombatantId,
@@ -1406,6 +1423,10 @@ export const BattleDroppedObjectOutcomeSchema = Schema.Struct({
       procedureRef: BattleProcedureExecutionRef,
       formExecutionRef: BattleStatBlockExecutionScopeRef,
     }),
+    Schema.Struct({
+      kind: Schema.Literal("thrownWeaponAttack"),
+      procedureRef: BattleAttackProcedureExecutionRef,
+    }),
   ]),
 });
 
@@ -1725,6 +1746,24 @@ const D20TestNaturalOneRerollHoleOptionsFields = (() => {
   return {
     labeled: { d20TestNaturalOneRerolls: schemas.labeled },
     mechanical: { d20TestNaturalOneRerolls: schemas.mechanical },
+  };
+})();
+
+const HeroicInspirationRerollHoleOptionsFields = (() => {
+  const member = pairedBattleHoleNestedMember({
+    effectKind: Schema.Literal(HEROIC_INSPIRATION_REROLL_EFFECT_KIND),
+  });
+  return {
+    labeled: {
+      heroicInspirationRerolls: Schema.optionalKey(
+        Schema.Tuple([member.labeled]),
+      ),
+    },
+    mechanical: {
+      heroicInspirationRerolls: Schema.optionalKey(
+        Schema.Tuple([member.mechanical]),
+      ),
+    },
   };
 })();
 
@@ -2356,6 +2395,7 @@ const BattleHolePayloadMembers = [
           }),
         ]),
         acceptsObjectTarget: Schema.optionalKey(Schema.Literal(true)),
+        requiresThrownWeaponLanding: Schema.optionalKey(Schema.Literal(true)),
       }),
     ),
   }),
@@ -2614,7 +2654,10 @@ const BattleHolePayloadMembers = [
       ),
       mergeBattleHoleFieldPairs(
         AttackRollMissToHitReplacementFields,
-        D20TestNaturalOneRerollHoleOptionsFields,
+        mergeBattleHoleFieldPairs(
+          D20TestNaturalOneRerollHoleOptionsFields,
+          HeroicInspirationRerollHoleOptionsFields,
+        ),
       ),
     ),
   ),
@@ -2630,7 +2673,10 @@ const BattleHolePayloadMembers = [
       AttackRollMissToHitReplacementFields,
       mergeBattleHoleFieldPairs(
         SpellAttackRerollHoleOptionsFields,
-        D20TestNaturalOneRerollHoleOptionsFields,
+        mergeBattleHoleFieldPairs(
+          D20TestNaturalOneRerollHoleOptionsFields,
+          HeroicInspirationRerollHoleOptionsFields,
+        ),
       ),
     ),
   ),
@@ -3627,12 +3673,7 @@ export const BattleMechanicalHoleSchema: BattleMechanicalHoleCodec =
     BattleMechanicalOrdinaryHoleSchema,
   ]).annotate({ identifier: "BattleMechanicalHole" });
 
-const BattleDieRollResultSchema = Schema.Number.pipe(
-  Schema.check(Schema.isInt()),
-  Schema.check(Schema.isGreaterThan(0)),
-  Schema.brand("PositiveInteger"),
-  Schema.brand("DieRollResult"),
-);
+const BattleDieRollResultSchema = DieRollResultSchema;
 
 const BattleD6RollResultSchema = Schema.Number.pipe(
   Schema.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 6 })),
@@ -3670,22 +3711,31 @@ const BattleD20TestRolledDieRollReplacementSchema = Schema.Struct({
   result: BattleD20TestRollReplacementSchema,
 }).annotate({ parseOptions: { onExcessProperty: "error" } });
 
-const BattleD20TestNaturalOneRerollDecisionSchema = Schema.Union([
-  Schema.Struct({
-    kind: Schema.Literal("decline"),
-    effectKind: Schema.Literal("d20_test_natural_one_reroll"),
-  }),
-  Schema.Struct({
-    kind: Schema.Literal("reroll"),
-    effectKind: Schema.Literal("d20_test_natural_one_reroll"),
-    replacement: BattleD20TestRollReplacementSchema,
-  }),
-  Schema.Struct({
-    kind: Schema.Literal("rerollRolledDie"),
-    effectKind: Schema.Literal("d20_test_natural_one_reroll"),
-    replacement: BattleD20TestRolledDieRollReplacementSchema,
-  }),
-]);
+function battleD20TestRollRerollDecisionSchema<const EffectKind extends string>(
+  effectKind: EffectKind,
+) {
+  return Schema.Union([
+    Schema.Struct({
+      kind: Schema.Literal("decline"),
+      effectKind: Schema.Literal(effectKind),
+    }),
+    Schema.Struct({
+      kind: Schema.Literal("reroll"),
+      effectKind: Schema.Literal(effectKind),
+      replacement: BattleD20TestRollReplacementSchema,
+    }),
+    Schema.Struct({
+      kind: Schema.Literal("rerollRolledDie"),
+      effectKind: Schema.Literal(effectKind),
+      replacement: BattleD20TestRolledDieRollReplacementSchema,
+    }),
+  ]);
+}
+
+const BattleD20TestNaturalOneRerollDecisionSchema =
+  battleD20TestRollRerollDecisionSchema("d20_test_natural_one_reroll");
+const BattleHeroicInspirationRerollDecisionSchema =
+  battleD20TestRollRerollDecisionSchema(HEROIC_INSPIRATION_REROLL_EFFECT_KIND);
 
 const BattleD20TestRolledDieOutcomeReplacementSchema = Schema.Struct({
   die: Schema.Literals(D20_TEST_ROLLED_DIE_KEYS),
@@ -3791,6 +3841,9 @@ const BattleAttackRollResultSchema = Schema.Struct({
   ),
   d20TestNaturalOneReroll: Schema.optionalKey(
     BattleD20TestNaturalOneRerollDecisionSchema,
+  ),
+  heroicInspirationReroll: Schema.optionalKey(
+    BattleHeroicInspirationRerollDecisionSchema,
   ),
 }).annotate({ parseOptions: { onExcessProperty: "error" } });
 
@@ -4049,14 +4102,20 @@ type BattleFillEncoded =
             readonly attackerCanSeeObject: boolean;
           }
         | {
-            readonly kind: "rangedSpellAttackEnemyProximity";
-            readonly casterId: string;
-            readonly sourceProcedureRef: string;
+            readonly kind: "rangedAttackEnemyProximity";
+            readonly attackerId: string;
+            readonly procedureRef: string;
             readonly enemies: readonly {
               readonly enemyId: string;
               readonly distanceFeet: number;
-              readonly enemyCanSeeCaster: boolean;
+              readonly enemyCanSeeAttacker: boolean;
             }[];
+          }
+        | {
+            readonly kind: "thrownWeaponLanding";
+            readonly attackerId: string;
+            readonly procedureRef: string;
+            readonly positionId: string;
           }
         | {
             readonly kind: "spellObjectLightTarget";
@@ -5288,17 +5347,18 @@ export const BattleFillSchema: Schema.Codec<
             attackerCanSeeObject: Schema.Boolean,
           }),
           Schema.Struct({
-            kind: Schema.Literal("rangedSpellAttackEnemyProximity"),
-            casterId: CombatantId,
-            sourceProcedureRef: BattleProcedureExecutionRef,
+            kind: Schema.Literal("rangedAttackEnemyProximity"),
+            attackerId: CombatantId,
+            procedureRef: BattleProcedureExecutionRef,
             enemies: Schema.Array(
               Schema.Struct({
                 enemyId: CombatantId,
                 distanceFeet: MovementFeet,
-                enemyCanSeeCaster: Schema.Boolean,
+                enemyCanSeeAttacker: Schema.Boolean,
               }),
             ),
           }),
+          ThrownWeaponLandingFactSchema,
           Schema.Struct({
             kind: Schema.Literal("spellObjectLightTarget"),
             casterId: CombatantId,
@@ -7024,6 +7084,11 @@ type CharacterProcedureBindingSnapshotCodec = Schema.Union<
 const CharacterProcedureBindingSnapshotSchema: CharacterProcedureBindingSnapshotCodec =
   Schema.Union(CharacterProcedureBindingSnapshotMembers);
 
+const HeroicInspirationSchema = Schema.Union([
+  Schema.Struct({ tag: Schema.Literal(NO_HEROIC_INSPIRATION.tag) }),
+  Schema.Struct({ tag: Schema.Literal(HEROIC_INSPIRATION_AVAILABLE.tag) }),
+]);
+
 const CharacterBattleCreatureOriginSnapshotSchema = Schema.Struct({
   kind: Schema.Literal("character"),
   characterId: CharacterIdSchema,
@@ -7048,6 +7113,7 @@ const CharacterBattleCreatureOriginSnapshotSchema = Schema.Struct({
     ]),
   }),
   resources: Schema.Array(BattleCharacterResourceSnapshotSchema),
+  heroicInspiration: HeroicInspirationSchema,
   druidWildShapeAvailableForms: Schema.Array(
     Schema.Struct({
       statBlockId: StatBlockId,
@@ -10310,6 +10376,7 @@ type EncodedCharacterBattleCreatureOriginSnapshot = {
       | null;
   };
   readonly resources: readonly (typeof BattleCharacterResourceSnapshotSchema.Encoded)[];
+  readonly heroicInspiration: typeof HeroicInspirationSchema.Encoded;
   readonly druidWildShapeAvailableForms: readonly {
     readonly statBlockId: typeof StatBlockId.Encoded;
     readonly execution: typeof StatBlockExecutionSnapshotSchema.Encoded;

@@ -5,6 +5,8 @@ import {
   type BoundSupportedAttackActionOption,
 } from "../battle-action-options.ts";
 import { spendAmmunitionForAcceptedAttackPendingContinuation } from "../battle-ammunition.ts";
+import { stateWithThrownWeaponReleased } from "./thrown-weapon-release.ts";
+import { thrownWeaponLandingIssue } from "./thrown-weapon-attack.ts";
 // Opportunity attack resolution owns the movement-triggered Reaction procedure.
 // KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE
 // UNIT-PROFILE-COVERAGE: runtime-owner spell.invocation-ray-of-enfeeblement-damage-penalty
@@ -42,11 +44,12 @@ import {
 } from "./attack-roll.ts";
 import { weaponAttackArmorClass } from "./attack-target-cover.ts";
 import {
-  attackRollHoleWithD20TestNaturalOneRerollOption,
-  d20TestNaturalOneRerollRollDecisionRequired,
-  d20TestNaturalOneRerollRollIssue,
-  effectiveD20TestNaturalOneRerollAttackRoll,
-} from "./d20-test-natural-one-reroll.ts";
+  attackRollD20TestRerolls,
+  attackRollHoleWithD20TestRerollOptions,
+  battleStateAfterHeroicInspirationReroll,
+  type AttackRollD20TestRerolls,
+  type AttackRollHeroicInspirationUse,
+} from "./attack-roll-d20-test-rerolls.ts";
 import {
   applyAttackDamageAmount,
   concentrationSavingThrowHole,
@@ -97,7 +100,10 @@ import {
   meleeWeaponOrUnarmedStrikeOptionForReactor,
   opportunityAttackOptionForReactor,
 } from "./movement-speed.ts";
-import { attackTargetIsLegal } from "./attack-spatial.ts";
+import {
+  attackEnemyProximityQualificationIssue,
+  attackTargetIsLegal,
+} from "./attack-spatial.ts";
 import { reactionSpellTargetFactsForAfterDamage } from "./reaction-triggered-spells.ts";
 import { resolveRemarkableAthleteCriticalHitMovement } from "./remarkable-athlete-critical-movement.ts";
 import { invalidResult } from "./result-helpers.ts";
@@ -184,6 +190,7 @@ type ReactionAttackRollPreparation =
   | {
       readonly tag: "ready";
       readonly effectiveAttackRoll: BattleAttackRollResult;
+      readonly heroicInspirationUse: AttackRollHeroicInspirationUse;
       readonly hiddenBeforeAttack: BattleHiddenState | null;
       readonly attackRollRelationshipFacts: Exclude<
         ReturnType<typeof parseAttackRollRelationshipFacts>,
@@ -285,41 +292,48 @@ function reactionAttackRerollResult(input: {
   readonly attackRoll: BattleAttackRollResult;
   readonly reactor: BattleCreatureState | undefined;
   readonly requiredRollMode: ReturnType<typeof requiredAttackRollMode>;
-}): BattleResolutionResult | null {
-  if (
-    d20TestNaturalOneRerollRollDecisionRequired({
-      actor: input.reactor,
-      originalD20TestRoll: input.attackRoll.d20TestRoll,
-      decision: input.attackRoll.d20TestNaturalOneReroll,
-    })
-  ) {
-    return needsHolesResult(
-      input.context.input.state,
-      input.context.input.subject,
-      [
-        attackRollHoleWithD20TestNaturalOneRerollOption(
-          reactionAttackRollHoleWithRelationshipFacts({
-            state: input.context.input.state,
-            reactorId: input.context.input.subject.reactorId,
-            targetId: input.context.input.subject.targetId,
-            attack: input.context.attack,
-            reactor: input.reactor,
-            requiredRollMode: input.requiredRollMode,
-          }),
-        ),
-      ],
-    );
-  }
-  const rerollIssue = d20TestNaturalOneRerollRollIssue({
-    actor: input.reactor,
-    total: input.attackRoll.total,
-    originalD20TestRoll: input.attackRoll.d20TestRoll,
-    decision: input.attackRoll.d20TestNaturalOneReroll,
+}):
+  | { readonly tag: "result"; readonly result: BattleResolutionResult }
+  | Extract<AttackRollD20TestRerolls, { readonly tag: "resolved" }> {
+  const d20TestRerolls = attackRollD20TestRerolls({
+    state: input.context.input.state,
+    attackerId: input.context.input.subject.reactorId,
+    attackRollHoleId: ATTACK_ROLL_HOLE_ID,
+    attackRoll: input.attackRoll,
     requiredRollMode: input.requiredRollMode,
   });
-  return rerollIssue === null
-    ? null
-    : invalidResult(input.context.input.state, "invalidFill", rerollIssue);
+  if (d20TestRerolls.tag === "decisionsRequired") {
+    return {
+      tag: "result",
+      result: needsHolesResult(
+        input.context.input.state,
+        input.context.input.subject,
+        [
+          attackRollHoleWithD20TestRerollOptions(
+            reactionAttackRollHoleWithRelationshipFacts({
+              state: input.context.input.state,
+              reactorId: input.context.input.subject.reactorId,
+              targetId: input.context.input.subject.targetId,
+              attack: input.context.attack,
+              reactor: input.reactor,
+              requiredRollMode: input.requiredRollMode,
+            }),
+            d20TestRerolls.options,
+          ),
+        ],
+      ),
+    };
+  }
+  return d20TestRerolls.tag === "invalid"
+    ? {
+        tag: "result",
+        result: invalidResult(
+          input.context.input.state,
+          "invalidFill",
+          d20TestRerolls.issue,
+        ),
+      }
+    : d20TestRerolls;
 }
 
 function prepareReactionAttackRoll(
@@ -360,8 +374,8 @@ function prepareReactionAttackRoll(
     reactor,
     requiredRollMode,
   });
-  if (rerollResult !== null) {
-    return { tag: "result", result: rerollResult };
+  if (rerollResult.tag === "result") {
+    return rerollResult;
   }
   const attackRollRelationshipFacts = parseAttackRollRelationshipFacts(
     input.fillSet.attackRollRelationshipFacts,
@@ -385,7 +399,8 @@ function prepareReactionAttackRoll(
   }
   return {
     tag: "ready",
-    effectiveAttackRoll: effectiveD20TestNaturalOneRerollAttackRoll(attackRoll),
+    effectiveAttackRoll: rerollResult.effectiveAttackRoll,
+    heroicInspirationUse: rerollResult.heroicInspirationUse,
     hiddenBeforeAttack:
       input.input.state.combatants.get(input.input.subject.reactorId)?.hidden ??
       null,
@@ -456,16 +471,10 @@ function resolveReactionAttackCommand(
     return invalidResult(input.state, "invalidFill", fillSet.message);
   }
   /* v8 ignore stop -- @preserve */
-  /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
-  if (fillSet.targetId !== undefined) {
-    /* v8 ignore next -- @preserve -- Malformed resolution input: this branch rejects fills that contradict the admitted subject's discovered holes or current typed runtime constraints. */
-    return invalidResult(
-      input.state,
-      "invalidFill",
-      `${commandLabel} target is fixed by the reaction trigger.`,
-    );
+  const reactionFillIssue = reactionAttackFillIssue(fillSet, commandLabel);
+  if (reactionFillIssue !== null) {
+    return invalidResult(input.state, "invalidFill", reactionFillIssue);
   }
-  /* v8 ignore stop -- @preserve */
   const targetSpatialFacts = reactionAttackTargetSpatialFacts({
     state: input.state,
     commandLabel,
@@ -540,24 +549,43 @@ function reactionAttackTargetSpatialFacts(input: {
         "Fixed-target reaction attacks require an exact attack target distance fact.",
     };
   }
-  if (
-    !attackTargetIsLegal(
-      input.state,
-      input.subject.reactorId,
-      input.subject.targetId,
-      input.attack,
+  return (
+    reactionAttackTargetIssue(input, facts) ?? {
+      tag: "ok",
       facts,
-    )
-  ) {
-    return {
-      tag: "invalid",
-      message: `${input.commandLabel} target distance is outside the selected attack's legal range.`,
-    };
-  }
-  return {
-    tag: "ok",
+    }
+  );
+}
+
+function reactionAttackTargetIssue(
+  input: Parameters<typeof reactionAttackTargetSpatialFacts>[0],
+  facts: readonly BattleTargetSpatialFact[],
+): { readonly tag: "invalid"; readonly message: string } | null {
+  const proximityIssue = attackEnemyProximityQualificationIssue(
+    input.state,
+    input.subject.reactorId,
+    input.attack,
     facts,
-  };
+  );
+  if (proximityIssue !== null) return proximityIssue;
+  const landingIssue = thrownWeaponLandingIssue(
+    input.subject.reactorId,
+    input.attack,
+    facts,
+  );
+  if (landingIssue !== null) return { tag: "invalid", message: landingIssue };
+  return attackTargetIsLegal(
+    input.state,
+    input.subject.reactorId,
+    input.subject.targetId,
+    input.attack,
+    facts,
+  )
+    ? null
+    : {
+        tag: "invalid",
+        message: `${input.commandLabel} target distance is outside the selected attack's legal range.`,
+      };
 }
 
 function reactionAttackDistanceFact(input: {
@@ -621,7 +649,13 @@ function resolveReactionAttackAfterRoll(afterRollInput: {
   );
   let attackRolledState = consumeHelpAttackForAttackRoll(
     recordAttackRollOngoingFeatures(
-      revealHidden(input.state, subject.reactorId),
+      revealHidden(
+        battleStateAfterHeroicInspirationReroll(
+          input.state,
+          afterRollInput.rollPreparation.heroicInspirationUse,
+        ),
+        subject.reactorId,
+      ),
       subject.reactorId,
       subject.targetId,
       null,
@@ -938,10 +972,16 @@ function resolveReactionAttackMiss(
       relationshipIssue,
     );
   }
+  const resolvedState = stateWithThrownWeaponReleased({
+    state: attackRolledState,
+    attackerId: resolutionInput.subject.reactorId,
+    attack: input.attack,
+    facts: context.targetSpatialFacts,
+  });
   return {
     tag: "resolved",
-    state: attackRolledState,
-    snapshot: snapshotBattle(attackRolledState),
+    state: resolvedState,
+    snapshot: snapshotBattle(resolvedState),
   };
 }
 
@@ -1324,8 +1364,16 @@ function resolveReactionAttackDamageTransaction(input: {
     Match.exhaustive,
   );
 
+  // The attack-damage window resumes from its own frame and finishes the attack
+  // there, never returning here, so a thrown weapon leaves the hand as the
+  // window opens. The public result reports it once the attack is over.
   const attackDamageReactionWindow = maybeOpenInterruptWindow(
-    spellReducedState,
+    stateWithThrownWeaponReleased({
+      state: spellReducedState,
+      attackerId: subject.reactorId,
+      attack,
+      facts: targetSpatialFacts,
+    }),
     {
       trigger: "attackDamage",
       continuation: attackDamageInterruptionFrame({
@@ -1481,8 +1529,17 @@ function resolveReactionAttackDamageTransaction(input: {
   }
   /* v8 ignore stop -- @preserve */
 
+  // Without an attack-damage window the subject ends here, so a thrown weapon
+  // leaves the hand now: a needsHoles state above is resumed, and the resumed
+  // attack still needs its weapon.
+  const resolvedState = stateWithThrownWeaponReleased({
+    state: afterDamagePath.state,
+    attackerId: subject.reactorId,
+    attack,
+    facts: targetSpatialFacts,
+  });
   const afterDamageReactionWindow = maybeOpenInterruptWindow(
-    afterDamagePath.state,
+    resolvedState,
     {
       trigger: "afterDamage",
       damageSourceId: subject.reactorId,
@@ -1506,7 +1563,26 @@ function resolveReactionAttackDamageTransaction(input: {
 
   return {
     tag: "resolved",
-    state: afterDamagePath.state,
-    snapshot: snapshotBattle(afterDamagePath.state),
+    state: resolvedState,
+    snapshot: snapshotBattle(resolvedState),
   };
+}
+
+/**
+ * A fill a reaction attack can't take: a target, which the trigger fixes, or a
+ * Weapon Mastery Graze decision, which reaction attacks don't resolve.
+ */
+function reactionAttackFillIssue(
+  fillSet: ResolvedAttackFillSet,
+  attackLabel: string,
+): string | null {
+  /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
+  if (fillSet.targetId !== undefined) {
+    /* v8 ignore next -- @preserve -- Malformed resolution input: this branch rejects fills that contradict the admitted subject's discovered holes or current typed runtime constraints. */
+    return `${attackLabel} target is fixed by the reaction trigger.`;
+  }
+  /* v8 ignore stop -- @preserve */
+  return fillSet.weaponMasteryGrazeDecision === undefined
+    ? null
+    : `${attackLabel} doesn't resolve Weapon Mastery Graze.`;
 }

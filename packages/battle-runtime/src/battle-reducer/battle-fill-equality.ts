@@ -1,11 +1,13 @@
 import type {
   BattleAttackRollResult,
+  BattleD20TestRollRerollDecision,
   BattleFill,
   BattleOpportunityAttackThreat,
   BattleRolledDiceFill,
   BattleSavingThrowOutcome,
 } from "../battle-state-execution.ts";
 import type { BattleProcedureExecutionRef } from "../identity.ts";
+import { canonicalStructuralKey } from "@dnd/shared/structural-value";
 import { Match } from "effect";
 import { sameMultisetBy } from "../mechanical-equality.ts";
 import { d20TestRollsEqual } from "@dnd/shared-algebras/runtime-hole-algebra";
@@ -13,6 +15,7 @@ import { opportunityAttackThreatEqual } from "./opportunity-attack-equality.ts";
 
 export const BATTLE_CONTINUATION_COMPARABLE_FILL_KINDS = [
   "targetChoice",
+  "targetSpatialFacts",
   "attackRoll",
   "rolledDice",
   "attackDamageDisposition",
@@ -53,6 +56,16 @@ export function battleContinuationFillEquals(
         b.kind === "targetChoice" &&
         left.holeId === b.holeId &&
         left.value === b.value,
+      targetSpatialFacts: (left) =>
+        b.kind === "targetSpatialFacts" &&
+        left.holeId === b.holeId &&
+        sameMultisetBy(
+          left.spatialFacts,
+          b.spatialFacts,
+          (leftFact, rightFact) =>
+            canonicalStructuralKey(leftFact) ===
+            canonicalStructuralKey(rightFact),
+        ),
       attackRoll: (left) =>
         b.kind === "attackRoll" &&
         left.holeId === b.holeId &&
@@ -166,6 +179,7 @@ type ComparableAttackRollResult = Pick<
       | "missToHitReplacementProcedureRef"
       | "spellAttackReroll"
       | "d20TestNaturalOneReroll"
+      | "heroicInspirationReroll"
     >
   >;
 
@@ -180,9 +194,13 @@ function attackRollResultsEqual(
       b.activatedOngoingFeatureProcedureRef &&
     a.missToHitReplacementProcedureRef === b.missToHitReplacementProcedureRef &&
     spellAttackRerollDecisionsEqual(a.spellAttackReroll, b.spellAttackReroll) &&
-    d20TestNaturalOneRerollDecisionsEqual(
+    d20TestRollRerollDecisionsEqual(
       a.d20TestNaturalOneReroll,
       b.d20TestNaturalOneReroll,
+    ) &&
+    d20TestRollRerollDecisionsEqual(
+      a.heroicInspirationReroll,
+      b.heroicInspirationReroll,
     )
   );
 }
@@ -203,9 +221,9 @@ function spellAttackRerollDecisionsEqual(
   return attackRollResultsEqual(a.replacement, b.replacement);
 }
 
-function d20TestNaturalOneRerollDecisionsEqual(
-  a: BattleAttackRollResult["d20TestNaturalOneReroll"],
-  b: BattleAttackRollResult["d20TestNaturalOneReroll"],
+function d20TestRollRerollDecisionsEqual<EffectKind extends string>(
+  a: BattleD20TestRollRerollDecision<EffectKind> | undefined,
+  b: BattleD20TestRollRerollDecision<EffectKind> | undefined,
 ): boolean {
   if (a === undefined || b === undefined) {
     return a === b;

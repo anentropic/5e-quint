@@ -1,3 +1,4 @@
+import { weaponAttackIsThrown } from "./thrown-weapon-attack.ts";
 import { attackDamageDiceRequest } from "./attack-damage-dice-request.ts";
 import {
   attackRollDefenseGrantsDisadvantage,
@@ -9,7 +10,8 @@ import {
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.grappler unit-feature.hunters-prey unit-feature.weapon-mastery-sap unit-feature.weapon-mastery-topple unit-feature.weapon-mastery-cleave unit-feature.weapon-mastery-push unit-feature.weapon-mastery-slow unit-feature.fighter-tactical-master spell.invocation-object-contact-damage
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.ROLL_MODIFIER_ACTIVE_EFFECTS BATTLE.SPELL.SAVE_GATED_ATTACK_ROLL_ADVANTAGE BATTLE.SPELL.RAY_OF_ENFEEBLEMENT_D20_LIFECYCLE BATTLE.SPELL.CHAINED_ATTACK_SEQUENCE BATTLE.SPELL.INDEPENDENT_ATTACK_SEQUENCE
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.TABLE_CIRCUMSTANCE_DECISION
-// KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE
+// KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE
+// UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.weapon-mastery-graze
 // KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_ATTACKER_ROLL_MODE
 // KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.CONDITION_ROLL_MODE
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.CREATURE_TYPE_PROTECTION_AND_CONDITION_PREVENTION
@@ -23,7 +25,6 @@ import {
 import {
   applyCondition,
   hasCondition,
-  isIncapacitated,
 } from "@dnd/shared-algebras/conditions-algebra";
 import {
   d20TestRollMode,
@@ -65,7 +66,6 @@ import {
   TACTICAL_MASTER_REPLACEMENT_DECISION_CHOICES,
   TACTICAL_MASTER_REPLACEMENT_SUPPORT_PROFILE,
   WEAPON_MASTERY_SAP_SUPPORT_PROFILE,
-  WEAPON_MASTERY_TOPPLE_SUPPORT_PROFILE,
   WEAPON_MASTERY_CLEAVE_SUPPORT_PROFILE,
   WEAPON_MASTERY_PUSH_SUPPORT_PROFILE,
   WEAPON_MASTERY_SLOW_SUPPORT_PROFILE,
@@ -154,15 +154,17 @@ import {
   HUNTERS_PREY_HORDE_BREAKER_DECISION_HOLE_INSTANCE,
   HUNTERS_PREY_HORDE_BREAKER_TARGET_HOLE_ID,
   HUNTERS_PREY_HORDE_BREAKER_TARGET_HOLE_INSTANCE,
-  RANGED_ATTACK_ENEMY_PROXIMITY_FEET,
 } from "./domain-constants.ts";
 import { combatantEffectiveSize } from "./druid-wild-shape.ts";
 import {
   attackExecutionSelectionMatchesOption,
+  attackCloseCombatDisadvantage,
+  attackEnemyProximityQualificationIssue,
   creatureAttackTargetIsLegal,
   attackTargetDistanceFeet,
   attackTargetRangeBand,
 } from "./attack-spatial.ts";
+import { rangedAttackCloseCombatDisadvantage } from "./ranged-attack-close-combat.ts";
 import { hasDodgeBenefit } from "./dodge-benefit.ts";
 import { ongoingFeatureEnemyRelationshipDecisionRequired } from "./ongoing-feature-relationship.ts";
 export { ongoingFeatureEnemyRelationshipDecisionRequired } from "./ongoing-feature-relationship.ts";
@@ -300,16 +302,23 @@ function combatantHasHiddenAttackRollBenefit(
   );
 }
 
-function attackTargetIsLongRange(
+// SRD "Ranged Attacks": long range and close combat each impose Disadvantage.
+function rangedAttackDisadvantage(
+  state: BattleState,
   targetSpatialFacts: readonly BattleTargetSpatialFact[],
   attackerId: CombatantId,
   targetId: CombatantId,
   attack: SupportedAttackActionOption | undefined,
 ): boolean {
   return (
-    attack !== undefined &&
-    attackTargetRangeBand(targetSpatialFacts, attackerId, targetId, attack) ===
-      "long"
+    (attack !== undefined &&
+      attackTargetRangeBand(
+        targetSpatialFacts,
+        attackerId,
+        targetId,
+        attack,
+      ) === "long") ||
+    attackCloseCombatDisadvantage(state, attackerId, attack, targetSpatialFacts)
   );
 }
 
@@ -330,7 +339,8 @@ function attackRollSourceFlags(
     hasDodgeAttackRollBenefit(state, target, attacker);
   const grappleDisadvantage =
     grapple !== undefined && grapple.grapplerId !== targetId;
-  const longRangeDisadvantage = attackTargetIsLongRange(
+  const rangedDisadvantage = rangedAttackDisadvantage(
+    state,
     targetSpatialFacts,
     attackerId,
     targetId,
@@ -403,7 +413,7 @@ function attackRollSourceFlags(
     hiddenTargetDisadvantage ||
     dodgeDisadvantage ||
     grappleDisadvantage ||
-    longRangeDisadvantage ||
+    rangedDisadvantage ||
     attackerConditionAttackRollModeSources(attacker?.conditions).disadvantage ||
     activeEffectGrantsAttackRollMode(state, attacker, target, "disadvantage", {
       attackerCanSeeTarget,
@@ -551,25 +561,21 @@ function rangedSpellAttackCloseCombatDisadvantage(
   ) {
     return false;
   }
-  return targetSpatialFacts.some((fact) => {
-    if (
-      fact.kind !== "rangedSpellAttackEnemyProximity" ||
-      fact.casterId !== attackerId ||
-      fact.sourceProcedureRef !== invocation.sourceProcedureRef
-    ) {
-      return false;
-    }
-    return fact.enemies.some((entry) => {
-      const enemy = state.combatants.get(entry.enemyId);
-      return (
-        entry.enemyId !== attackerId &&
-        entry.distanceFeet <= RANGED_ATTACK_ENEMY_PROXIMITY_FEET &&
-        entry.enemyCanSeeCaster &&
-        enemy !== undefined &&
-        !isIncapacitated(enemy.conditions)
-      );
-    });
-  });
+  // The spell's procedure ref is untyped on the invocation union, so the
+  // scope takes the matching fact's typed ref.
+  const scoped = targetSpatialFacts.find(
+    (fact) =>
+      fact.kind === "rangedAttackEnemyProximity" &&
+      fact.procedureRef === invocation.sourceProcedureRef,
+  );
+  return (
+    scoped?.kind === "rangedAttackEnemyProximity" &&
+    rangedAttackCloseCombatDisadvantage(
+      state,
+      { attackerId, procedureRef: scoped.procedureRef },
+      targetSpatialFacts,
+    )
+  );
 }
 
 export function requiredOrdinaryObjectAttackRollMode(
@@ -1429,18 +1435,23 @@ export function applyWeaponMasteryToppleSavingThrow(
   };
 }
 
-export function weaponMasteryToppleSelection(
-  state: BattleState,
-  attackerId: CombatantId,
-  targetId: CombatantId,
-  attack: SupportedAttackActionOption,
-): SelectedWeaponMasteryProperty | null {
-  return state.combatants.has(targetId)
+/**
+ * The attacker's selected, unlocked Weapon Mastery property with the given
+ * support profile on this attack, while the target is still in the battle.
+ */
+export function weaponMasterySelectionAgainstTarget(input: {
+  readonly state: BattleState;
+  readonly attackerId: CombatantId;
+  readonly targetId: CombatantId;
+  readonly attack: SupportedAttackActionOption;
+  readonly supportProfile: WeaponMasteryPropertySupportProfile;
+}): SelectedWeaponMasteryProperty | null {
+  return input.state.combatants.has(input.targetId)
     ? selectedWeaponMasteryProperty({
-        state,
-        attackerId,
-        attack,
-        supportProfile: WEAPON_MASTERY_TOPPLE_SUPPORT_PROFILE,
+        state: input.state,
+        attackerId: input.attackerId,
+        attack: input.attack,
+        supportProfile: input.supportProfile,
       })
     : null;
 }
@@ -1705,6 +1716,7 @@ export function huntersPreyHordeBreakerDamageHole(
 }
 
 export function huntersPreyHordeBreakerTargetIsLegal(input: {
+  readonly state: BattleState;
   readonly attackerId: CombatantId;
   readonly sourceProcedureRef: BattleProcedureExecutionRef;
   readonly firstTargetId: CombatantId;
@@ -1720,6 +1732,12 @@ export function huntersPreyHordeBreakerTargetIsLegal(input: {
       input.attack,
       input.targetSpatialFacts,
     ) &&
+    attackEnemyProximityQualificationIssue(
+      input.state,
+      input.attackerId,
+      input.attack,
+      input.targetSpatialFacts,
+    ) === null &&
     input.targetSpatialFacts.some(
       (fact) =>
         fact.kind === "hordeBreakerSecondTargetEligible" &&
@@ -1761,6 +1779,9 @@ export function huntersPreyHordeBreakerSelection(
 ): HuntersPreyHordeBreakerSelection | null {
   if (
     attack.kind !== "weapon" ||
+    // Horde Breaker's second attack uses the same weapon, which a throw has
+    // already sent out of the attacker's hand.
+    weaponAttackIsThrown(attack) ||
     currentActorId(state) !== attackerId ||
     !state.combatants.has(targetId)
   ) {

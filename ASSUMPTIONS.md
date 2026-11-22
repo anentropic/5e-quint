@@ -59,6 +59,10 @@ extra attack with a different Light weapon, but does not say that the weapons
 must be melee weapons. The melee-only restriction is therefore a deliberate
 interpretation of that omission, not a quoted SRD requirement.
 
+"Melee weapon" here is the weapon's category, not how the attack is made. A
+Light Melee weapon thrown with the Thrown property (a Dagger) is still a Melee
+weapon, so its thrown ranged attack can make or follow the extra attack.
+
 ## A17: Standing from Prone requires a nonzero movement expenditure
 
 **Assumption:** Standing from Prone is unavailable when half the creature's
@@ -244,6 +248,84 @@ SRD doesn't say whether lowering yourself to the ground counts as moving. The
 model reads "doesn't move" as covering any voluntary change of the target's
 position, so Halt suppresses Drop Prone as it suppresses Movement and Stand from
 Prone.
+
+## A53: Graze is not offered when it would deal 0 damage
+
+**Assumption:** After a missed attack roll with a Graze weapon, the attacker is
+asked whether to use Graze only when the ability modifier used for the attack
+roll is 1 or more. With a modifier of 0 or less, the miss ends the attack and no
+Graze decision is asked.
+
+**Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Graze" lets
+the attacker deal damage equal to the ability modifier used for the attack
+roll, and `.references/srd-5.2.1/playing-the-game.md`, "Damage Rolls" says
+"it's possible to deal 0 damage but not negative damage". So the SRD fixes the
+amount: a modifier of 0 or less deals 0. It doesn't say whether the attacker is
+still asked to choose. Since either answer leaves the battle unchanged, the
+model doesn't ask.
+
+## A54: Graze damage is still doubled by Vulnerability
+
+**Assumption:** A target with Vulnerability to the weapon's damage type takes
+double Graze damage, as it does any other damage of that type. Resistance and
+Immunity also apply as usual.
+
+**Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Graze" says
+"the damage can be increased only by increasing the ability modifier". The SRD
+doesn't say whether that limit covers the target's Vulnerability.
+`.references/srd-5.2.1/playing-the-game.md`, "Order of Application" applies
+"bonuses, penalties, or multipliers" first and Vulnerability last, as part of
+the damage the target takes. The model reads Graze's limit as excluding the
+first step (damage bonuses and riders on the attacker's side) and leaves the
+target's Resistance and Vulnerability as the general rule applies them.
+## A55: A D20 Test roll is rerolled at most once, whatever its sources
+
+**Assumption:** When more than one reroll source applies to the same D20 Test
+roll (Heroic Inspiration, a natural-1 reroll trait, Seeking Spell), the roller
+may take at most one of them. Each source the roller has is offered for the
+original roll, and a decision that takes a second reroll of that roll is
+rejected. Heroic Inspiration is spent only when its reroll is taken.
+
+**Rules basis / gap:** `.references/srd-5.2.1/rules-glossary.md`, "Heroic
+Inspiration" lets a player character "reroll any die immediately after rolling
+it" and use the new roll. `.references/srd-5.2.1/playing-the-game.md`,
+"Interactions with Rerolls" says that with Advantage or Disadvantage only one
+of the two d20s is rerolled or replaced, chosen by the roller. Neither passage
+says whether a die produced by one reroll can be rerolled again by another
+source, and "immediately after rolling it" reads either way. The runtime keeps
+the existing one-reroll-per-roll rule that the natural-1 reroll and Seeking
+Spell already follow.
+
+## A57: A thrown weapon is not held with two hands for its damage
+
+**Assumption:** A thrown attack with a Two-Handed or Versatile Melee weapon
+doesn't use the attack damage die floor that a Melee weapon held with two
+hands grants, whatever grip the loadout records.
+
+**Rules basis / gap:** `.references/srd-5.2.1/feats.md`, "Great Weapon
+Fighting" applies "when you roll damage for an attack you make with a Melee
+weapon that you are holding with two hands". `.references/srd-5.2.1/equipment.md`,
+"Thrown" makes the throw a ranged attack, and "Versatile" grants its two-handed
+damage only "to make a melee attack". The SRD doesn't say whether a thrown
+weapon counts as held with two hands when its damage is rolled. The model reads
+the throw as releasing the weapon, so it is no longer held then.
+
+## A58: A loadout grip holds the main weapon for the whole battle
+
+**Assumption:** A character's loadout records one grip for the main weapon,
+and Battle Runtime keeps it for the whole battle. Any weapon may take the
+`two_handed` grip, and a Two-Handed weapon needs it. A `two_handed` grip uses
+both hands, so the loadout can't also hold a shield or an off-hand weapon. A
+Versatile weapon held with the `two_handed` grip deals its Versatile damage on
+every melee attack; it isn't switched to one hand from one attack to the next.
+
+**Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Two-Handed"
+says such a weapon "requires two hands when you attack with it", and
+"Versatile" says the weapon "can be used with one or two hands" and deals its
+Versatile damage "when used with two hands to make a melee attack". The SRD
+says when two hands are required, not that any other weapon can't be held in
+both, and it doesn't say when a creature changes how it holds a weapon. The
+model fixes the grip in the loadout, as Battle Runtime already takes it.
 
 ## A59: A Chromatic Orb leap measures cover from the previous target
 

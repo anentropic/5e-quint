@@ -5,7 +5,12 @@ import {
 import { Schema } from "effect";
 import { rollModifierProfile } from "./battle-reducer/spell-procedure-profiles/roll-modifier.ts";
 import { battleResolutionHolesForTest } from "./battle-runtime.test-support.ts";
-import { unitId as parseSharedUnitId } from "@dnd/shared/game-facts";
+import {
+  HEROIC_INSPIRATION_AVAILABLE,
+  NO_HEROIC_INSPIRATION,
+  type HeroicInspiration,
+  unitId as parseSharedUnitId,
+} from "@dnd/shared/game-facts";
 import { battleRuntimeSessionForTest } from "./battle-runtime-session.test-support.ts";
 import {
   assertBattleSnapshotCodecRoundTripForTest,
@@ -41,6 +46,7 @@ import type {
   BattleSpellTargetListHole,
   BattleTargetSpatialFact,
 } from "./battle-state-execution.ts";
+import { HEROIC_INSPIRATION_REROLL_EFFECT_KIND } from "./battle-state-execution.ts";
 import {
   EMPOWERED_SPELL_REROLL_UNSUPPORTED_DAMAGE_ROLL_OWNER_MESSAGE,
   SEEKING_SPELL_REROLL_UNSUPPORTED_ATTACK_ROLL_OWNER_MESSAGE,
@@ -1066,12 +1072,12 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
       {
         enemyId: skeletonId,
         distanceFeet: movementFeet(30),
-        enemyCanSeeCaster: true,
+        enemyCanSeeAttacker: true,
       },
       {
         enemyId: fighterId,
         distanceFeet: movementFeet(30),
-        enemyCanSeeCaster: true,
+        enemyCanSeeAttacker: true,
       },
     ]);
     const awaitingAttackRoll = resolveBattleSubject({
@@ -1162,12 +1168,12 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
       {
         enemyId: skeletonId,
         distanceFeet: movementFeet(30),
-        enemyCanSeeCaster: true,
+        enemyCanSeeAttacker: true,
       },
       {
         enemyId: fighterId,
         distanceFeet: movementFeet(30),
-        enemyCanSeeCaster: true,
+        enemyCanSeeAttacker: true,
       },
     ]);
     const fills: BattleFill[] = [
@@ -2863,6 +2869,87 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
     ).state;
 
     expect(sorceryPointsRemaining(resolved)).toBe(resourceCount(3));
+  });
+
+  test("Seeking Spell is not asked after Heroic Inspiration rerolled the spell attack", () => {
+    const session = saveMetamagicBattle({
+      knownOptions: [seekingMetamagicOption()],
+      heroicInspiration: HEROIC_INSPIRATION_AVAILABLE,
+    });
+    const state = session.state;
+    const act = actionRayOfFrostAct(session);
+    const target = targetFill(
+      findHole(act.initialHoles, "targetChoice"),
+      skeletonId,
+    );
+    const attack = nextSpellHole(state, act.subject, [target], "attackRoll");
+    const heroicInspirationReroll = {
+      kind: "reroll",
+      effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+      replacement: {
+        total: 6,
+        d20TestRoll: { tag: "single", naturalD20: DieRollResult(3) },
+      },
+    } as const;
+    const rerolledMiss = resolveBattleSubject({
+      state,
+      subject: act.subject,
+      fills: [
+        target,
+        attackRollFill(attack, {
+          total: 5,
+          naturalD20: 2,
+          heroicInspirationReroll,
+        }),
+      ],
+    });
+
+    const resolved = requireResolved(rerolledMiss).state;
+    expect(heroicInspirationOf(resolved)).toEqual(NO_HEROIC_INSPIRATION);
+    expect(sorceryPointsRemaining(resolved)).toBe(resourceCount(4));
+  });
+
+  test("a declined Seeking Spell does not count as a second reroll of the spell attack", () => {
+    const session = saveMetamagicBattle({
+      knownOptions: [seekingMetamagicOption()],
+      heroicInspiration: HEROIC_INSPIRATION_AVAILABLE,
+    });
+    const state = session.state;
+    const act = actionRayOfFrostAct(session);
+    const target = targetFill(
+      findHole(act.initialHoles, "targetChoice"),
+      skeletonId,
+    );
+    const attack = nextSpellHole(state, act.subject, [target], "attackRoll");
+
+    const resolved = requireResolved(
+      resolveBattleSubject({
+        state,
+        subject: act.subject,
+        fills: [
+          target,
+          attackRollFill(attack, {
+            total: 5,
+            naturalD20: 2,
+            heroicInspirationReroll: {
+              kind: "reroll",
+              effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+              replacement: {
+                total: 6,
+                d20TestRoll: { tag: "single", naturalD20: DieRollResult(3) },
+              },
+            },
+            spellAttackReroll: {
+              kind: "decline",
+              effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+            },
+          }),
+        ],
+      }),
+    ).state;
+
+    expect(heroicInspirationOf(resolved)).toEqual(NO_HEROIC_INSPIRATION);
+    expect(sorceryPointsRemaining(resolved)).toBe(resourceCount(4));
   });
 
   test("rejects repeated Seeking Spell and requires an actor for combined use", () => {
@@ -5105,7 +5192,7 @@ function sanctuaryRetargetFill(
   targetId: ReturnType<typeof combatantId>,
   enemies: Extract<
     BattleTargetSpatialFact,
-    { readonly kind: "rangedSpellAttackEnemyProximity" }
+    { readonly kind: "rangedAttackEnemyProximity" }
   >["enemies"],
 ): Extract<BattleFill, { readonly kind: "targetingSaveInterdictionOutcome" }> {
   if (hole.kind !== "targetingSaveInterdictionOutcome") {
@@ -5121,9 +5208,9 @@ function sanctuaryRetargetFill(
         targetId,
         spatialFacts: [
           {
-            kind: "rangedSpellAttackEnemyProximity",
-            casterId: wizardId,
-            sourceProcedureRef: hole.triggeringProcedureRef,
+            kind: "rangedAttackEnemyProximity",
+            attackerId: wizardId,
+            procedureRef: hole.triggeringProcedureRef,
             enemies,
           },
           {
@@ -5379,6 +5466,7 @@ function saveMetamagicBattle(input: {
   readonly d20Statistics?: ReturnType<typeof testCharacterD20Statistics>;
   readonly spellcastingAbilityModifier?: number;
   readonly mirrorImageAllyCaster?: true;
+  readonly heroicInspiration?: HeroicInspiration;
 }): BattleRuntimeSession {
   return startBattleSessionRight({
     battleId: battleId("battle:sorcerer-metamagic-save"),
@@ -5393,6 +5481,9 @@ function saveMetamagicBattle(input: {
           input.d20Statistics ?? testCharacterD20Statistics({ cha: 16 }),
         currentHp: 18,
         maxHp: 18,
+        ...(input.heroicInspiration === undefined
+          ? {}
+          : { heroicInspiration: input.heroicInspiration }),
         resources: [
           {
             unit: unitLibrary.requireUnit("sorcerer_font_of_magic"),
@@ -6633,4 +6724,13 @@ function sorcererSpellSlots(state: BattleState) {
     throw new Error("Expected Sorcerer combatant.");
   }
   return actor.origin.spellcasting?.spellSlots;
+}
+
+function heroicInspirationOf(
+  state: BattleState,
+): HeroicInspiration | undefined {
+  const creature = state.combatants.get(wizardId);
+  return creature?.origin.kind === "character"
+    ? creature.origin.heroicInspiration
+    : undefined;
 }

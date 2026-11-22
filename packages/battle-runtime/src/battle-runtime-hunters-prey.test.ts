@@ -28,6 +28,9 @@ import {
   fighterId,
   findHole,
   goblinId,
+  huntersPreyUnitRef,
+  longbowWeaponMasterySelections,
+  masteryCleaveUnitRefs,
   interruptDecisionFill,
   requireHole,
   requireCharacterUnitProcedureRefForTest,
@@ -50,12 +53,18 @@ import {
   testDaggerAttack,
   targetFill,
   testLongswordAttack,
+  testRangedCleaveLongbowAttack,
+  testRangedCleaveLongbowUnitRef,
   unitFeatureDecisionFill,
   unitLibrary,
   uncannyDodgeUnit,
   wizardId,
   wizardSpellcasting,
 } from "./battle-runtime.test-support.ts";
+import {
+  battleAmmunitionStock,
+  type BattleTargetSpatialFact,
+} from "./index.ts";
 import { huntersPreyUnsupportedDamageDieUnit } from "./unit-profile-admission-catalog.test-support.ts";
 import { attackActionOptionForSubject } from "./battle-reducer/attack-damage-apply.ts";
 import { resolveHuntersPreyHordeBreakerContinuation } from "./battle-reducer/attack-main.ts";
@@ -68,48 +77,6 @@ import type {
   BattleState,
   BattleUnitRef,
 } from "./index.ts";
-
-function huntersPreyUnitRef(
-  optionId: "colossusSlayer" | "hordeBreaker",
-): BattleUnitRef {
-  const unit = unitLibrary.requireUnit("ranger_hunters_prey");
-  const huntersPrey =
-    optionId === "colossusSlayer"
-      ? {
-          kind: "woundedTargetWeaponDamage" as const,
-          trigger: "hitCreatureWithWeapon" as const,
-          targetPredicate: "missingAnyHitPoints" as const,
-          usageLimit: "oncePerTurn" as const,
-          damage: {
-            kind: "addAttackDamageDice" as const,
-            dice: { dice: 1 as const, dieSize: 8 as const },
-            damageType: "sameAsAttack" as const,
-          },
-        }
-      : {
-          kind: "nearbyDifferentTargetSameWeaponAttack" as const,
-          trigger: "makeWeaponAttack" as const,
-          usageLimit: "oncePerTurn" as const,
-          extraAttack: {
-            weapon: "sameWeapon" as const,
-            target: {
-              kind: "differentCreatureNearOriginalTarget" as const,
-              withinFeetOfOriginalTarget: movementFeet(5),
-              withinWeaponRange: true as const,
-              notAttackedThisTurn: true as const,
-            },
-          },
-        };
-  return {
-    unit: unitLibrary.requireUnit(unit.id),
-    supportProfiles: [
-      {
-        kind: "huntersPrey",
-        huntersPrey,
-      },
-    ],
-  };
-}
 
 function selectedDarkOnesBlessingUnit() {
   const unit = unitLibrary.requireUnit("warlock_dark_ones_blessing");
@@ -1674,6 +1641,59 @@ describe("battle runtime: Hunter's Prey", () => {
     expect(resolved.state.combatants.get(skeletonId)?.hp).toBe(Hp(8));
   });
 
+  test("Horde Breaker isn't offered after a thrown attack, whose weapon has left the hand", () => {
+    const state = startBattleSessionRight({
+      battleId: battleId("battle-hunters-prey-horde-breaker-thrown-dagger"),
+      combatants: [
+        characterSeed({
+          initiative: 20,
+          characterUnitRefs: [huntersPreyUnitRef("hordeBreaker")],
+          attack: testDaggerAttack(),
+          selectedLoadout: {
+            weapon: {
+              itemId: testDaggerAttack().weaponObjectId,
+              unitId: unitLibrary.requireUnit("weapon_dagger").id,
+              grip: "one_handed",
+            },
+          },
+        }),
+        statBlockCreatureInit({ initiative: 10 }),
+        statBlockCreatureInit({
+          combatantId: skeletonId,
+          statBlockName: "Second Target",
+          initiative: 9,
+        }),
+      ],
+    }).state;
+    const melee = fighterAttackSubject(state, "Dagger");
+    const afterMiss = (
+      subject: typeof melee & { readonly weaponDelivery?: "thrown" },
+    ) => {
+      const target = targetFill(
+        requireHole(
+          resolveBattleSubject({ state, subject, fills: [] }),
+          "targetChoice",
+        ),
+        goblinId,
+      );
+      const roll = requireHole(
+        resolveBattleSubject({ state, subject, fills: [target] }),
+        "attackRoll",
+      );
+      return resolveBattleSubject({
+        state,
+        subject,
+        fills: [target, attackRollFill(roll, { total: 7, naturalD20: 2 })],
+      });
+    };
+
+    requireHole(afterMiss(melee), "unitFeatureDecision");
+    expect(
+      requireResolved(afterMiss({ ...melee, weaponDelivery: "thrown" })).state
+        .groundObjects.size,
+    ).toBe(1);
+  });
+
   test("Horde Breaker can be declined after the original weapon attack misses", () => {
     const { state, subject, primaryFills, decision } =
       hordeBreakerAfterPrimaryMissFixture({
@@ -2115,8 +2135,106 @@ describe("battle runtime: Hunter's Prey", () => {
     ).toMatchObject({
       tag: "invalid",
       message:
-        "Hunter's Prey Horde Breaker second target must be different, within 5 feet of the original target, within weapon range, and not already attacked this turn.",
+        "Hunter's Prey Horde Breaker second target must be different, within 5 feet of the original target, within weapon range, and not already attacked this turn, with at most the attack's one enemy proximity qualification.",
     });
+  });
+
+  test("a ranged Horde Breaker second target keeps the attack's close-combat Disadvantage", () => {
+    const state = startBattleRight({
+      battleId: battleId("battle-hunters-prey-horde-breaker-ranged"),
+      combatants: [
+        characterSeed({
+          initiative: 20,
+          characterUnitRefs: [
+            huntersPreyUnitRef("hordeBreaker"),
+            ...masteryCleaveUnitRefs(),
+            testRangedCleaveLongbowUnitRef(),
+          ],
+          weaponMasteries: longbowWeaponMasterySelections(),
+          attack: testRangedCleaveLongbowAttack(),
+          ammunitionStocks: [battleAmmunitionStock("arrow", 20)],
+        }),
+        statBlockCreatureInit({ initiative: 10 }),
+        statBlockCreatureInit({
+          combatantId: skeletonId,
+          statBlockName: "Second Target",
+          initiative: 9,
+        }),
+      ],
+    });
+    const subject = fighterAttackSubject(state, "Longbow");
+    const primaryTarget = attackInitialTargetHole(state, subject);
+    const goblinWithin5Feet: BattleTargetSpatialFact = {
+      kind: "rangedAttackEnemyProximity",
+      attackerId: fighterId,
+      procedureRef: subject.procedureRef,
+      enemies: [
+        {
+          enemyId: goblinId,
+          distanceFeet: movementFeet(5),
+          enemyCanSeeAttacker: true,
+        },
+      ],
+    };
+    const primaryTargetFill = attackTargetFill(
+      primaryTarget,
+      fighterId,
+      goblinId,
+      undefined,
+      [goblinWithin5Feet],
+    );
+    const primaryRoll = requireHole(
+      resolveBattleSubject({ state, subject, fills: [primaryTargetFill] }),
+      "attackRoll",
+    );
+    expect(primaryRoll.rollMode).toBe("disadvantage");
+    const primaryFills = [
+      primaryTargetFill,
+      attackRollFill(primaryRoll, {
+        total: 7,
+        naturalD20: 2,
+        rollMode: "disadvantage",
+      }),
+    ];
+    const decision = requireHole(
+      resolveBattleSubject({ state, subject, fills: primaryFills }),
+      "unitFeatureDecision",
+    );
+    const target = requireHole(
+      resolveBattleSubject({
+        state,
+        subject,
+        fills: [...primaryFills, unitFeatureDecisionFill(decision, "use")],
+      }),
+      "targetChoice",
+    );
+    const hordeRoll = requireHole(
+      resolveBattleSubject({
+        state,
+        subject,
+        fills: [
+          ...primaryFills,
+          unitFeatureDecisionFill(decision, "use"),
+          targetFill(target, skeletonId, [
+            attackTargetSpatialFact(
+              fighterId,
+              skeletonId,
+              attackExecutionSelectionForSubjectForTest(subject),
+            ),
+            {
+              kind: "hordeBreakerSecondTargetEligible",
+              attackerId: fighterId,
+              sourceProcedureRef:
+                battleProcedureExecutionRefForSpellHoleForTest(target),
+              originalTargetId: goblinId,
+              secondTargetId: skeletonId,
+            },
+          ]),
+        ],
+      }),
+      "attackRoll",
+    );
+    expect(hordeRoll.rollMode).toBe("disadvantage");
   });
 
   test("Horde Breaker same-weapon damage includes marked damage riders on the second target", () => {
