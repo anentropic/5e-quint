@@ -1,6 +1,6 @@
 // -*- mode: Bluespec; -*-
 
-// KERNEL-COVERAGE: qnt-owner BATTLE.D20_TEST.TABLE_CIRCUMSTANCE_DECISION BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE BATTLE.ATTACK.PRONE_ATTACKER_ROLL_MODE BATTLE.ATTACK.CONDITION_ROLL_MODE BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE
+// KERNEL-COVERAGE: qnt-owner BATTLE.D20_TEST.TABLE_CIRCUMSTANCE_DECISION BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE BATTLE.ATTACK.PRONE_ATTACKER_ROLL_MODE BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE BATTLE.ATTACK.CONDITION_ROLL_MODE
 
 // RAW trace:
 // - .references/srd-5.2.1/playing-the-game.md#D20 Tests defines Ability
@@ -20,6 +20,7 @@
 //   it and doesn't have the Incapacitated condition. Any one such enemy is a
 //   Disadvantage source that combines with the other sources, including a
 //   Prone target's, before cancellation.
+
 // - .references/srd-5.2.1/rules-glossary.md#Restrained says "Attack rolls
 //   against you have Advantage, and your attack rolls have Disadvantage."
 // - .references/srd-5.2.1/rules-glossary.md#Paralyzed, #Petrified and
