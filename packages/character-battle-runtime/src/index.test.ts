@@ -135,6 +135,7 @@ import {
   resourceCount,
   spellSlotLevel,
   type ResourceCount,
+  type WeaponGrip,
 } from "@dnd/shared/types";
 import {
   buildUnitCatalog,
@@ -11001,6 +11002,119 @@ describe("Character Build battle projection", () => {
     },
   );
 
+  test.each([
+    {
+      label: "a Versatile weapon held one-handed",
+      weaponUnitId: "weapon_longsword",
+      grip: "one_handed",
+      dieSize: 8,
+    },
+    {
+      label: "a Versatile weapon held two-handed",
+      weaponUnitId: "weapon_longsword",
+      grip: "two_handed",
+      dieSize: 10,
+    },
+    {
+      label: "a Two-Handed weapon",
+      weaponUnitId: "weapon_greataxe",
+      grip: "two_handed",
+      dieSize: 12,
+    },
+  ] as const)(
+    "projects the weapon damage of $label from its grip",
+    ({ weaponUnitId, grip, dieSize }) => {
+      const attack = expectSuccess(
+        characterWeaponAttackActionOptions({
+          build: equippedFighterBuild({
+            weaponUnitId: authoredUnitId(weaponUnitId),
+            str: 16,
+            dex: 10,
+            grip,
+          }),
+          unitLibrary,
+          weaponMasteries: [],
+          classLevels: [{ className: "fighter", level: 1 }],
+        }),
+      ).attack;
+
+      expect(attack?.weapon.damage).toEqual(
+        expect.objectContaining({ kind: "dice", dice: 1, dieSize }),
+      );
+    },
+  );
+
+  test.each([
+    { grip: "one_handed", dieSize: 10 },
+    { grip: "two_handed", dieSize: 10 },
+  ] as const)(
+    "compares Martial Arts against the Versatile damage of a $grip Quarterstaff",
+    ({ grip, dieSize }) => {
+      // Level 11 Martial Arts (d10) beats both the one-handed d6 and the
+      // two-handed Versatile d8, so the Versatile swap must run first.
+      const attack = expectSuccess(
+        characterWeaponAttackActionOptions({
+          build: monkBuild({
+            level: 11,
+            weaponUnitId: "weapon_quarterstaff",
+            str: 12,
+            dex: 16,
+            grip,
+          }),
+          unitLibrary,
+          weaponMasteries: [],
+          classLevels: [{ className: "monk", level: 11 }],
+        }),
+      ).attack;
+
+      expect(attack?.weapon.damage).toEqual(
+        expect.objectContaining({ kind: "dice", dice: 1, dieSize }),
+      );
+    },
+  );
+
+  test("keeps a two-handed Spear's one-handed damage for its thrown attack", () => {
+    const attack = expectSuccess(
+      characterWeaponAttackActionOptions({
+        build: equippedFighterBuild({
+          weaponUnitId: authoredUnitId("weapon_spear"),
+          str: 16,
+          dex: 10,
+          grip: "two_handed",
+        }),
+        unitLibrary,
+        weaponMasteries: [],
+        classLevels: [{ className: "fighter", level: 1 }],
+      }),
+    ).attack;
+
+    expect(attack?.weapon).toMatchObject({
+      damage: { kind: "dice", dice: 1, dieSize: 8 },
+      oneHandedDamage: { kind: "dice", dice: 1, dieSize: 6 },
+    });
+  });
+
+  test("keeps a level 1 Monk's two-handed Quarterstaff at its Versatile d8", () => {
+    const attack = expectSuccess(
+      characterWeaponAttackActionOptions({
+        build: monkBuild({
+          level: 1,
+          weaponUnitId: "weapon_quarterstaff",
+          str: 12,
+          dex: 16,
+          grip: "two_handed",
+        }),
+        unitLibrary,
+        weaponMasteries: [],
+        classLevels: [{ className: "monk", level: 1 }],
+      }),
+    ).attack;
+
+    expect(attack?.weapon.damage).toEqual(
+      expect.objectContaining({ kind: "dice", dice: 1, dieSize: 8 }),
+    );
+  });
+
   test("offers a tied finesse ability without adding proficiency to an untrained weapon", () => {
     const fighterBuild = equippedFighterBuild({
       weaponUnitId: syntheticFinesseWeaponUnitId,
@@ -12908,6 +13022,7 @@ function monkBuild(input: {
   readonly shield?: boolean;
   readonly str: number;
   readonly dex: number;
+  readonly grip?: WeaponGrip;
 }): CharacterBuild {
   const weaponItemId =
     input.weaponUnitId === undefined
@@ -13014,7 +13129,12 @@ function monkBuild(input: {
       loadout: {
         ...(weaponItemId === undefined
           ? {}
-          : { weapon: { itemId: weaponItemId, grip: "one_handed" as const } }),
+          : {
+              weapon: {
+                itemId: weaponItemId,
+                grip: input.grip ?? "one_handed",
+              },
+            }),
         ...(offHandWeaponItemId === undefined
           ? {}
           : { offHandWeapon: { itemId: offHandWeaponItemId } }),
@@ -13557,6 +13677,7 @@ function equippedFighterBuild(input: {
   readonly weaponUnitId: UnitRecord["id"];
   readonly str: number;
   readonly dex: number;
+  readonly grip?: WeaponGrip;
 }): CharacterBuild {
   const weaponItemId = characterEquipmentItemId({
     slot: "main",
@@ -13577,7 +13698,9 @@ function equippedFighterBuild(input: {
     equipment: {
       startingEquipmentCurrencyRemainderCp: copperPieceAmount(0),
       owned: [characterBuildCatalogEquipmentItem({ itemId: weaponItemId })],
-      loadout: { weapon: { itemId: weaponItemId, grip: "one_handed" } },
+      loadout: {
+        weapon: { itemId: weaponItemId, grip: input.grip ?? "one_handed" },
+      },
     },
   };
 }
@@ -13657,7 +13780,7 @@ function weaponMasteryGreataxeFighterBuild(): CharacterBuild {
       loadout: {
         weapon: {
           itemId: greataxeItemId,
-          grip: "one_handed",
+          grip: "two_handed",
         },
       },
     },
