@@ -1187,7 +1187,7 @@ describe("Character Sheet battle handoff", () => {
     });
   });
 
-  test("rejects an equipped Dagger even when its mastery is unselected", () => {
+  test("admits an equipped Dagger for ordinary use when its mastery is unselected", () => {
     const daggerBuild = monkBuild({
       weaponUnitId: "weapon_dagger",
       offHandWeaponUnitId: "weapon_dagger",
@@ -1217,34 +1217,11 @@ describe("Character Sheet battle handoff", () => {
       ammunitionStocks: [],
       unitLibrary,
     });
-    expect(init).toMatchObject({ _tag: "Failure" });
-    if (Result.isSuccess(init)) return;
-    expect(battleCreatureInitIssueLeaves(init.failure)).toEqual([
-      expect.objectContaining({
-        tag: "battleWeaponDefinitionAdmissionIssue",
-        root: { kind: "unit", id: "weapon_dagger" },
-        admissionReason: "unsupported_mechanics",
-        mechanicsPath: {
-          family: "unit",
-          nodes: [
-            { kind: "singleton", role: "recordMechanics" },
-            { kind: "singleton", role: "reference" },
-          ],
-        },
-      }),
-      expect.objectContaining({
-        tag: "battleWeaponDefinitionAdmissionIssue",
-        root: { kind: "unit", id: "weapon_dagger" },
-        admissionReason: "unsupported_mechanics",
-        mechanicsPath: {
-          family: "unit",
-          nodes: [
-            { kind: "singleton", role: "recordMechanics" },
-            { kind: "singleton", role: "reference" },
-          ],
-        },
-      }),
-    ]);
+    const admittedInit = expectSuccess(init);
+    expect(admittedInit.creatureInit.attack?.weapon).toMatchObject({
+      weaponUnitId: "weapon_dagger",
+    });
+    expect(admittedInit.creatureInit.attack?.weapon).not.toHaveProperty("masteryProperty");
 
     const sheet = expectSuccess(
       rebuildCharacterSheetFixture({
@@ -1274,34 +1251,7 @@ describe("Character Sheet battle handoff", () => {
         },
       },
     ]);
-    expect(roster).toMatchObject({
-      tag: "rejected",
-      issues: [
-        {
-          kind: "characterSheetProjection",
-          index: 0,
-          characterId: sheet.characterId,
-          issueTag: "battleWeaponDefinitionAdmissionIssue",
-          root: { kind: "unit", id: "weapon_dagger" },
-          admissionReason: "unsupported_mechanics",
-          mechanicsPath: {
-            family: "unit",
-            nodes: [
-              { kind: "singleton", role: "recordMechanics" },
-              { kind: "singleton", role: "reference" },
-            ],
-          },
-        },
-        {
-          kind: "characterSheetProjection",
-          index: 0,
-          characterId: sheet.characterId,
-          issueTag: "battleWeaponDefinitionAdmissionIssue",
-          root: { kind: "unit", id: "weapon_dagger" },
-          admissionReason: "unsupported_mechanics",
-        },
-      ],
-    });
+    expect(roster).toMatchObject({ tag: "admitted" });
   });
 
   test("propagates support-profile selection, source-fact, and catalog failures", () => {
@@ -12065,8 +12015,8 @@ describe("Character Build battle projection", () => {
     });
   });
 
-  test("rejects an unsupported ranged weapon definition before Pact binding", () => {
-    expect(
+  test("admits a Shortbow for ordinary use without binding it to Pact of the Blade", () => {
+    const init = expectSuccess(
       battleCreatureInitFromCharacterBuild({
         combatantId: combatantId("pact-blade-shortbow"),
         characterId: characterId("character:pact-blade-shortbow"),
@@ -12076,14 +12026,16 @@ describe("Character Build battle projection", () => {
         ammunitionStocks: [],
         unitLibrary,
       }),
-    ).toMatchObject({
-      _tag: "Failure",
-      failure: {
-        message: expect.stringContaining(
-          "referenced Weapon Mastery procedure is unsupported",
-        ),
-      },
+    );
+    // Pact of the Blade binds only a Melee weapon, so the Shortbow attacks
+    // with Dexterity, not Charisma.
+    expect(init.creatureInit.attack).toMatchObject({
+      ability: "dex",
+      weapon: { weaponUnitId: "weapon_shortbow" },
     });
+    expect(init.creatureInit.attack?.weapon).not.toHaveProperty(
+      "masteryProperty",
+    );
   });
 
   test.each([
