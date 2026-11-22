@@ -302,3 +302,20 @@ weapon that you are holding with two hands". `.references/srd-5.2.1/equipment.md
 damage only "to make a melee attack". The SRD doesn't say whether a thrown
 weapon counts as held with two hands when its damage is rolled. The model reads
 the throw as releasing the weapon, so it is no longer held then.
+
+## A58: A loadout grip holds the main weapon for the whole battle
+
+**Assumption:** A character's loadout records one grip for the main weapon,
+and Battle Runtime keeps it for the whole battle. Any weapon may take the
+`two_handed` grip, and a Two-Handed weapon needs it. A `two_handed` grip uses
+both hands, so the loadout can't also hold a shield or an off-hand weapon. A
+Versatile weapon held with the `two_handed` grip deals its Versatile damage on
+every melee attack; it isn't switched to one hand from one attack to the next.
+
+**Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Two-Handed"
+says such a weapon "requires two hands when you attack with it", and
+"Versatile" says the weapon "can be used with one or two hands" and deals its
+Versatile damage "when used with two hands to make a melee attack". The SRD
+says when two hands are required, not that any other weapon can't be held in
+both, and it doesn't say when a creature changes how it holds a weapon. The
+model fixes the grip in the loadout, as Battle Runtime already takes it.
