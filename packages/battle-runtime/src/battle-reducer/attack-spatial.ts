@@ -4,6 +4,7 @@ import type {
   BattleAttackExecutionSelection,
   BattleAttackRangeBand,
   BattleState,
+  BattleCreatureState,
   BattleTargetSpatialFact,
 } from "../battle-state-execution.ts";
 import {
@@ -17,6 +18,7 @@ import {
   type RangedAttackEnemyProximityScope,
 } from "./ranged-attack-close-combat.ts";
 import type { MovementFeet } from "@dnd/shared/types";
+import { thrownWeaponLandingIssue } from "./thrown-weapon-attack.ts";
 
 export function attackExecutionSelectionMatchesOption(
   selection: BattleAttackExecutionSelection,
@@ -33,6 +35,20 @@ export function attackTargetIsLegal(
   attack: SupportedAttackActionOption,
   facts: readonly BattleTargetSpatialFact[],
 ): boolean {
+  const target = state.combatants.get(targetId);
+  return (
+    target !== undefined &&
+    creatureAttackTargetIsLegal(actorId, target, attack, facts)
+  );
+}
+
+export function creatureAttackTargetIsLegal(
+  actorId: CombatantId,
+  target: BattleCreatureState,
+  attack: SupportedAttackActionOption,
+  facts: readonly BattleTargetSpatialFact[],
+): boolean {
+  const targetId = target.combatantId;
   const constraint = attackTargetConstraint(attack);
   const distanceFeet = attackTargetDistanceFeet(
     facts,
@@ -42,7 +58,6 @@ export function attackTargetIsLegal(
   );
   return (
     actorId !== targetId &&
-    state.combatants.has(targetId) &&
     distanceFeet !== null &&
     (constraint.kind === "meleeReach"
       ? Number(distanceFeet) <= Number(constraint.reachFeet)
@@ -128,4 +143,41 @@ export function attackTargetDistanceFeet(
     }
   }
   return null;
+}
+
+/**
+ * The table's target facts must qualify a ranged attack's enemy proximity,
+ * give a thrown weapon its landing, and place the target inside the attack's
+ * target constraint.
+ */
+export function attackTargetFactsIssue(
+  state: BattleState,
+  attackerId: CombatantId,
+  targetId: CombatantId,
+  attack: SupportedAttackActionOption,
+  targetSpatialFacts: readonly BattleTargetSpatialFact[],
+): string | null {
+  const proximityIssue = attackEnemyProximityQualificationIssue(
+    state,
+    attackerId,
+    attack,
+    targetSpatialFacts,
+  );
+  if (proximityIssue !== null) return proximityIssue.message;
+  const landingIssue = thrownWeaponLandingIssue(
+    attackerId,
+    attack,
+    targetSpatialFacts,
+  );
+  if (landingIssue !== null) return landingIssue;
+  return attackTargetIsLegal(
+    state,
+    attackerId,
+    targetId,
+    attack,
+    targetSpatialFacts,
+  )
+    ? null
+    : /* v8 ignore next -- @preserve -- Malformed resolution input: this branch rejects fills that contradict the admitted subject's discovered holes or current typed runtime constraints. */
+      "Attack target is outside the selected attack's supported target constraint.";
 }

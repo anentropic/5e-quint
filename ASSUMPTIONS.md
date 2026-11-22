@@ -59,6 +59,10 @@ extra attack with a different Light weapon, but does not say that the weapons
 must be melee weapons. The melee-only restriction is therefore a deliberate
 interpretation of that omission, not a quoted SRD requirement.
 
+"Melee weapon" here is the weapon's category, not how the attack is made. A
+Light Melee weapon thrown with the Thrown property (a Dagger) is still a Melee
+weapon, so its thrown ranged attack can make or follow the extra attack.
+
 ## A17: Standing from Prone requires a nonzero movement expenditure
 
 **Assumption:** Standing from Prone is unavailable when half the creature's
@@ -284,3 +288,17 @@ says whether a die produced by one reroll can be rerolled again by another
 source, and "immediately after rolling it" reads either way. The runtime keeps
 the existing one-reroll-per-roll rule that the natural-1 reroll and Seeking
 Spell already follow.
+
+## A57: A thrown weapon is not held with two hands for its damage
+
+**Assumption:** A thrown attack with a Two-Handed or Versatile Melee weapon
+doesn't use the attack damage die floor that a Melee weapon held with two
+hands grants, whatever grip the loadout records.
+
+**Rules basis / gap:** `.references/srd-5.2.1/feats.md`, "Great Weapon
+Fighting" applies "when you roll damage for an attack you make with a Melee
+weapon that you are holding with two hands". `.references/srd-5.2.1/equipment.md`,
+"Thrown" makes the throw a ranged attack, and "Versatile" grants its two-handed
+damage only "to make a melee attack". The SRD doesn't say whether a thrown
+weapon counts as held with two hands when its damage is rolled. The model reads
+the throw as releasing the weapon, so it is no longer held then.
