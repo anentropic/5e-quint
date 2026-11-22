@@ -240,7 +240,9 @@ export function attackActionVariantOptions(
  * SRD 5.2.1 "Thrown": a held Melee weapon with the Thrown property can also be
  * thrown to make a ranged attack, with the same ability modifier as its melee
  * attack. The thrown option copies the melee option, so its ability choices
- * are the melee ones. A Ranged weapon's attack is already ranged.
+ * are the melee ones. A Ranged weapon's attack is already ranged. A thrown
+ * Versatile weapon held two-handed deals its one-handed damage, since the
+ * Versatile damage is only for a melee attack.
  */
 function characterWeaponAttackDeliveryOptions(
   attack: CharacterWeaponAttackActionOption,
@@ -248,8 +250,24 @@ function characterWeaponAttackDeliveryOptions(
   return attack.weaponDelivery === undefined &&
     attack.weapon.usage === "melee" &&
     weaponThrownRange(attack.weapon) !== undefined
-    ? [attack, { ...attack, weaponDelivery: "thrown" }]
+    ? [
+        attack,
+        {
+          ...attack,
+          weaponDelivery: "thrown",
+          weapon: thrownWeaponFacts(attack.weapon),
+        },
+      ]
     : [attack];
+}
+
+function thrownWeaponFacts(
+  weapon: CharacterWeaponAttackActionOption["weapon"],
+): CharacterWeaponAttackActionOption["weapon"] {
+  const { oneHandedDamage, ...facts } = weapon;
+  return oneHandedDamage === undefined
+    ? weapon
+    : { ...facts, damage: oneHandedDamage };
 }
 
 function characterWeaponAttackAbilityOptions(
