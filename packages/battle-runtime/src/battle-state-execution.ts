@@ -778,15 +778,13 @@ export type BattleHelpAttack = {
   readonly targetEnemyId: CombatantId;
   readonly expiresAt: TurnAnchoredBattleActiveEffectExpiration;
 };
-// SRD 5.2.1 Help [Action], "Assist an Ability Check": the helper chooses one
-// of its skill proficiencies and one ally it can assist; that ally has
-// Advantage on the next ability check it makes with the chosen skill. The
-// benefit expires if unused before the start of the helper's next turn.
+// The skill-assistance benefit stored by Battle. SRD 5.2.1 Help [Action]
+// permits choosing a skill or tool proficiency; this type represents a skill.
+// The unused benefit expires at the start of the helper's next turn.
 export type BattleHelpAbilityCheck = {
   readonly helperId: CombatantId;
   readonly allyId: CombatantId;
   readonly skill: Skill;
-  readonly expiresAt: TurnAnchoredBattleActiveEffectExpiration;
 };
 export type GlyphStoredSpellReleaseReplayContext = {
   readonly profile: GlyphStoredSpellReleaseProfile;
@@ -1779,14 +1777,24 @@ export type BattleTargetSpatialFact =
        * An empty enemies array means checked-none; omission is unqualified.
        * Enemies are contextual and independent of the selected target.
        */
-      readonly kind: "rangedSpellAttackEnemyProximity";
-      readonly casterId: CombatantId;
-      readonly sourceProcedureRef: BattleProcedureExecutionRef;
+      readonly kind: "rangedAttackEnemyProximity";
+      readonly attackerId: CombatantId;
+      readonly procedureRef: BattleProcedureExecutionRef;
       readonly enemies: readonly {
         readonly enemyId: CombatantId;
         readonly distanceFeet: MovementFeet;
-        readonly enemyCanSeeCaster: boolean;
+        readonly enemyCanSeeAttacker: boolean;
       }[];
+    }
+  | {
+      /**
+       * Table-supplied ground position where a thrown weapon comes to rest
+       * once its attack roll is accepted, hit or miss.
+       */
+      readonly kind: "thrownWeaponLanding";
+      readonly attackerId: CombatantId;
+      readonly procedureRef: BattleAttackProcedureExecutionRef;
+      readonly positionId: BattleTablePositionId;
     }
   | {
       readonly kind: "unitFeatureVisibleTargetWithinRange";
@@ -4913,7 +4921,7 @@ export const RANGED_SPELL_ATTACK_TARGET_SPATIAL_FACT_KINDS = [
   "spellObjectTarget",
   "spellObjectTargetSight",
   "spellObjectIgnition",
-  "rangedSpellAttackEnemyProximity",
+  "rangedAttackEnemyProximity",
   "spellLeapTargetWithinRange",
   "spellTargetKnownWilling",
   "reactionSpellDamagerVisibleWithinRange",
@@ -4962,6 +4970,8 @@ export type BattleTargetChoiceHole = Extract<
     readonly selection: BattleAttackExecutionSelection;
     readonly targetConstraint: AttackTargetConstraint;
     readonly acceptsObjectTarget?: true;
+    /** The attack throws its weapon: the fill needs a thrownWeaponLanding fact. */
+    readonly requiresThrownWeaponLanding?: true;
   };
 };
 export type BattleHelpAttackAllyDecisionHole = {
@@ -5317,6 +5327,11 @@ export type BattleDroppedObjectSource =
       readonly kind: "druidWildShape";
       readonly procedureRef: BattleProcedureExecutionRef;
       readonly formExecutionRef: BattleStatBlockExecutionScopeRef;
+    }
+  | {
+      /** SRD 5.2.1 "Thrown": the weapon left its owner's hand in an attack. */
+      readonly kind: "thrownWeaponAttack";
+      readonly procedureRef: BattleAttackProcedureExecutionRef;
     };
 export type BattleGroundObjectState = {
   readonly positionId: BattleTablePositionId;
@@ -7379,7 +7394,8 @@ export type BattleFill =
             | "spellManufacturedMetalObjectTarget"
             | "spellObjectTarget"
             | "spellObjectTargetSight"
-            | "rangedSpellAttackEnemyProximity"
+            | "rangedAttackEnemyProximity"
+            | "thrownWeaponLanding"
             | "attackObjectTarget";
         }
       >[];

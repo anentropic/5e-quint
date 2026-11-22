@@ -14,6 +14,7 @@ import {
   consumeHelpAbilityChecks,
   helpAbilityCheckGrantsAdvantage,
 } from "./help-ability-check.ts";
+import { weaponAttackIsThrown } from "./thrown-weapon-attack.ts";
 import { optionalProperty } from "../optional-property.ts";
 import { Match } from "effect";
 import { canSpendBonusAction } from "@dnd/shared-algebras/action-economy-algebra";
@@ -33,7 +34,11 @@ import {
 } from "@dnd/shared/types";
 import type { Ability, Skill } from "@dnd/surface/surface/types";
 import { isPresentSpawnedCompanionCombatant } from "../spawned-companion-state.ts";
-import { mechanicalD20TestRollMode } from "../d20-test-circumstance.ts";
+import {
+  D20TestRollModeSourcesMonoid,
+  mechanicalD20TestRollMode,
+  type D20TestRollModeSources,
+} from "../d20-test-circumstance.ts";
 import { spellActiveEffectExecutionRef } from "../effect-execution-ref.ts";
 import type {
   BattleEffectExecutionRef,
@@ -51,6 +56,7 @@ import {
 } from "../character-execution-queries.ts";
 import {
   attackExecutionSelectionForOption,
+  type BoundCharacterWeaponAttackActionOption,
   type BoundSupportedAttackActionOption,
   type SupportedAttackActionOption,
 } from "../battle-action-options.ts";
@@ -401,12 +407,15 @@ function skillCheck(
     check.ability,
     check,
   );
-  const rollMode = mechanicalD20TestRollMode({
-    advantage:
-      sources.advantage ||
-      helpAbilityCheckGrantsAdvantage(state, actorId, check.skill),
-    disadvantage: sources.disadvantage,
-  });
+  const rollMode = mechanicalD20TestRollMode(
+    D20TestRollModeSourcesMonoid.combineAll([
+      sources,
+      {
+        advantage: helpAbilityCheckGrantsAdvantage(state, actorId, check.skill),
+        disadvantage: false,
+      },
+    ]),
+  );
   return {
     hole: {
       holeInstanceKey: hole.holeInstanceKey,
@@ -546,7 +555,7 @@ function abilityCheckRollModeSources(
     readonly skill?: Skill;
     readonly targetId?: CombatantId;
   },
-): { readonly advantage: boolean; readonly disadvantage: boolean } {
+): D20TestRollModeSources {
   const hasDisadvantage =
     activeAbilityCheckRollModeEffectMatches(
       state,
@@ -867,6 +876,9 @@ export function attackTargetHole(
       actorId,
       selection: attackExecutionSelectionForOption(attack),
       targetConstraint: attackTargetConstraint(attack),
+      ...(weaponAttackIsThrown(attack)
+        ? { requiresThrownWeaponLanding: true as const }
+        : {}),
     },
     choices: attackTargetChoices(state, actorId, attack),
   };
@@ -886,6 +898,14 @@ export function ordinaryAttackTargetHole(
     : hole;
 }
 
+// A thrown attack's landing is a creature-target fact; object targets take
+// only their own object fact. Weapon Mastery riders aren't object outcomes.
+function weaponAttackHasOrdinaryObjectAttackShape(
+  attack: BoundCharacterWeaponAttackActionOption,
+): boolean {
+  return !weaponAttackIsThrown(attack) && !("masteryProperty" in attack.weapon);
+}
+
 export function ordinaryObjectAttackOptionIsSupported(
   state: BattleState,
   actorId: CombatantId,
@@ -896,7 +916,7 @@ export function ordinaryObjectAttackOptionIsSupported(
       const actor = state.combatants.get(actorId);
       return (
         actor?.origin.kind === "character" &&
-        !("masteryProperty" in option.weapon) &&
+        weaponAttackHasOrdinaryObjectAttackShape(option) &&
         activeSpellWeaponDamageRiders(actor, option).length === 0 &&
         eligibleWeaponDamageDiceRollChoiceProcedureRefs(state, actorId, option)
           .length === 0 &&

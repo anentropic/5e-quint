@@ -59,6 +59,10 @@ extra attack with a different Light weapon, but does not say that the weapons
 must be melee weapons. The melee-only restriction is therefore a deliberate
 interpretation of that omission, not a quoted SRD requirement.
 
+"Melee weapon" here is the weapon's category, not how the attack is made. A
+Light Melee weapon thrown with the Thrown property (a Dagger) is still a Melee
+weapon, so its thrown ranged attack can make or follow the extra attack.
+
 ## A17: Standing from Prone requires a nonzero movement expenditure
 
 **Assumption:** Standing from Prone is unavailable when half the creature's
@@ -129,14 +133,21 @@ ordering of the SRD's damage adjustments.
 
 **Assumption:** Once a Stat Block Multiattack is selected, its named attack
 dispatches remain the open Attack action. Until the dispatches are spent or the
-turn ends, Movement between attacks and turn completion remain available; unrelated
+turn ends, Movement (including Standing from Prone), voluntary Dropping Prone
+between completed attacks, and turn completion remain available; unrelated
 actions, Bonus Actions, spells, features, and unrelated reaction or Legendary
 Action subjects are not part of that continuation.
 
 **Rules basis / gap:** `.references/srd-5.2.1/monsters.md`,
 "Multiattack" says that the listed attacks and additional abilities are part of
 the Attack action. `.references/srd-5.2.1/rules-glossary.md`, "Attack [Action]"
-allows movement between multiple attacks, while
+allows movement between multiple attacks. Its "Prone" entry identifies
+righting yourself by spending half your Speed as a movement option, so Standing
+from Prone retains that permission when enough movement remains.
+`.references/srd-5.2.1/playing-the-game.md`, "Dropping Prone," permits voluntarily
+becoming Prone on the creature's turn without an action or any Speed expenditure;
+the continuation preserves that permission between fully resolved attacks.
+Meanwhile,
 `.references/srd-5.2.1/playing-the-game.md`, "Bonus Actions" leaves the timing
 of an available Bonus Action to the creature unless specified. The SRD does
 not define a replay or interleaving protocol for a partially resolved named
@@ -267,6 +278,7 @@ doesn't say whether that limit covers the target's Vulnerability.
 the damage the target takes. The model reads Graze's limit as excluding the
 first step (damage bonuses and riders on the attacker's side) and leaves the
 target's Resistance and Vulnerability as the general rule applies them.
+
 ## A55: Different reroll sources may apply sequentially to the same die
 
 **Assumption:** A die rerolled by one source may be rerolled again by a
@@ -285,3 +297,34 @@ sequence rather than imposing a shared one-reroll limit across sources.
 `.references/srd-5.2.1/playing-the-game.md`, "Interactions with Rerolls,"
 still limits each reroll with Advantage or Disadvantage to one chosen die,
 not both.
+
+## A57: A thrown weapon is not held with two hands for its damage
+
+**Assumption:** A thrown attack with a Two-Handed or Versatile Melee weapon
+doesn't use the attack damage die floor that a Melee weapon held with two
+hands grants, whatever grip the loadout records.
+
+**Rules basis / gap:** `.references/srd-5.2.1/feats.md`, "Great Weapon
+Fighting" applies "when you roll damage for an attack you make with a Melee
+weapon that you are holding with two hands". `.references/srd-5.2.1/equipment.md`,
+"Thrown" makes the throw a ranged attack, and "Versatile" grants its two-handed
+damage only "to make a melee attack". The SRD doesn't say whether a thrown
+weapon counts as held with two hands when its damage is rolled. The model reads
+the throw as releasing the weapon, so it is no longer held then.
+
+## A58: A loadout grip holds the main weapon for the whole battle
+
+**Assumption:** A character's loadout records one grip for the main weapon,
+and Battle Runtime keeps it for the whole battle. Any weapon may take the
+`two_handed` grip, and a Two-Handed weapon needs it. A `two_handed` grip uses
+both hands, so the loadout can't also hold a shield or an off-hand weapon. A
+Versatile weapon held with the `two_handed` grip deals its Versatile damage on
+every melee attack; it isn't switched to one hand from one attack to the next.
+
+**Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Two-Handed"
+says such a weapon "requires two hands when you attack with it", and
+"Versatile" says the weapon "can be used with one or two hands" and deals its
+Versatile damage "when used with two hands to make a melee attack". The SRD
+says when two hands are required, not that any other weapon can't be held in
+both, and it doesn't say when a creature changes how it holds a weapon. The
+model fixes the grip in the loadout, as Battle Runtime already takes it.

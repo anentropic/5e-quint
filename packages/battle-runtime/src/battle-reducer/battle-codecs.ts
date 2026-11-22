@@ -59,6 +59,7 @@ import {
   CreatureId,
   DeathSavingThrowCount,
   D20Roll,
+  DieRollResultSchema,
   ResourceCount,
   SIZES,
 } from "@dnd/shared/types";
@@ -123,6 +124,7 @@ import {
   battleSubjectProcedureRefs,
   BattleAttackExecutionAbilitySchema,
   BattleAttackExecutionSelectionSchema,
+  WeaponAttackDeliverySchema,
   BattleReadyResponseSnapshotSchema,
   BattleReadyResponseSchema,
   BattleInterruptAttackExecutionSelectionSchema,
@@ -822,6 +824,13 @@ const UnitFeatureAreaInputRequestSchema = Schema.Struct({
     AttackActionAreaSaveDamageReplacementProcedureExecutionSchema.fields.breath
       .fields.area.fields.shapeChoice,
 });
+const ThrownWeaponLandingFactSchema = Schema.Struct({
+  kind: Schema.Literal("thrownWeaponLanding"),
+  attackerId: CombatantId,
+  procedureRef: BattleAttackProcedureExecutionRef,
+  positionId: BattleTablePositionId,
+});
+
 const BattleTargetSpatialFactSchema = Schema.Union([
   BattleAttackObjectTargetSpatialFactSchema,
   Schema.Struct({
@@ -842,6 +851,7 @@ const BattleTargetSpatialFactSchema = Schema.Union([
     procedureRef: BattleAttackProcedureExecutionRef,
     attackAbility: BattleAttackExecutionAbilitySchema,
     attackDamageType: DamageTypeSchema,
+    weaponDelivery: Schema.optionalKey(WeaponAttackDeliverySchema),
     attackName: Schema.optionalKey(Schema.Never),
     statBlockDamageSelection: Schema.optionalKey(Schema.Never),
     disposition: BattleImmediateAreaPushDispositionSchema,
@@ -854,6 +864,7 @@ const BattleTargetSpatialFactSchema = Schema.Union([
       procedureRef: BattleAttackProcedureExecutionRef,
       attackAbility: BattleAttackExecutionAbilitySchema,
       attackDamageType: DamageTypeSchema,
+      weaponDelivery: Schema.optionalKey(WeaponAttackDeliverySchema),
       attackName: Schema.optionalKey(Schema.Never),
       statBlockDamageSelection: Schema.optionalKey(Schema.Never),
       distanceFeet: MovementFeet,
@@ -902,17 +913,18 @@ const BattleTargetSpatialFactSchema = Schema.Union([
     distanceFeet: Schema.optionalKey(MovementFeet),
   }),
   Schema.Struct({
-    kind: Schema.Literal("rangedSpellAttackEnemyProximity"),
-    casterId: CombatantId,
-    sourceProcedureRef: BattleProcedureExecutionRef,
+    kind: Schema.Literal("rangedAttackEnemyProximity"),
+    attackerId: CombatantId,
+    procedureRef: BattleProcedureExecutionRef,
     enemies: Schema.Array(
       Schema.Struct({
         enemyId: CombatantId,
         distanceFeet: MovementFeet,
-        enemyCanSeeCaster: Schema.Boolean,
+        enemyCanSeeAttacker: Schema.Boolean,
       }),
     ),
   }),
+  ThrownWeaponLandingFactSchema,
   Schema.Struct({
     ...UnitFeatureVisibleTargetFactRequestFields,
     targetId: CombatantId,
@@ -1403,6 +1415,10 @@ export const BattleDroppedObjectOutcomeSchema = Schema.Struct({
       kind: Schema.Literal("druidWildShape"),
       procedureRef: BattleProcedureExecutionRef,
       formExecutionRef: BattleStatBlockExecutionScopeRef,
+    }),
+    Schema.Struct({
+      kind: Schema.Literal("thrownWeaponAttack"),
+      procedureRef: BattleAttackProcedureExecutionRef,
     }),
   ]),
 });
@@ -2372,6 +2388,7 @@ const BattleHolePayloadMembers = [
           }),
         ]),
         acceptsObjectTarget: Schema.optionalKey(Schema.Literal(true)),
+        requiresThrownWeaponLanding: Schema.optionalKey(Schema.Literal(true)),
       }),
     ),
   }),
@@ -3649,12 +3666,7 @@ export const BattleMechanicalHoleSchema: BattleMechanicalHoleCodec =
     BattleMechanicalOrdinaryHoleSchema,
   ]).annotate({ identifier: "BattleMechanicalHole" });
 
-const BattleDieRollResultSchema = Schema.Number.pipe(
-  Schema.check(Schema.isInt()),
-  Schema.check(Schema.isGreaterThan(0)),
-  Schema.brand("PositiveInteger"),
-  Schema.brand("DieRollResult"),
-);
+const BattleDieRollResultSchema = DieRollResultSchema;
 
 const BattleD6RollResultSchema = Schema.Number.pipe(
   Schema.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 6 })),
@@ -4087,14 +4099,20 @@ type BattleFillEncoded =
             readonly attackerCanSeeObject: boolean;
           }
         | {
-            readonly kind: "rangedSpellAttackEnemyProximity";
-            readonly casterId: string;
-            readonly sourceProcedureRef: string;
+            readonly kind: "rangedAttackEnemyProximity";
+            readonly attackerId: string;
+            readonly procedureRef: string;
             readonly enemies: readonly {
               readonly enemyId: string;
               readonly distanceFeet: number;
-              readonly enemyCanSeeCaster: boolean;
+              readonly enemyCanSeeAttacker: boolean;
             }[];
+          }
+        | {
+            readonly kind: "thrownWeaponLanding";
+            readonly attackerId: string;
+            readonly procedureRef: string;
+            readonly positionId: string;
           }
         | {
             readonly kind: "spellObjectLightTarget";
@@ -5325,17 +5343,18 @@ export const BattleFillSchema: Schema.Codec<
             attackerCanSeeObject: Schema.Boolean,
           }),
           Schema.Struct({
-            kind: Schema.Literal("rangedSpellAttackEnemyProximity"),
-            casterId: CombatantId,
-            sourceProcedureRef: BattleProcedureExecutionRef,
+            kind: Schema.Literal("rangedAttackEnemyProximity"),
+            attackerId: CombatantId,
+            procedureRef: BattleProcedureExecutionRef,
             enemies: Schema.Array(
               Schema.Struct({
                 enemyId: CombatantId,
                 distanceFeet: MovementFeet,
-                enemyCanSeeCaster: Schema.Boolean,
+                enemyCanSeeAttacker: Schema.Boolean,
               }),
             ),
           }),
+          ThrownWeaponLandingFactSchema,
           Schema.Struct({
             kind: Schema.Literal("spellObjectLightTarget"),
             casterId: CombatantId,
@@ -7528,8 +7547,7 @@ const BattleHelpAbilityCheckSnapshotSchema = Schema.Struct({
   helperId: CombatantId,
   allyId: CombatantId,
   skill: Schema.Literals(BATTLE_SURFACE_SKILLS),
-  expiresAt: OngoingFeatureExpirationSchema,
-});
+}).annotate({ parseOptions: { onExcessProperty: "error" } });
 
 const BattleReactionModifierChoiceSchema = Schema.Union([
   Schema.Struct({

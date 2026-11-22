@@ -1,18 +1,18 @@
 {
   "summary": {
-    "total": 177,
-    "covered": 166,
+    "total": 179,
+    "covered": 168,
     "open": 5,
     "nonSemantic": 6,
     "byRuntime": {
       "shared-algebras": 1,
-      "battle": 137,
+      "battle": 139,
       "character-creation": 20,
       "character-sheet": 15,
       "character-battle": 4
     },
     "byStatus": {
-      "covered": 166,
+      "covered": 168,
       "needs-qnt-owner": 5,
       "needs-parity-witness": 0,
       "needs-surface-evidence": 0,
@@ -66,6 +66,14 @@
         {
           "kind": "contract-test",
           "ownerPath": "scripts/raw-swarm/sdk-player/consumer-distribution.test.ts"
+        },
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-condition-speed.test.ts"
+        },
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-drop-prone-eligibility.test.ts"
         }
       ],
       "profiles": [
@@ -88,7 +96,9 @@
         "packages/battle-runtime/src/battle-reducer/movement-procedures.ts",
         "packages/battle-runtime/src/battle-reducer/movement-speed.ts",
         "packages/battle-runtime/src/battle-reducer/creature-state-leaves.ts",
-        "scripts/raw-swarm/sdk-player/scenario-session.ts"
+        "scripts/raw-swarm/sdk-player/scenario-session.ts",
+        "packages/battle-runtime/src/battle-reducer/drop-prone-policy.ts",
+        "packages/battle-runtime/src/battle-reducer/movement-speed-facts.ts"
       ],
       "status": "covered",
       "surfaceEvidence": [
@@ -3913,11 +3923,14 @@
         "packages/character-battle-runtime/src/index.ts",
         "packages/character-battle-runtime/src/battle-creature-init.ts",
         "packages/character-battle-runtime/src/battle-character-build-projection.ts",
-        "packages/character-battle-runtime/src/battle-support-profiles.ts"
+        "packages/character-battle-runtime/src/battle-support-profiles.ts",
+        "packages/character-sheet-runtime/src/equipment-ownership.ts"
       ],
       "status": "covered",
       "surfaceEvidence": [
         ".references/srd-5.2.1/character-creation.md#Fill In Numbers",
+        ".references/srd-5.2.1/equipment.md#Two-Handed",
+        ".references/srd-5.2.1/equipment.md#Versatile",
         ".references/srd-5.2.1/playing-the-game.md#The Order of Combat",
         ".references/srd-5.2.1/playing-the-game.md#Armor Class",
         ".references/srd-5.2.1/playing-the-game.md#Hit Points",
@@ -3925,7 +3938,8 @@
         ".references/srd-5.2.1/rules-glossary.md#Condition",
         ".references/srd-5.2.1/rules-glossary.md#Stable",
         ".references/srd-5.2.1/spells.md#Spell Slots",
-        "ASSUMPTIONS.md#a26-stable-recovery-timers-do-not-cross-the-battle-handoff-boundary"
+        "ASSUMPTIONS.md#a26-stable-recovery-timers-do-not-cross-the-battle-handoff-boundary",
+        "ASSUMPTIONS.md#a58-a-loadout-grip-holds-the-main-weapon-for-the-whole-battle"
       ],
       "title": "Character Sheet and Character Build projection into Battle initialization for identity, HP, Armor Class, conditions, Spell Slots, and supported Unit profiles"
     },
@@ -4178,6 +4192,7 @@
         ".references/srd-5.2.1/character-creation.md#Hit Points",
         ".references/srd-5.2.1/character-creation.md#Level 1 Hit Points by Class",
         ".references/srd-5.2.1/character-creation.md#Fixed Hit Points by Class",
+        ".references/srd-5.2.1/character-creation.md#Level Advancement",
         ".references/srd-5.2.1/character-origins.md#Dwarven Toughness",
         ".references/srd-5.2.1/rules-glossary.md#Hit Points",
         ".references/srd-5.2.1/rules-glossary.md#Long Rest"
@@ -5380,6 +5395,35 @@
       "title": "A Prone attacker's attack rolls have Disadvantage against creature and object targets, composed with every other source before cancellation"
     },
     {
+      "id": "BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE",
+      "kind": "boundary-protocol",
+      "parityWitnesses": [
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-ranged-close-combat.test.ts"
+        }
+      ],
+      "profiles": [],
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/d20-test-circumstance-core.qnt"
+      ],
+      "reason": "The QNT owner models each listed enemy as a Disadvantage source when it is within 5 feet, can see the attacker and isn't Incapacitated, joined with the other mechanical sources, including a Prone target's, before cancellation. ranged-attack-close-combat owns the one rangedAttackEnemyProximity fact, scoped by attacker and procedure ref, which every ranged attack requires (enemies: [] means checked-none) and the Disadvantage it gives; attack-spatial applies it to weapon and Stat Block attacks on creatures, and attack-roll to them and to ranged Spell Attacks. The executable parity witness covers a qualifying target and a non-target enemy, a Prone target cancelling it, an enemy too far, unseeing or Incapacitated, the missing, duplicated or misscoped fact, and a melee attack needing none.",
+      "runtime": "battle",
+      "runtimeOwners": [
+        "packages/battle-runtime/src/battle-reducer/ranged-attack-close-combat.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-spatial.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-roll.ts"
+      ],
+      "status": "covered",
+      "surfaceEvidence": [
+        ".references/srd-5.2.1/playing-the-game.md#Ranged Attacks in Close Combat",
+        ".references/srd-5.2.1/rules-glossary.md#Incapacitated [Condition]",
+        ".references/srd-5.2.1/playing-the-game.md#Advantage/Disadvantage",
+        "UBIQUITOUS_LANGUAGE.md#Advantage-and-Disadvantage"
+      ],
+      "title": "A ranged attack roll on a creature, with a weapon, a Stat Block attack or a spell, has Disadvantage while an enemy within 5 feet can see the attacker and isn't Incapacitated, from one required table-supplied enemy proximity fact, composed with every other source before cancellation"
+    },
+    {
       "id": "BATTLE.ATTACK.CONDITION_ROLL_MODE",
       "kind": "boundary-protocol",
       "parityWitnesses": [
@@ -5629,6 +5673,10 @@
         {
           "kind": "runtime-test",
           "ownerPath": "packages/battle-runtime/src/battle-runtime-stat-block-actions.test.ts"
+        },
+        {
+          "kind": "runtime-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-multiattack-drop-prone.test.ts"
         }
       ],
       "profiles": ["stat-block.multiattack"],
@@ -6416,6 +6464,37 @@
         "ASSUMPTIONS.md#A55-A-D20-Test-roll-is-rerolled-at-most-once-whatever-its-sources"
       ],
       "title": "A player character who has Heroic Inspiration can expend it to reroll an attack roll and must use the new roll, with one reroll per roll"
+    },
+    {
+      "id": "BATTLE.ATTACK.THROWN_WEAPON_ATTACK",
+      "kind": "state-transition",
+      "parityWitnesses": [
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-thrown-weapon-attacks.test.ts"
+        }
+      ],
+      "profiles": [],
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack.qnt"
+      ],
+      "reason": "The QNT owner models the thrown option a Melee weapon with Thrown adds beside its melee one, that the throw is a ranged attack using the melee ability, that an accepted throw (but not one prevented before its roll, nor a melee or Ammunition attack) leaves the weapon on the ground, and that the Light extra attack needs only its own weapon in hand. statblock-attacks adds the thrown variant and its Thrown range; thrown-weapon-attack owns the one thrownWeaponLanding fact, scoped by attacker and procedure ref, and the release onto the owner's ground objects; attack-main and attack-offhand release it when an Attack action or Light extra attack roll is accepted. The executable parity witness covers the thrown option and its range, a hit and a miss landing and the pickup, a melee attack keeping its weapon, the missing, misscoped or stray landing fact, long range and close-combat Disadvantage, and a thrown Light extra attack before and after a main-hand throw.",
+      "runtime": "battle",
+      "runtimeOwners": [
+        "packages/battle-runtime/src/battle-reducer/thrown-weapon-attack.ts",
+        "packages/battle-runtime/src/battle-reducer/statblock-attacks.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-main.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-offhand.ts"
+      ],
+      "status": "covered",
+      "surfaceEvidence": [
+        ".references/srd-5.2.1/equipment.md#Thrown",
+        ".references/srd-5.2.1/equipment.md#Range",
+        ".references/srd-5.2.1/equipment.md#Light",
+        ".references/srd-5.2.1/equipment.md#Melee or Ranged",
+        "UBIQUITOUS_LANGUAGE.md#Equipment"
+      ],
+      "title": "A held Melee weapon with the Thrown property also offers a thrown ranged attack with its Thrown range and melee ability, and an accepted thrown attack roll, hit or miss, puts the weapon on the ground at one required table-supplied landing position"
     }
   ],
   "battleHoleFrontier": [
@@ -10388,10 +10467,16 @@
       "role": "mbt-fixture"
     },
     {
-      "evidence": "packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt carries executable Character Sheet Hit Point Maximum derivation semantics from class Hit Dice, Constitution modifier, fixed higher-level gains, deterministic maximum bonuses, and maximum reductions.",
+      "evidence": "packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt carries executable Character Sheet Hit Point Maximum derivation semantics from class Hit Dice, Constitution modifier, fixed or rolled higher-level gains, deterministic maximum bonuses, and maximum reductions.",
       "obligationIds": ["SHEET.HIT_POINTS.MAXIMUM_DERIVATION"],
       "ownerPath": "packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt",
       "role": "semantic-core"
+    },
+    {
+      "evidence": "Executable closed examples cover fixed and rolled higher-level Hit Point gains, the minimum of 1, a Constitution increase over rolled levels, and rolls outside the Hit Die for the Hit Point maximum core.",
+      "obligationIds": [],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/hit-point-maximum-examples.qnt",
+      "role": "proof-only"
     },
     {
       "evidence": "packages/character-sheet-runtime/character-sheet-hit-point-maximum.mbt.qnt is a bounded replay owner for Character Sheet Hit Point Maximum parity evidence; the reusable semantics live in packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt.",
@@ -12724,6 +12809,7 @@
         "BATTLE.ATTACK.CONDITION_ROLL_MODE",
         "BATTLE.ATTACK.PRONE_ATTACKER_ROLL_MODE",
         "BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE",
+        "BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE",
         "BATTLE.D20_TEST.TABLE_CIRCUMSTANCE_DECISION"
       ],
       "ownerPath": "packages/shared-algebras/proofs/rule-core/d20-test-circumstance-core.qnt",
@@ -13283,6 +13369,18 @@
       "evidence": "Executable closed examples cover reroll, forced lower roll, decline, availability, stacking and the chosen die under Advantage and Disadvantage for the Heroic Inspiration reroll core.",
       "obligationIds": [],
       "ownerPath": "packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
+      "evidence": "Owns the thrown delivery a Melee weapon with Thrown adds, the throw's ranged attack and melee ability, the accepted-throw release onto the ground, and the Light extra attack's own-weapon custody.",
+      "obligationIds": ["BATTLE.ATTACK.THROWN_WEAPON_ATTACK"],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "evidence": "Focused run-block proof evidence for thrown deliveries, ranged thrown attacks with the melee ability, release on an accepted roll only, a Dart's release, and the Light extra attack after a throw.",
+      "obligationIds": [],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack-tests.qnt",
       "role": "proof-only"
     }
   ],
@@ -14794,6 +14892,11 @@
     },
     {
       "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/hit-point-maximum-examples.qnt",
+      "role": "proof-only"
+    },
+    {
+      "classification": "qnt-owner-role",
       "ownerPath": "packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt",
       "role": "semantic-core"
     },
@@ -15231,6 +15334,11 @@
     {
       "classification": "qnt-owner-role",
       "ownerPath": "packages/shared-algebras/proofs/rule-core/stat-block-spellcasting-procedure.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack.qnt",
       "role": "semantic-core"
     },
     {
@@ -18965,6 +19073,7 @@
       "blockedBy": [],
       "generatorSubset": [
         "import",
+        "variant",
         "record",
         "pure-def",
         "int",
@@ -18976,11 +19085,13 @@
         "arithmetic",
         "comparison",
         "boolean-connective",
+        "pattern-match",
         "all-block"
       ],
       "obligationId": "SHEET.HIT_POINTS.MAXIMUM_DERIVATION",
       "proofOnly": [
-        "packages/character-sheet-runtime/character-sheet-hit-point-maximum.mbt.qnt"
+        "packages/character-sheet-runtime/character-sheet-hit-point-maximum.mbt.qnt",
+        "packages/shared-algebras/proofs/rule-core/hit-point-maximum-examples.qnt"
       ],
       "semanticCore": [
         "packages/shared-algebras/proofs/rule-core/hit-point-maximum.qnt"
@@ -19988,6 +20099,32 @@
         "comparison",
         "boolean-connective",
         "pattern-match",
+        "all-block",
+        "list",
+        "fold"
+      ],
+      "obligationId": "BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE",
+      "proofOnly": [
+        "packages/shared-algebras/proofs/rule-core/d20-test-circumstance-core-examples.qnt"
+      ],
+      "semanticCore": [
+        "packages/shared-algebras/proofs/rule-core/d20-test-circumstance-core.qnt"
+      ],
+      "status": "generation-subset-clean"
+    },
+    {
+      "blockedBy": [],
+      "generatorSubset": [
+        "variant",
+        "record",
+        "pure-def",
+        "constant-val",
+        "int",
+        "bool",
+        "if-expression",
+        "comparison",
+        "boolean-connective",
+        "pattern-match",
         "all-block"
       ],
       "obligationId": "BATTLE.ATTACK.CONDITION_ROLL_MODE",
@@ -20656,6 +20793,28 @@
       ],
       "semanticCore": [
         "packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core.qnt"
+      ],
+      "status": "generation-subset-clean"
+    },
+    {
+      "blockedBy": [],
+      "generatorSubset": [
+        "variant",
+        "record",
+        "pure-def",
+        "bool",
+        "if-expression",
+        "comparison",
+        "boolean-connective",
+        "all-block",
+        "set"
+      ],
+      "obligationId": "BATTLE.ATTACK.THROWN_WEAPON_ATTACK",
+      "proofOnly": [
+        "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack-tests.qnt"
+      ],
+      "semanticCore": [
+        "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack.qnt"
       ],
       "status": "generation-subset-clean"
     }

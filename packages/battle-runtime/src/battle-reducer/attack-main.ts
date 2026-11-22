@@ -9,6 +9,7 @@ import * as Result from "effect/Result";
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.MIRROR_IMAGE_HIT_INTERCEPTION
 // KERNEL-COVERAGE: runtime-owner BATTLE.FEATURE.WEAPON_MASTERY_GRAZE
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.weapon-mastery-graze
+// KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.THROWN_WEAPON_ATTACK
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.action-surge-resource unit-feature.attack-action-attack-count-scaling unit-feature.attack-damage-reduction-zero-damage-redirect unit-feature.attack-damage-rider unit-feature.attack-roll-miss-to-hit-replacement unit-feature.bonus-action-dash-temporary-hit-points unit-feature.bonus-action-ongoing-rage unit-feature.brutal-strike unit-feature.failed-ability-check-resource-boost unit-feature.first-attack-roll-reckless-advantage unit-feature.grappler unit-feature.hunters-prey unit-feature.open-hand-technique unit-feature.passive-ranged-attack-roll-bonus unit-feature.passive-speed-bonus unit-feature.passive-speed-kind-grants unit-feature.reaction-roll-or-damage-reduction unit-feature.remarkable-athlete unit-feature.save-damage-replacement unit-feature.self-bonus-action-healing unit-feature.stunning-strike unit-feature.weapon-damage-dice-roll-choice unit-feature.weapon-mastery-sap unit-feature.weapon-mastery-topple unit-feature.weapon-mastery-cleave unit-feature.weapon-mastery-push unit-feature.weapon-mastery-slow unit-feature.fighter-tactical-master unit-feature.zero-hit-point-replacement spell.creature-type-protection-and-charm spell.invocation-attack-roll-advantage-save spell.invocation-chained-attack-damage spell.invocation-damage-reduction spell.invocation-damage-save-or-attack spell.invocation-condition-save spell.hit-point-restoration spell.invocation-marked-damage-rider spell.invocation-roll-modifier spell.invocation-weapon-damage-rider spell.reaction-shield spell.readied-action-time-spell spell.scalar-buff
 // UNIT-PROFILE-COVERAGE: runtime-owner spell.invocation-ray-of-enfeeblement-damage-penalty
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.d20-test-natural-one-reroll
@@ -136,6 +137,8 @@ import {
 } from "./attack-resolvers.ts";
 import { maybeOpenInterruptWindow } from "./interrupt-execution.ts";
 import { snapshotBattle } from "./battle-snapshot.ts";
+import { withThrownWeaponReleased } from "./thrown-weapon-release.ts";
+import { attackTargetFactsIssue } from "./attack-spatial.ts";
 
 import {
   attackTargetHole,
@@ -157,6 +160,7 @@ import {
   representedMovementSpeedKinds,
 } from "./movement-speed.ts";
 import { applyBattleMovement } from "./battle-movement.ts";
+import { withAttackEnemyProximityFrom } from "./ranged-attack-close-combat.ts";
 import { parseBattleMovement } from "./movement-procedures.ts";
 
 import { attackFillSet, selectedAttackFillSet } from "./attack-fill-set.ts";
@@ -1663,13 +1667,12 @@ function ordinaryObjectAttackDamage<
     ),
   };
 }
-
 export function resolveSelectedAttackProcedure<
   Attack extends BoundSupportedAttackActionOption,
 >(
   input: AttackProcedureResolutionInput,
   selectedAttack: Attack,
-  spendAttackProcedure: SpendAttackProcedure<Attack>,
+  spendSelectedAttackProcedure: SpendAttackProcedure<Attack>,
 ): BattleResolutionResult {
   let attack = selectedAttack;
   const pendingAttackDamageReductions =
@@ -1694,7 +1697,7 @@ export function resolveSelectedAttackProcedure<
         attack,
         attackerId,
         fillSet,
-        spendAttackProcedure,
+        spendAttackProcedure: spendSelectedAttackProcedure,
       }),
     })),
     Match.when({ tag: "ok" }, (fillSet) => ({
@@ -1740,24 +1743,37 @@ export function resolveSelectedAttackProcedure<
     );
   }
   /* v8 ignore stop -- @preserve */
-  /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
-  if (
-    !attackTargetIsLegal(
-      input.state,
-      attackerId,
-      target.combatantId,
-      attack,
-      fillSet.targetSpatialFacts,
-    )
-  ) {
-    /* v8 ignore next -- @preserve -- Malformed resolution input: this branch rejects fills that contradict the admitted subject's discovered holes or current typed runtime constraints. */
-    return invalidResult(
-      input.state,
-      "invalidFill",
-      "Attack target is outside the selected attack's supported target constraint.",
-    );
+  const targetFactsIssue = attackTargetFactsIssue(
+    input.state,
+    attackerId,
+    target.combatantId,
+    attack,
+    fillSet.targetSpatialFacts,
+  );
+  if (targetFactsIssue !== null) {
+    return invalidResult(input.state, "invalidFill", targetFactsIssue);
   }
-  /* v8 ignore stop -- @preserve */
+  const spendAttackProcedure: SpendAttackProcedure<Attack> = (
+    state,
+    actorId,
+    spentAttack,
+    timing,
+  ) => {
+    const spent = spendSelectedAttackProcedure(
+      state,
+      actorId,
+      spentAttack,
+      timing,
+    );
+    return timing.kind === "acceptedAttack"
+      ? withThrownWeaponReleased({
+          result: spent,
+          attackerId: actorId,
+          attack: spentAttack,
+          facts: fillSet.targetSpatialFacts,
+        })
+      : spent;
+  };
   /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
   if (
     fillSet.damageDisposition.kind === "knockOut" &&
@@ -1854,7 +1870,7 @@ export function resolveSelectedAttackProcedure<
         ],
       },
       attack,
-      spendAttackProcedure,
+      spendSelectedAttackProcedure,
     );
   }
 
@@ -2026,7 +2042,7 @@ export function resolveSelectedAttackProcedure<
           ? requiredAttackRollMode(
               input.state,
               attackerId,
-              target.combatantId,
+              target,
               attack,
               fillSet.targetSpatialFacts,
             )
@@ -2081,7 +2097,7 @@ export function resolveSelectedAttackProcedure<
   const requiredRollMode = attackRollModeWithOptionalOngoingFeature(
     input.state,
     attackerId,
-    target.combatantId,
+    target,
     attack,
     fillSet.targetSpatialFacts,
     fillSet.attackRoll.activatedOngoingFeatureProcedureRef,
@@ -2089,7 +2105,7 @@ export function resolveSelectedAttackProcedure<
   const baselineRequiredRollMode = requiredAttackRollMode(
     input.state,
     attackerId,
-    target.combatantId,
+    target,
     attack,
     fillSet.targetSpatialFacts,
   );
@@ -2883,7 +2899,10 @@ export function resolveSelectedAttackProcedure<
         return needsAttackDamageConcentrationResult({
           state: grapplerPunchAndGrab.state,
           subject: input.subject,
-          attack,
+          spendAcceptedAttack: (state) =>
+            spendAttackProcedure(state, attackerId, attack, {
+              kind: "acceptedAttack",
+            }),
           continuation: attackDamageInterruptionFrame({
             participant: input.subject,
             targetId: target.combatantId,
@@ -3430,7 +3449,10 @@ export function resolveSelectedAttackProcedure<
         return needsAttackDamageConcentrationResult({
           state: grapplerPunchAndGrab.state,
           subject: input.subject,
-          attack,
+          spendAcceptedAttack: (state) =>
+            spendAttackProcedure(state, attackerId, attack, {
+              kind: "acceptedAttack",
+            }),
           continuation: attackDamageInterruptionFrame({
             participant: input.subject,
             targetId: target.combatantId,
@@ -4247,7 +4269,7 @@ function resolveAdditionalWeaponAttackRoll(input: {
     { readonly kind: "weapon" }
   >;
   readonly family: AdditionalWeaponAttackFamily;
-  readonly targetId: CombatantId;
+  readonly target: BattleCreatureState;
   readonly targetSpatialFacts: readonly BattleTargetSpatialFact[];
   readonly attackRollHole: BattleAttackRollHole;
 }): AdditionalWeaponAttackRollResolution {
@@ -4263,7 +4285,7 @@ function resolveAdditionalWeaponAttackRoll(input: {
   const requiredRollMode = requiredAttackRollMode(
     input.state,
     input.subject.actorId,
-    input.targetId,
+    input.target,
     input.attack,
     input.targetSpatialFacts,
   );
@@ -4943,13 +4965,14 @@ function prepareWeaponMasteryCleaveAttack(input: {
   const secondTargetId = targetFill.value;
   const cleaveTargetFacts =
     additionalWeaponAttackTargetSpatialFacts(targetFill);
+  const secondTarget = input.state.combatants.get(secondTargetId);
   /* v8 ignore start -- @preserve -- Malformed fill: the selected second target must satisfy the spatial constraints encoded by the emitted Cleave target hole. */
   if (
+    secondTarget === undefined ||
     !weaponMasteryCleaveTargetIsLegal({
-      state: input.state,
       attackerId: input.subject.actorId,
       firstTargetId: input.firstTargetId,
-      secondTargetId,
+      secondTarget,
       attack: cleaveAttack,
       targetSpatialFacts: cleaveTargetFacts,
     })
@@ -4969,30 +4992,17 @@ function prepareWeaponMasteryCleaveAttack(input: {
     subject: input.subject,
     attack: cleaveAttack,
     family: decision.family,
-    targetId: secondTargetId,
+    target: secondTarget,
     targetSpatialFacts: cleaveTargetFacts,
     attackRollHole: weaponMasteryCleaveAttackRollHole(
       input.state,
       input.subject.actorId,
-      secondTargetId,
+      secondTarget,
       cleaveAttack,
       cleaveTargetFacts,
     ),
   });
   if (cleaveAttackRoll.tag === "result") return cleaveAttackRoll;
-  const secondTarget = input.state.combatants.get(secondTargetId);
-  /* v8 ignore start -- @preserve -- Stale subject: the target choice was admitted from the battle roster but may be replayed only after that target was removed. */
-  if (secondTarget === undefined) {
-    return {
-      tag: "result",
-      result: invalidResult(
-        input.state,
-        "invalidFill",
-        "Weapon Mastery Cleave second target is no longer in this battle.",
-      ),
-    };
-  }
-  /* v8 ignore stop -- @preserve */
   return {
     tag: "prepared",
     decision,
@@ -5616,15 +5626,20 @@ function prepareHuntersPreyHordeBreakerAttack(input: {
     };
   }
   const secondTargetId = targetFill.value;
-  const targetFacts = additionalWeaponAttackTargetSpatialFacts(targetFill);
+  const targetFacts = withAttackEnemyProximityFrom(
+    input.fillSet.targetSpatialFacts,
+    additionalWeaponAttackTargetSpatialFacts(targetFill),
+  );
+  const secondTarget = input.state.combatants.get(secondTargetId);
   /* v8 ignore start -- @preserve -- Malformed fill: the second target must satisfy the spatial constraints encoded by the emitted Horde Breaker target hole. */
   if (
+    secondTarget === undefined ||
     !huntersPreyHordeBreakerTargetIsLegal({
       state: input.state,
       attackerId: input.subject.actorId,
       sourceProcedureRef: procedureRef,
       firstTargetId: input.firstTargetId,
-      secondTargetId,
+      secondTarget,
       attack: hordeBreakerAttack,
       targetSpatialFacts: targetFacts,
     })
@@ -5634,7 +5649,7 @@ function prepareHuntersPreyHordeBreakerAttack(input: {
       result: invalidResult(
         input.state,
         "invalidFill",
-        "Hunter's Prey Horde Breaker second target must be different, within 5 feet of the original target, within weapon range, and not already attacked this turn.",
+        "Hunter's Prey Horde Breaker second target must be different, within 5 feet of the original target, within weapon range, and not already attacked this turn, with at most the attack's one enemy proximity qualification.",
       ),
     };
   }
@@ -5644,12 +5659,12 @@ function prepareHuntersPreyHordeBreakerAttack(input: {
     subject: input.subject,
     attack: hordeBreakerAttack,
     family: decision.family,
-    targetId: secondTargetId,
+    target: secondTarget,
     targetSpatialFacts: targetFacts,
     attackRollHole: huntersPreyHordeBreakerAttackRollHole(
       input.state,
       input.subject.actorId,
-      secondTargetId,
+      secondTarget,
       hordeBreakerAttack,
       targetFacts,
     ),
@@ -5657,19 +5672,6 @@ function prepareHuntersPreyHordeBreakerAttack(input: {
   if (hordeBreakerAttackRoll.tag === "result") {
     return hordeBreakerAttackRoll;
   }
-  const secondTarget = input.state.combatants.get(secondTargetId);
-  /* v8 ignore start -- @preserve -- Stale subject: the target choice was admitted from the battle roster but may be replayed only after that target was removed. */
-  if (secondTarget === undefined) {
-    return {
-      tag: "result",
-      result: invalidResult(
-        input.state,
-        "invalidFill",
-        "Hunter's Prey Horde Breaker second target is no longer in this battle.",
-      ),
-    };
-  }
-  /* v8 ignore stop -- @preserve */
   return {
     tag: "prepared",
     decision,

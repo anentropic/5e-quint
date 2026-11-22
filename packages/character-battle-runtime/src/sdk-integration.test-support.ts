@@ -351,6 +351,7 @@ function levelFiveBaseBuild(input: {
       advancements: Array.from({ length: 4 }, () => ({
         classUnitId: classUnitId(input.classUnitId),
         hitPointRule: { tag: "fixedHigherLevelGain" as const },
+        constitutionModifierAtGain: 2,
       })),
     },
     background: authoredUnitId("background_soldier"),
@@ -1188,6 +1189,9 @@ export function attackSubject(
       candidate.subject.tag === "action" &&
       candidate.subject.action === "attack" &&
       candidate.subject.actorId === actorId &&
+      // A thrown variant of the same weapon has the same name; these
+      // fixtures attack with the weapon's own delivery.
+      !("weaponDelivery" in candidate.subject) &&
       (candidate.subject.statBlockDamageSelection === undefined ||
         (candidate.subject.statBlockDamageSelection.length > 0 &&
           candidate.subject.statBlockDamageSelection.every(

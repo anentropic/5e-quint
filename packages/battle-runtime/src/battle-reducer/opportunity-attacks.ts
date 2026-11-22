@@ -5,6 +5,8 @@ import {
   type BoundSupportedAttackActionOption,
 } from "../battle-action-options.ts";
 import { spendAmmunitionForAcceptedAttackPendingContinuation } from "../battle-ammunition.ts";
+import { stateWithThrownWeaponReleased } from "./thrown-weapon-release.ts";
+import { thrownWeaponLandingIssue } from "./thrown-weapon-attack.ts";
 // Opportunity attack resolution owns the movement-triggered Reaction procedure.
 // KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE
 // UNIT-PROFILE-COVERAGE: runtime-owner spell.invocation-ray-of-enfeeblement-damage-penalty
@@ -99,7 +101,10 @@ import {
   meleeWeaponOrUnarmedStrikeOptionForReactor,
   opportunityAttackOptionForReactor,
 } from "./movement-speed.ts";
-import { attackTargetIsLegal } from "./attack-spatial.ts";
+import {
+  attackEnemyProximityQualificationIssue,
+  attackTargetIsLegal,
+} from "./attack-spatial.ts";
 import { reactionSpellTargetFactsForAfterDamage } from "./reaction-triggered-spells.ts";
 import { resolveRemarkableAthleteCriticalHitMovement } from "./remarkable-athlete-critical-movement.ts";
 import { invalidResult } from "./result-helpers.ts";
@@ -338,7 +343,7 @@ function prepareReactionAttackRoll(
   const requiredRollMode = requiredAttackRollMode(
     input.input.state,
     input.input.subject.reactorId,
-    input.input.subject.targetId,
+    input.target,
     input.attack,
     input.targetSpatialFacts,
     input.input.subject.command === "opportunityAttack",
@@ -545,24 +550,43 @@ function reactionAttackTargetSpatialFacts(input: {
         "Fixed-target reaction attacks require an exact attack target distance fact.",
     };
   }
-  if (
-    !attackTargetIsLegal(
-      input.state,
-      input.subject.reactorId,
-      input.subject.targetId,
-      input.attack,
+  return (
+    reactionAttackTargetIssue(input, facts) ?? {
+      tag: "ok",
       facts,
-    )
-  ) {
-    return {
-      tag: "invalid",
-      message: `${input.commandLabel} target distance is outside the selected attack's legal range.`,
-    };
-  }
-  return {
-    tag: "ok",
+    }
+  );
+}
+
+function reactionAttackTargetIssue(
+  input: Parameters<typeof reactionAttackTargetSpatialFacts>[0],
+  facts: readonly BattleTargetSpatialFact[],
+): { readonly tag: "invalid"; readonly message: string } | null {
+  const proximityIssue = attackEnemyProximityQualificationIssue(
+    input.state,
+    input.subject.reactorId,
+    input.attack,
     facts,
-  };
+  );
+  if (proximityIssue !== null) return proximityIssue;
+  const landingIssue = thrownWeaponLandingIssue(
+    input.subject.reactorId,
+    input.attack,
+    facts,
+  );
+  if (landingIssue !== null) return { tag: "invalid", message: landingIssue };
+  return attackTargetIsLegal(
+    input.state,
+    input.subject.reactorId,
+    input.subject.targetId,
+    input.attack,
+    facts,
+  )
+    ? null
+    : {
+        tag: "invalid",
+        message: `${input.commandLabel} target distance is outside the selected attack's legal range.`,
+      };
 }
 
 function reactionAttackDistanceFact(input: {
@@ -941,10 +965,16 @@ function resolveReactionAttackMiss(
       relationshipIssue,
     );
   }
+  const resolvedState = stateWithThrownWeaponReleased({
+    state: attackRolledState,
+    attackerId: resolutionInput.subject.reactorId,
+    attack: input.attack,
+    facts: context.targetSpatialFacts,
+  });
   return {
     tag: "resolved",
-    state: attackRolledState,
-    snapshot: snapshotBattle(attackRolledState),
+    state: resolvedState,
+    snapshot: snapshotBattle(resolvedState),
   };
 }
 
@@ -1327,8 +1357,16 @@ function resolveReactionAttackDamageTransaction(input: {
     Match.exhaustive,
   );
 
+  // The attack-damage window resumes from its own frame and finishes the attack
+  // there, never returning here, so a thrown weapon leaves the hand as the
+  // window opens. The public result reports it once the attack is over.
   const attackDamageReactionWindow = maybeOpenInterruptWindow(
-    spellReducedState,
+    stateWithThrownWeaponReleased({
+      state: spellReducedState,
+      attackerId: subject.reactorId,
+      attack,
+      facts: targetSpatialFacts,
+    }),
     {
       trigger: "attackDamage",
       continuation: attackDamageInterruptionFrame({
@@ -1484,8 +1522,17 @@ function resolveReactionAttackDamageTransaction(input: {
   }
   /* v8 ignore stop -- @preserve */
 
+  // Without an attack-damage window the subject ends here, so a thrown weapon
+  // leaves the hand now: a needsHoles state above is resumed, and the resumed
+  // attack still needs its weapon.
+  const resolvedState = stateWithThrownWeaponReleased({
+    state: afterDamagePath.state,
+    attackerId: subject.reactorId,
+    attack,
+    facts: targetSpatialFacts,
+  });
   const afterDamageReactionWindow = maybeOpenInterruptWindow(
-    afterDamagePath.state,
+    resolvedState,
     {
       trigger: "afterDamage",
       damageSourceId: subject.reactorId,
@@ -1509,8 +1556,8 @@ function resolveReactionAttackDamageTransaction(input: {
 
   return {
     tag: "resolved",
-    state: afterDamagePath.state,
-    snapshot: snapshotBattle(afterDamagePath.state),
+    state: resolvedState,
+    snapshot: snapshotBattle(resolvedState),
   };
 }
 

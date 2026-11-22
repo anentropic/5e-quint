@@ -135,6 +135,7 @@ import {
   resourceCount,
   spellSlotLevel,
   type ResourceCount,
+  type WeaponGrip,
 } from "@dnd/shared/types";
 import {
   buildUnitCatalog,
@@ -404,6 +405,7 @@ describe("Character Sheet battle handoff", () => {
             advancements: Array.from({ length: 2 }, () => ({
               classUnitId: classUnitId(authoredUnitId("class_fighter")),
               hitPointRule: { tag: "fixedHigherLevelGain" as const },
+              constitutionModifierAtGain: 1,
             })),
           },
         },
@@ -549,6 +551,7 @@ describe("Character Sheet battle handoff", () => {
               advancements: Array.from({ length: 9 }, () => ({
                 classUnitId: classUnitId(authoredUnitId("class_warlock")),
                 hitPointRule: { tag: "fixedHigherLevelGain" as const },
+                constitutionModifierAtGain: 1,
               })),
             },
             features: [
@@ -4879,6 +4882,63 @@ describe("Character Sheet battle handoff", () => {
     if (init.creatureInit.kind !== "character") return;
     expect(init.creatureInit.maxHp).toBe(sheetMaximumHp(sheet.success));
     expect(init.creatureInit.currentHp).toBe(7);
+  });
+
+  test("admits a rolled Hit Die above the fixed value into battle initialization", () => {
+    const fighterUnitId = classUnitId(authoredUnitId("class_fighter"));
+    const rolledBuild = {
+      ...build,
+      progression: {
+        startingClass: fighterUnitId,
+        advancements: [
+          {
+            classUnitId: fighterUnitId,
+            hitPointRule: {
+              tag: "rolledHigherLevelGain" as const,
+              hitDieResult: DieRollResult(10),
+            },
+            constitutionModifierAtGain: 1,
+          },
+        ],
+      },
+    };
+    const fixedBuild = {
+      ...rolledBuild,
+      progression: {
+        ...rolledBuild.progression,
+        advancements: [
+          {
+            classUnitId: fighterUnitId,
+            hitPointRule: { tag: "fixedHigherLevelGain" as const },
+            constitutionModifierAtGain: 1,
+          },
+        ],
+      },
+    };
+    const initWith = (
+      characterBuild: typeof rolledBuild | typeof fixedBuild,
+      hitPointMaximum?: number,
+    ) =>
+      battleCreatureInitFromCharacterBuild({
+        combatantId: combatantId("rolled-maximum-init"),
+        characterId: characterId("character:rolled-maximum-init"),
+        displayName: "Fighter",
+        build: characterBuild,
+        initiative: initiativeScore(20),
+        ammunitionStocks: [],
+        unitLibrary,
+        ...(hitPointMaximum === undefined
+          ? {}
+          : { hitPointMaximum: Hp(hitPointMaximum) }),
+      });
+
+    const fixed = expectSuccess(initWith(fixedBuild)).creatureInit;
+    const rolled = expectSuccess(initWith(rolledBuild)).creatureInit;
+    expect(rolled.maxHp - fixed.maxHp).toBe(10 - 6);
+    expect(
+      expectSuccess(initWith(rolledBuild, rolled.maxHp)).creatureInit.maxHp,
+    ).toBe(rolled.maxHp);
+    expect(Result.isFailure(initWith(fixedBuild, rolled.maxHp))).toBe(true);
   });
 
   test("rejects CharacterBuild battle initialization max HP above the build-derived maximum", () => {
@@ -9622,6 +9682,7 @@ describe("Character Build battle projection", () => {
           {
             classUnitId: duplicateClassUnitId,
             hitPointRule: { tag: "fixedHigherLevelGain" as const },
+            constitutionModifierAtGain: 1,
           },
         ],
       },
@@ -9860,14 +9921,17 @@ describe("Character Build battle projection", () => {
           {
             classUnitId: classUnitId(authoredUnitId("class_druid")),
             hitPointRule: { tag: "fixedHigherLevelGain" as const },
+            constitutionModifierAtGain: 1,
           },
           {
             classUnitId: classUnitId(authoredUnitId("class_monk")),
             hitPointRule: { tag: "fixedHigherLevelGain" as const },
+            constitutionModifierAtGain: 1,
           },
           {
             classUnitId: classUnitId(authoredUnitId("class_monk")),
             hitPointRule: { tag: "fixedHigherLevelGain" as const },
+            constitutionModifierAtGain: 1,
           },
         ],
       },
@@ -9905,6 +9969,7 @@ describe("Character Build battle projection", () => {
         advancements: Array.from({ length: 9 }, () => ({
           classUnitId: classUnitId(authoredUnitId("class_barbarian")),
           hitPointRule: { tag: "fixedHigherLevelGain" as const },
+          constitutionModifierAtGain: 1,
         })),
       },
       features: [
@@ -10936,6 +11001,119 @@ describe("Character Build battle projection", () => {
       expect(attack?.alternateAbilityChoices).toEqual(expectedAlternates);
     },
   );
+
+  test.each([
+    {
+      label: "a Versatile weapon held one-handed",
+      weaponUnitId: "weapon_longsword",
+      grip: "one_handed",
+      dieSize: 8,
+    },
+    {
+      label: "a Versatile weapon held two-handed",
+      weaponUnitId: "weapon_longsword",
+      grip: "two_handed",
+      dieSize: 10,
+    },
+    {
+      label: "a Two-Handed weapon",
+      weaponUnitId: "weapon_greataxe",
+      grip: "two_handed",
+      dieSize: 12,
+    },
+  ] as const)(
+    "projects the weapon damage of $label from its grip",
+    ({ weaponUnitId, grip, dieSize }) => {
+      const attack = expectSuccess(
+        characterWeaponAttackActionOptions({
+          build: equippedFighterBuild({
+            weaponUnitId: authoredUnitId(weaponUnitId),
+            str: 16,
+            dex: 10,
+            grip,
+          }),
+          unitLibrary,
+          weaponMasteries: [],
+          classLevels: [{ className: "fighter", level: 1 }],
+        }),
+      ).attack;
+
+      expect(attack?.weapon.damage).toEqual(
+        expect.objectContaining({ kind: "dice", dice: 1, dieSize }),
+      );
+    },
+  );
+
+  test.each([
+    { grip: "one_handed", dieSize: 10 },
+    { grip: "two_handed", dieSize: 10 },
+  ] as const)(
+    "compares Martial Arts against the Versatile damage of a $grip Quarterstaff",
+    ({ grip, dieSize }) => {
+      // Level 11 Martial Arts (d10) beats both the one-handed d6 and the
+      // two-handed Versatile d8, so the Versatile swap must run first.
+      const attack = expectSuccess(
+        characterWeaponAttackActionOptions({
+          build: monkBuild({
+            level: 11,
+            weaponUnitId: "weapon_quarterstaff",
+            str: 12,
+            dex: 16,
+            grip,
+          }),
+          unitLibrary,
+          weaponMasteries: [],
+          classLevels: [{ className: "monk", level: 11 }],
+        }),
+      ).attack;
+
+      expect(attack?.weapon.damage).toEqual(
+        expect.objectContaining({ kind: "dice", dice: 1, dieSize }),
+      );
+    },
+  );
+
+  test("keeps a two-handed Spear's one-handed damage for its thrown attack", () => {
+    const attack = expectSuccess(
+      characterWeaponAttackActionOptions({
+        build: equippedFighterBuild({
+          weaponUnitId: authoredUnitId("weapon_spear"),
+          str: 16,
+          dex: 10,
+          grip: "two_handed",
+        }),
+        unitLibrary,
+        weaponMasteries: [],
+        classLevels: [{ className: "fighter", level: 1 }],
+      }),
+    ).attack;
+
+    expect(attack?.weapon).toMatchObject({
+      damage: { kind: "dice", dice: 1, dieSize: 8 },
+      oneHandedDamage: { kind: "dice", dice: 1, dieSize: 6 },
+    });
+  });
+
+  test("keeps a level 1 Monk's two-handed Quarterstaff at its Versatile d8", () => {
+    const attack = expectSuccess(
+      characterWeaponAttackActionOptions({
+        build: monkBuild({
+          level: 1,
+          weaponUnitId: "weapon_quarterstaff",
+          str: 12,
+          dex: 16,
+          grip: "two_handed",
+        }),
+        unitLibrary,
+        weaponMasteries: [],
+        classLevels: [{ className: "monk", level: 1 }],
+      }),
+    ).attack;
+
+    expect(attack?.weapon.damage).toEqual(
+      expect.objectContaining({ kind: "dice", dice: 1, dieSize: 8 }),
+    );
+  });
 
   test("offers a tied finesse ability without adding proficiency to an untrained weapon", () => {
     const fighterBuild = equippedFighterBuild({
@@ -12844,6 +13022,7 @@ function monkBuild(input: {
   readonly shield?: boolean;
   readonly str: number;
   readonly dex: number;
+  readonly grip?: WeaponGrip;
 }): CharacterBuild {
   const weaponItemId =
     input.weaponUnitId === undefined
@@ -12892,6 +13071,7 @@ function monkBuild(input: {
         () => ({
           classUnitId: classUnitId(authoredUnitId("class_monk")),
           hitPointRule: { tag: "fixedHigherLevelGain" as const },
+          constitutionModifierAtGain: 1,
         }),
       ),
     },
@@ -12949,7 +13129,12 @@ function monkBuild(input: {
       loadout: {
         ...(weaponItemId === undefined
           ? {}
-          : { weapon: { itemId: weaponItemId, grip: "one_handed" as const } }),
+          : {
+              weapon: {
+                itemId: weaponItemId,
+                grip: input.grip ?? "one_handed",
+              },
+            }),
         ...(offHandWeaponItemId === undefined
           ? {}
           : { offHandWeapon: { itemId: offHandWeaponItemId } }),
@@ -13316,6 +13501,7 @@ function multiclassUnarmoredDefenseBuild(): CharacterBuild {
         {
           classUnitId: classUnitId(authoredUnitId("class_monk")),
           hitPointRule: { tag: "fixedHigherLevelGain" },
+          constitutionModifierAtGain: 1,
         },
       ],
     },
@@ -13491,6 +13677,7 @@ function equippedFighterBuild(input: {
   readonly weaponUnitId: UnitRecord["id"];
   readonly str: number;
   readonly dex: number;
+  readonly grip?: WeaponGrip;
 }): CharacterBuild {
   const weaponItemId = characterEquipmentItemId({
     slot: "main",
@@ -13511,7 +13698,9 @@ function equippedFighterBuild(input: {
     equipment: {
       startingEquipmentCurrencyRemainderCp: copperPieceAmount(0),
       owned: [characterBuildCatalogEquipmentItem({ itemId: weaponItemId })],
-      loadout: { weapon: { itemId: weaponItemId, grip: "one_handed" } },
+      loadout: {
+        weapon: { itemId: weaponItemId, grip: input.grip ?? "one_handed" },
+      },
     },
   };
 }
@@ -13524,6 +13713,7 @@ function weaponMasteryLongswordLevel9FighterBuild(): CharacterBuild {
       advancements: Array.from({ length: 8 }, () => ({
         classUnitId: classUnitId(authoredUnitId("class_fighter")),
         hitPointRule: { tag: "fixedHigherLevelGain" as const },
+        constitutionModifierAtGain: 1,
       })),
     },
   };
@@ -13590,7 +13780,7 @@ function weaponMasteryGreataxeFighterBuild(): CharacterBuild {
       loadout: {
         weapon: {
           itemId: greataxeItemId,
-          grip: "one_handed",
+          grip: "two_handed",
         },
       },
     },
@@ -13712,10 +13902,12 @@ function hunterRangerHordeBreakerBuild(): CharacterBuild {
         {
           classUnitId: classUnitId(authoredUnitId("class_ranger")),
           hitPointRule: { tag: "fixedHigherLevelGain" },
+          constitutionModifierAtGain: 1,
         },
         {
           classUnitId: classUnitId(authoredUnitId("class_ranger")),
           hitPointRule: { tag: "fixedHigherLevelGain" },
+          constitutionModifierAtGain: 1,
         },
       ],
     },
@@ -13778,6 +13970,7 @@ function paladinsSmitePaladinBuild(): CharacterBuild {
         {
           classUnitId: classUnitId(authoredUnitId("class_paladin")),
           hitPointRule: { tag: "fixedHigherLevelGain" },
+          constitutionModifierAtGain: 1,
         },
       ],
     },
@@ -14164,6 +14357,7 @@ function druidWildShapeBuildAtLevel(level: number): CharacterBuild {
       advancements: Array.from({ length: level - 1 }, () => ({
         classUnitId: classUnitId(authoredUnitId("class_druid")),
         hitPointRule: { tag: "fixedHigherLevelGain" },
+        constitutionModifierAtGain: 1,
       })),
     },
     spellcasting: {
@@ -14320,18 +14514,22 @@ function sorcererFontOfMagicBuild(): CharacterBuild {
         {
           classUnitId: classUnitId(authoredUnitId("class_sorcerer")),
           hitPointRule: { tag: "fixedHigherLevelGain" },
+          constitutionModifierAtGain: 1,
         },
         {
           classUnitId: classUnitId(authoredUnitId("class_sorcerer")),
           hitPointRule: { tag: "fixedHigherLevelGain" },
+          constitutionModifierAtGain: 1,
         },
         {
           classUnitId: classUnitId(authoredUnitId("class_sorcerer")),
           hitPointRule: { tag: "fixedHigherLevelGain" },
+          constitutionModifierAtGain: 1,
         },
         {
           classUnitId: classUnitId(authoredUnitId("class_sorcerer")),
           hitPointRule: { tag: "fixedHigherLevelGain" },
+          constitutionModifierAtGain: 1,
         },
       ],
     },
