@@ -2376,6 +2376,7 @@ These profile-subset rows have no selected-identity replay witness, but the decl
 | FACTORY-579 | completed-runtime-parity | `unit-feature.ongoing-feature-activation-movement-rider` |
 | GH530-WEAPON-MASTERY-GRAZE | qnt-proof | `unit-feature.weapon-mastery-graze` |
 | GH530-WEAPON-MASTERY-GRAZE | completed-runtime-parity | `unit-feature.weapon-mastery-graze` |
+| SB-MULTIATTACK-PRONE-RUNTIME-TEST | runtime-evidence | `stat-block.multiattack` |
 
 ## Supported Profiles Lacking Runtime Parity
 

@@ -7653,7 +7653,8 @@
       "taskRefs": [
         "SB-MULTIATTACK-INDUCTIVE",
         "SB-MULTIATTACK-MBT",
-        "SB-ACTIONS-RUNTIME-TEST"
+        "SB-ACTIONS-RUNTIME-TEST",
+        "SB-MULTIATTACK-PRONE-RUNTIME-TEST"
       ],
       "title": "Admitted attack-procedure Multiattack control and dispatch",
       "verificationOwners": [
@@ -7668,6 +7669,10 @@
         {
           "kind": "runtime-test",
           "ownerPath": "packages/battle-runtime/src/battle-runtime-stat-block-actions.test.ts"
+        },
+        {
+          "kind": "runtime-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-multiattack-drop-prone.test.ts"
         }
       ]
     },
@@ -23449,6 +23454,14 @@
         "unit-feature.weapon-mastery-graze"
       ],
       "taskId": "GH530-WEAPON-MASTERY-GRAZE"
+    },
+    {
+      "claimKind": "runtime-evidence",
+      "note": "Public runtime discovery and resolution cover Drop Prone and Standing from Prone between completed Multiattack attacks, preserving pending dispatches and applying movement costs.",
+      "profileIds": [
+        "stat-block.multiattack"
+      ],
+      "taskId": "SB-MULTIATTACK-PRONE-RUNTIME-TEST"
     }
   ],
   "unitGroupDenominatorAudit": {
