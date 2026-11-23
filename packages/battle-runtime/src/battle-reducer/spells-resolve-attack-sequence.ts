@@ -7,7 +7,6 @@ import { prepareAttackRollInput } from "./attack-roll-admission.ts";
 // KERNEL-COVERAGE: runtime-owner BATTLE.FEATURE.METAMAGIC_TRANSMUTED_DAMAGE_TYPE_SUBSTITUTION BATTLE.PROTOCOL.HOLE_FRONTIER_ORDERING BATTLE.DAMAGE.OBJECT_DAMAGE_TRANSITION BATTLE.SPELL.INDEPENDENT_ATTACK_SEQUENCE
 // KERNEL-COVERAGE: runtime-owner BATTLE.PROTOCOL.ZERO_HIT_POINT_MID_RESOLUTION
 import { optionalProperty } from "../optional-property.ts";
-import { currentArmorClass } from "@dnd/shared-algebras/armor-class-algebra";
 import {
   attackRollHits,
   attackRollResultIsValid,
@@ -53,7 +52,10 @@ import {
   requiredSpellObjectTargetAttackRollMode,
   requiredSpellAttackRollMode,
 } from "./attack-roll.ts";
-import { activeEffectArmorClass } from "./creature-state-execution.ts";
+import {
+  admittedArmorClassBehindCover,
+  spellAttackArmorClass,
+} from "./attack-target-cover.ts";
 
 import { needsHolesResult } from "./needs-holes-result.ts";
 import { invalidResult } from "./result-helpers.ts";
@@ -529,10 +531,14 @@ function resolveSpellAttackSequenceCreaturePart(input: {
   const effectiveAttackRoll = attackRollAfterD20TestRerolls(
     input.partFill.attackRoll,
   );
-  const ordinaryHit = attackRollHits(
-    effectiveAttackRoll,
-    currentArmorClass(activeEffectArmorClass(input.state, target)),
+  const targetArmorClass = spellAttackArmorClass(
+    input.state,
+    input.actorId,
+    target,
+    input.invocation,
+    input.target.spatialFacts,
   );
+  const ordinaryHit = attackRollHits(effectiveAttackRoll, targetArmorClass);
   const missToHitReplacement = selectedAttackRollMissToHitReplacement({
     state: input.state,
     subject: input.input.subject,
@@ -1221,7 +1227,10 @@ function resolveSpellAttackSequenceObjectPart(input: {
   }
   /* v8 ignore stop -- @preserve */
   const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll);
-  const hit = attackRollHits(effectiveAttackRoll, objectFact.armorClass);
+  const hit = attackRollHits(
+    effectiveAttackRoll,
+    admittedArmorClassBehindCover(objectFact.armorClass, objectFact.cover),
+  );
   const critical = attackRollIsCriticalHit(effectiveAttackRoll);
   const spentState = battleStateAfterHeroicInspirationReroll(
     input.state,

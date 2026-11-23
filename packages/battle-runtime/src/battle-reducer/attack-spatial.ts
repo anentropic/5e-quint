@@ -1,4 +1,5 @@
-// KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE
+// KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE BATTLE.ATTACK.RANGED_CLOSE_COMBAT_ROLL_MODE BATTLE.ATTACK.TARGET_COVER
+import { directTargetCover } from "@dnd/shared-algebras/cover-algebra";
 import type { CombatantId } from "../identity.ts";
 import type {
   BattleAttackExecutionSelection,
@@ -19,7 +20,7 @@ import {
   type SpatialQualificationIssue,
   type RangedAttackEnemyProximityEvidence,
 } from "./ranged-attack-close-combat.ts";
-import type { MovementFeet } from "@dnd/shared/types";
+import type { CoverType, MovementFeet } from "@dnd/shared/types";
 import { thrownWeaponLandingIssue } from "./thrown-weapon-attack.ts";
 
 export function attackExecutionSelectionMatchesOption(
@@ -61,6 +62,9 @@ export function creatureAttackTargetIsLegal(
   return (
     actorId !== targetId &&
     distanceFeet !== null &&
+    directTargetCover(
+      attackTargetStatedCover(facts, actorId, targetId, attack),
+    ) !== null &&
     (constraint.kind === "meleeReach"
       ? Number(distanceFeet) <= Number(constraint.reachFeet)
       : attackTargetRangeBand(facts, actorId, targetId, attack) !== null)
@@ -113,12 +117,17 @@ export function attackTargetRangeBand(
   return null;
 }
 
-export function attackTargetDistanceFeet(
+type AttackTargetDistanceFact = Extract<
+  BattleTargetSpatialFact,
+  { readonly kind: "attackTargetDistance" }
+>;
+
+function attackTargetDistanceFact(
   facts: readonly BattleTargetSpatialFact[],
   actorId: CombatantId,
   targetId: CombatantId,
   attack: SupportedAttackActionOption,
-): MovementFeet | null {
+): AttackTargetDistanceFact | null {
   for (const fact of facts) {
     if (
       fact.kind === "attackTargetDistance" &&
@@ -126,7 +135,7 @@ export function attackTargetDistanceFeet(
       fact.targetId === targetId &&
       attackExecutionSelectionMatchesOption(fact, attack)
     ) {
-      return fact.distanceFeet;
+      return fact;
     }
   }
   return null;
@@ -175,4 +184,29 @@ export function qualifyAttackTargetFacts(
   return landingIssue === null
     ? proximity
     : { tag: "invalid", message: landingIssue };
+}
+
+export function attackTargetDistanceFeet(
+  facts: readonly BattleTargetSpatialFact[],
+  actorId: CombatantId,
+  targetId: CombatantId,
+  attack: SupportedAttackActionOption,
+): MovementFeet | null {
+  return (
+    attackTargetDistanceFact(facts, actorId, targetId, attack)?.distanceFeet ??
+    null
+  );
+}
+
+/**
+ * The degree of cover the table stated between a weapon or Stat Block attacker
+ * and a creature target, or undefined when it stated none.
+ */
+export function attackTargetStatedCover(
+  facts: readonly BattleTargetSpatialFact[],
+  actorId: CombatantId,
+  targetId: CombatantId,
+  attack: SupportedAttackActionOption,
+): CoverType | undefined {
+  return attackTargetDistanceFact(facts, actorId, targetId, attack)?.cover;
 }

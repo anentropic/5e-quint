@@ -13,8 +13,6 @@ import { optionalProperty } from "../optional-property.ts";
 import type { CharacterAttackExecutionSelection } from "../battle-action-options.ts";
 import { spendActivationResource } from "@dnd/shared-algebras/action-economy-algebra";
 
-import { currentArmorClass } from "@dnd/shared-algebras/armor-class-algebra";
-
 import { attackRollResultIsValid } from "@dnd/shared-algebras/attack-roll-algebra";
 import { damageAmount as toDamageAmount } from "@dnd/shared/types";
 
@@ -41,7 +39,7 @@ import {
 
 import { normalizeBattleGrapples } from "./creature-state-leaves.ts";
 
-import { activeEffectArmorClass } from "./creature-state-execution.ts";
+import { weaponAttackArmorClass } from "./attack-target-cover.ts";
 import {
   attackRollD20TestRerolls,
   attackRollHoleWithD20TestRerollOptions,
@@ -418,9 +416,16 @@ function resolveBonusActionAttack(
     input.state.combatants.get(input.subject.actorId),
     attack,
   );
+  const targetArmorClass = weaponAttackArmorClass(
+    input.state,
+    input.subject.actorId,
+    target,
+    attack,
+    fillSet.targetSpatialFacts,
+  );
   const hit = attackRollHitsWithCriticalThreshold(
     effectiveAttackRoll,
-    currentArmorClass(activeEffectArmorClass(input.state, target)),
+    targetArmorClass,
     criticalThreshold,
   );
   let attackRolledState = consumeHelpAttackForAttackRoll(

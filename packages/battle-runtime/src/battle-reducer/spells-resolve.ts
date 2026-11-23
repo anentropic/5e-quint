@@ -48,7 +48,6 @@ import {
   spendAction,
   spendActivationResource,
 } from "@dnd/shared-algebras/action-economy-algebra";
-import { currentArmorClass } from "@dnd/shared-algebras/armor-class-algebra";
 import {
   attackRollHits,
   attackRollResultIsValid,
@@ -105,7 +104,8 @@ import {
   recordAttackRollOngoingFeatures,
   requiredSpellAttackRollMode,
 } from "./attack-roll.ts";
-import { activeEffectArmorClass } from "./creature-state-execution.ts";
+import { spellAttackArmorClass } from "./attack-target-cover.ts";
+import type { SpellTargetLegalityOptions } from "./spells-targeting.ts";
 import {
   concentrationSavingThrowHole,
   damageLifecycleConcentrationSavingThrowFillCheck,
@@ -2298,6 +2298,13 @@ function resolveSpellActInternal(
     );
   }
   /* v8 ignore stop -- @preserve */
+  const spellTargetLegalityOptions: SpellTargetLegalityOptions =
+    spatialMeleeSpellAttackProxyPosition === undefined
+      ? {}
+      : {
+          spatialMeleeSpellAttackProxyPositionId:
+            spatialMeleeSpellAttackProxyPosition.positionId,
+        };
   /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
   if (
     !spellTargetIsLegal(
@@ -2306,12 +2313,7 @@ function resolveSpellActInternal(
       target.combatantId,
       invocationForResolution,
       fillSet.targetSpatialFacts,
-      spatialMeleeSpellAttackProxyPosition === undefined
-        ? {}
-        : {
-            spatialMeleeSpellAttackProxyPositionId:
-              spatialMeleeSpellAttackProxyPosition.positionId,
-          },
+      spellTargetLegalityOptions,
     )
   ) {
     /* v8 ignore next -- @preserve -- Malformed resolution input: this branch rejects fills that contradict the admitted subject's discovered holes or current typed runtime constraints. */
@@ -2507,6 +2509,14 @@ function resolveSpellActInternal(
   const spellDamageContext = (():
     | BattleResolutionResult
     | SpellDamageResolutionContext => {
+    const targetArmorClass = spellAttackArmorClass(
+      input.state,
+      subject.actorId,
+      target,
+      invocationForResolution,
+      fillSet.targetSpatialFacts,
+      spellTargetLegalityOptions,
+    );
     const initialAttackRoll = resolveInitialSpellAttackRoll({
       castingState,
       errorState: input.state,
@@ -2516,9 +2526,7 @@ function resolveSpellActInternal(
       invocation: invocationForResolution,
       fillSet,
       seekingSpell: {
-        targetArmorClass: currentArmorClass(
-          activeEffectArmorClass(input.state, target),
-        ),
+        targetArmorClass,
         castMetamagicApplications: metamagicApplicationsForResolution ?? [],
       },
     });
@@ -2538,10 +2546,7 @@ function resolveSpellActInternal(
         ? [...(metamagicApplicationsForResolution ?? []), seekingApplication]
         : metamagicApplicationsForResolution;
     const effectiveAttackRoll = initialAttackRoll.effectiveAttackRoll;
-    const ordinaryHit = attackRollHits(
-      effectiveAttackRoll,
-      currentArmorClass(activeEffectArmorClass(input.state, target)),
-    );
+    const ordinaryHit = attackRollHits(effectiveAttackRoll, targetArmorClass);
     const missToHitReplacement = selectedAttackRollMissToHitReplacement({
       state: castingState,
       subject: input.subject,

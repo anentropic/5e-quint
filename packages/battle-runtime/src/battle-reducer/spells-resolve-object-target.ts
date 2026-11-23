@@ -42,6 +42,7 @@ import {
   spellCastMetamagicApplicationsInput,
 } from "./spell-cast-interrupt-frame.ts";
 import { invalidResult } from "./result-helpers.ts";
+import { admittedArmorClassBehindCover } from "./attack-target-cover.ts";
 import { needsHolesResult } from "./needs-holes-result.ts";
 import { resolveRemarkableAthleteCriticalHitMovement } from "./remarkable-athlete-critical-movement.ts";
 import {
@@ -370,7 +371,10 @@ function resolveObjectTargetSpellAttackCore(
   /* v8 ignore stop -- @preserve */
 
   const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll);
-  const hit = attackRollHits(effectiveAttackRoll, objectFact.armorClass);
+  const hit = attackRollHits(
+    effectiveAttackRoll,
+    admittedArmorClassBehindCover(objectFact.armorClass, objectFact.cover),
+  );
   const critical = attackRollIsCriticalHit(effectiveAttackRoll);
   const spentState = battleStateAfterHeroicInspirationReroll(
     input.input.state,
