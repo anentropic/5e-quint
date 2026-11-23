@@ -3250,7 +3250,15 @@ describe("MCP server route", () => {
           holeId: "battle:movement",
           value: {
             speedKind: "walk",
-            movementCostFeet: 10,
+            path: [
+              {
+                distanceFeet: 10,
+                activity: "ordinary",
+                difficultTerrain: "none",
+                movesCloserThroughDirectionalArea: false,
+                draggedGrappledTargetIds: [],
+              },
+            ],
             provokedOpportunityAttacks: [],
           },
         },
