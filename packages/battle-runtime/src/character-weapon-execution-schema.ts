@@ -34,7 +34,8 @@ export const WeaponExecutionFactsSchema = Schema.Union([
 
 /**
  * `oneHandedDamage` is present only when `damage` carries the Versatile damage
- * of a Versatile weapon held with the `two_handed` grip. It keeps the damage
+ * of a Versatile weapon held with the `two_handed` grip, or the Martial Arts
+ * damage that replaces it. It keeps the damage
  * the weapon deals otherwise, which a thrown attack with it uses: Versatile
  * damage applies only "to make a melee attack" (SRD 5.2.1 equipment.md,
  * Versatile; ASSUMPTIONS.md A57).
