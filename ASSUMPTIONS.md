@@ -328,3 +328,18 @@ Versatile damage "when used with two hands to make a melee attack". The SRD
 says when two hands are required, not that any other weapon can't be held in
 both, and it doesn't say when a creature changes how it holds a weapon. The
 model fixes the grip in the loadout, as Battle Runtime already takes it.
+
+## A59: A Chromatic Orb leap measures cover from the previous target
+
+**Assumption:** When the orb leaps, the new target's cover against the new
+attack roll is measured from the creature the orb leaps from, not from the
+caster. The table supplies that degree on the leap's geometry fact; a new target
+with Total Cover from the previous target can't be leapt to.
+
+**Rules basis / gap:** `.references/srd-5.2.1/spells.md`, "Chromatic Orb," says
+the orb "leaps to a different target of your choice within 30 feet of the
+target" and that you "make an attack roll against the new target," but not
+where that attack originates. `.references/srd-5.2.1/playing-the-game.md`,
+"Cover," says a target benefits from cover only "when an attack or other effect
+originates on the opposite side of the cover." The model reads the leap as
+travelling from the previous target, so the attack originates there.

@@ -1,18 +1,18 @@
 {
   "summary": {
-    "total": 179,
-    "covered": 168,
+    "total": 180,
+    "covered": 169,
     "open": 5,
     "nonSemantic": 6,
     "byRuntime": {
       "shared-algebras": 1,
-      "battle": 139,
+      "battle": 140,
       "character-creation": 20,
       "character-sheet": 15,
       "character-battle": 4
     },
     "byStatus": {
-      "covered": 168,
+      "covered": 169,
       "needs-qnt-owner": 5,
       "needs-parity-witness": 0,
       "needs-surface-evidence": 0,
@@ -6495,6 +6495,35 @@
         "UBIQUITOUS_LANGUAGE.md#Equipment"
       ],
       "title": "A held Melee weapon with the Thrown property also offers a thrown ranged attack with its Thrown range and melee ability, and an accepted thrown attack roll, hit or miss, puts the weapon on the ground at one required table-supplied landing position"
+    },
+    {
+      "id": "BATTLE.ATTACK.TARGET_COVER",
+      "kind": "boundary-protocol",
+      "parityWitnesses": [
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-target-cover.test.ts"
+        }
+      ],
+      "profiles": [],
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/cover-defense-core.qnt"
+      ],
+      "reason": "The QNT owner models the three degrees' AC bonuses and Total Cover's refusal of direct targeting; the ordinary object Attack owner imports it. The table adjudicates the degree from the geometry and supplies it, when it rules some, as an optional cover field on the attack and spell target geometry facts; a fact without one gets no cover. The facts are attackTargetDistance, an Opportunity Attack threat, spellTarget, a spatial melee spell attack proxy target, a chained spell leap, a familiar's touch delivery, and the creature and spell object target facts. attack-spatial and spell targeting refuse a target with Total Cover; attack-target-cover adds the bonus at every creature attack-roll hit decision, and object attacks add it through the same algebra. The executable parity witness covers weapon attacks with each degree and with no degree, Total Cover refusal, the reported attack total of 19 missing AC 19 behind Half Cover, an Opportunity Attack threat with Total Cover, and a Spell Attack with each degree.",
+      "runtime": "battle",
+      "runtimeOwners": [
+        "packages/shared-algebras/src/cover-algebra.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-target-cover.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-spatial.ts"
+      ],
+      "status": "covered",
+      "surfaceEvidence": [
+        ".references/srd-5.2.1/rules-glossary.md#Cover",
+        ".references/srd-5.2.1/playing-the-game.md#Cover",
+        ".references/srd-5.2.1/spells.md#Targets",
+        "UBIQUITOUS_LANGUAGE.md#Combat"
+      ],
+      "title": "An attack roll on a creature or object, with a weapon, a Stat Block attack, an Opportunity Attack or a spell, meets the target's AC plus the bonus of the table-supplied degree of cover, and Total Cover refuses direct targeting by attacks and spells"
     }
   ],
   "battleHoleFrontier": [
@@ -13382,6 +13411,18 @@
       "obligationIds": [],
       "ownerPath": "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack-tests.qnt",
       "role": "proof-only"
+    },
+    {
+      "evidence": "Identity-independent Cover semantics: a table-supplied degree of cover either refuses direct targeting (Total Cover) or adds 0, 2 or 5 to the Armor Class an attack roll must meet. Object and creature attack owners import it instead of keeping their own cover arithmetic.",
+      "obligationIds": ["BATTLE.ATTACK.TARGET_COVER"],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/cover-defense-core.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "evidence": "Focused executable Cover targeting and Armor Class examples; it is proof evidence rather than generator input.",
+      "obligationIds": [],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/cover-defense-core-examples.qnt",
+      "role": "proof-only"
     }
   ],
   "qntRegistry": [
@@ -14797,6 +14838,16 @@
     {
       "classification": "qnt-owner-role",
       "ownerPath": "packages/shared-algebras/proofs/rule-core/composite-target-buff-core.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/cover-defense-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/cover-defense-core.qnt",
       "role": "semantic-core"
     },
     {
@@ -20815,6 +20866,26 @@
       ],
       "semanticCore": [
         "packages/shared-algebras/proofs/rule-core/thrown-weapon-attack.qnt"
+      ],
+      "status": "generation-subset-clean"
+    },
+    {
+      "blockedBy": [],
+      "generatorSubset": [
+        "variant",
+        "pure-def",
+        "int",
+        "bool",
+        "pattern-match",
+        "arithmetic",
+        "all-block"
+      ],
+      "obligationId": "BATTLE.ATTACK.TARGET_COVER",
+      "proofOnly": [
+        "packages/shared-algebras/proofs/rule-core/cover-defense-core-examples.qnt"
+      ],
+      "semanticCore": [
+        "packages/shared-algebras/proofs/rule-core/cover-defense-core.qnt"
       ],
       "status": "generation-subset-clean"
     }

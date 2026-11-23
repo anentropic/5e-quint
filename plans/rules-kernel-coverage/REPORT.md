@@ -6,14 +6,14 @@ Generated detail; do not edit or read wholesale. Start with `plans/rules-kernel-
 
 ## Summary
 
-- Total obligations: 179
-- Covered obligations: 168
+- Total obligations: 180
+- Covered obligations: 169
 - Open transitional obligations: 5
 - Boundary or unsupported obligations: 6
 
 | Status                   | Count |
 | ------------------------ | ----: |
-| covered                  |   168 |
+| covered                  |   169 |
 | needs-qnt-owner          |     5 |
 | needs-parity-witness     |     0 |
 | needs-surface-evidence   |     0 |
@@ -23,7 +23,7 @@ Generated detail; do not edit or read wholesale. Start with `plans/rules-kernel-
 | Runtime            | Count |
 | ------------------ | ----: |
 | shared-algebras    |     1 |
-| battle             |   139 |
+| battle             |   140 |
 | character-creation |    20 |
 | character-sheet    |    15 |
 | character-battle   |     4 |
@@ -211,6 +211,7 @@ Generated detail; do not edit or read wholesale. Start with `plans/rules-kernel-
 | `BATTLE.HELP.ABILITY_CHECK_ASSIST`                                | battle             | covered                  | _direct reducer entrypoint_                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL`                       | battle             | covered                  | _direct reducer entrypoint_                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `BATTLE.ATTACK.THROWN_WEAPON_ATTACK`                              | battle             | covered                  | _direct reducer entrypoint_                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `BATTLE.ATTACK.TARGET_COVER`                                      | battle             | covered                  | _direct reducer entrypoint_                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ## Battle Hole Frontier
 
@@ -959,6 +960,8 @@ Generated detail; do not edit or read wholesale. Start with `plans/rules-kernel-
 | `packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core-examples.qnt`                             | proof-only              | _none_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `packages/shared-algebras/proofs/rule-core/thrown-weapon-attack.qnt`                                                | semantic-core           | `BATTLE.ATTACK.THROWN_WEAPON_ATTACK`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `packages/shared-algebras/proofs/rule-core/thrown-weapon-attack-tests.qnt`                                          | proof-only              | _none_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `packages/shared-algebras/proofs/rule-core/cover-defense-core.qnt`                                                  | semantic-core           | `BATTLE.ATTACK.TARGET_COVER`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `packages/shared-algebras/proofs/rule-core/cover-defense-core-examples.qnt`                                         | proof-only              | _none_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 ## QNT Registry
 
@@ -1243,6 +1246,8 @@ Rows here inventory `packages/**/*.qnt` files excluding `.mbt.qnt` drivers and `
 | `packages/shared-algebras/proofs/rule-core/attack-roll-defense-core.qnt`                                            | qnt-owner-role | semantic-core                                                                                                                                                                                            |
 | `packages/shared-algebras/proofs/rule-core/chosen-prepared-spell-access.qnt`                                        | qnt-owner-role | semantic-core                                                                                                                                                                                            |
 | `packages/shared-algebras/proofs/rule-core/composite-target-buff-core.qnt`                                          | qnt-owner-role | semantic-core                                                                                                                                                                                            |
+| `packages/shared-algebras/proofs/rule-core/cover-defense-core-examples.qnt`                                         | qnt-owner-role | proof-only                                                                                                                                                                                               |
+| `packages/shared-algebras/proofs/rule-core/cover-defense-core.qnt`                                                  | qnt-owner-role | semantic-core                                                                                                                                                                                            |
 | `packages/shared-algebras/proofs/rule-core/creature-size-order.qnt`                                                 | exempt         | leaf-type-vocabulary: Shared creature size order leaf imported by registered movement and Unit feature procedure owners.                                                                                 |
 | `packages/shared-algebras/proofs/rule-core/d20-test-circumstance-core-examples.qnt`                                 | qnt-owner-role | proof-only                                                                                                                                                                                               |
 | `packages/shared-algebras/proofs/rule-core/d20-test-circumstance-core.qnt`                                          | qnt-owner-role | semantic-core                                                                                                                                                                                            |
@@ -1639,6 +1644,7 @@ Rows here are derived from `plans/unit-profile-coverage/profiles.jsonl` for prof
 | `BATTLE.HELP.ABILITY_CHECK_ASSIST`                                | generation-subset-clean | `record`, `pure-def`, `int`, `bool`, `comparison`, `boolean-connective`, `all-block`, `set`, `set-operators`, `size`, `membership`, `exists`, `filter`                                                                                                                                                             |          |           |
 | `BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL`                       | generation-subset-clean | `import`, `variant`, `record`, `pure-def`, `int`, `bool`, `if-expression`, `comparison`, `boolean-connective`, `pattern-match`, `all-block`, `let-binding`                                                                                                                                                         |          |           |
 | `BATTLE.ATTACK.THROWN_WEAPON_ATTACK`                              | generation-subset-clean | `variant`, `record`, `pure-def`, `bool`, `if-expression`, `comparison`, `boolean-connective`, `all-block`, `set`                                                                                                                                                                                                   |          |           |
+| `BATTLE.ATTACK.TARGET_COVER`                                      | generation-subset-clean | `variant`, `pure-def`, `int`, `bool`, `pattern-match`, `arithmetic`, `all-block`                                                                                                                                                                                                                                   |          |           |
 
 ### Generator Readiness Backlog
 

@@ -13,7 +13,8 @@ import {
   holeInstanceKey,
 } from "@dnd/shared-algebras/runtime-hole-algebra";
 import { deathSaveStateIsDead } from "@dnd/shared-algebras/death-saves-algebra";
-import { SIZES, type MovementFeet } from "@dnd/shared/types";
+import { directTargetCover } from "@dnd/shared-algebras/cover-algebra";
+import { SIZES, type CoverType, type MovementFeet } from "@dnd/shared/types";
 import { battleCreatureType } from "./domain-helpers.ts";
 import {
   type BattleObjectContactTargetsHole,
@@ -115,8 +116,14 @@ type WeaponAttackDamageEnhancementSpellExecution = Extract<
   { readonly procedure: "weaponAttackDamageEnhancement" }
 >;
 
-type SpellTargetLegalityOptions = {
+export type SpellTargetLegalityOptions = {
   readonly spatialMeleeSpellAttackProxyPositionId?: BattleTablePositionId;
+  /**
+   * Where the spell's attack originates for cover. A chained leap originates
+   * at the previous target (A59), so the caster's `spellTarget` cover doesn't
+   * refuse it; the leap fact's own cover does.
+   */
+  readonly coverOrigin?: "caster" | "previousTarget";
 };
 export type ObjectLightTargetFact = Extract<
   BattleTargetSpatialFact,
@@ -936,6 +943,25 @@ function spellTargetSatisfiesNonDispositionRequirements(
   return true;
 }
 
+/**
+ * Whether a caster's spellTarget fact names this caster, target and spell, and
+ * lets the spell target it directly: a target with Total Cover can't be.
+ */
+function spellTargetFactAdmitsTarget(
+  fact: Extract<BattleTargetSpatialFact, { readonly kind: "spellTarget" }>,
+  actorId: CombatantId,
+  targetId: CombatantId,
+  sourceProcedureRef: BattleExecutableSpellInvocation["sourceProcedureRef"],
+  coverOrigin: SpellTargetLegalityOptions["coverOrigin"],
+): boolean {
+  return (
+    fact.casterId === actorId &&
+    fact.targetId === targetId &&
+    fact.sourceProcedureRef === sourceProcedureRef &&
+    (coverOrigin === "previousTarget" || directTargetCover(fact.cover) !== null)
+  );
+}
+
 export function spellTargetSpatialFactMatches(
   fact: BattleTargetSpatialFact,
   actorId: CombatantId,
@@ -967,9 +993,13 @@ export function spellTargetSpatialFactMatches(
     return false;
   }
   if (
-    fact.casterId !== actorId ||
-    fact.targetId !== targetId ||
-    fact.sourceProcedureRef !== sourceProcedureRef
+    !spellTargetFactAdmitsTarget(
+      fact,
+      actorId,
+      targetId,
+      sourceProcedureRef,
+      options.coverOrigin,
+    )
   ) {
     return false;
   }
@@ -1002,6 +1032,7 @@ function spatialMeleeSpellAttackProxyTargetFactMatches(
     fact.casterId === actorId &&
     fact.targetId === targetId &&
     fact.sourceProcedureRef === sourceProcedureRef &&
+    directTargetCover(fact.cover) !== null &&
     (forcePositionId === undefined ||
       fact.forcePositionId === forcePositionId) &&
     fact.reachFeet === invocation.forceReachFeet
@@ -1046,10 +1077,43 @@ export function spellObjectTargetFact(
         fact.objectId === objectId &&
         fact.sourceProcedureRef === invocation.sourceProcedureRef &&
         fact.rangeFeet === invocation.rangeFeet &&
+        directTargetCover(fact.cover) !== null &&
         (!spellAttackRequiresExactDistance(invocation) ||
           fact.distanceFeet <= invocation.rangeFeet),
     ) ?? null
   );
+}
+
+/**
+ * The degree of cover the table stated between a spell's attacker and a
+ * creature target, read from the same geometry fact that made the target
+ * legal: the caster's spellTarget, or the force's proxy fact for a spell that
+ * attacks from a force's position. Undefined when the table stated none, as
+ * for the creature that triggers a stored spell, which has no such fact.
+ */
+export function spellAttackTargetStatedCover(
+  facts: readonly BattleTargetSpatialFact[],
+  actorId: CombatantId,
+  targetId: CombatantId,
+  invocation: BattleExecutableSpellInvocation,
+  options: SpellTargetLegalityOptions = {},
+): CoverType | undefined {
+  for (const fact of facts) {
+    if (
+      (fact.kind === "spellTarget" ||
+        fact.kind === "spatialMeleeSpellAttackProxyTargetWithinReach") &&
+      spellTargetSpatialFactMatches(
+        fact,
+        actorId,
+        targetId,
+        invocation,
+        options,
+      )
+    ) {
+      return fact.cover;
+    }
+  }
+  return undefined;
 }
 
 export function spellObjectTargetSightFact(

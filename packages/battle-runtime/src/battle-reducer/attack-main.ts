@@ -20,7 +20,11 @@ import {
   nonEmptyArrayProperty,
   optionalProperty,
 } from "../optional-property.ts";
-import { currentArmorClass } from "@dnd/shared-algebras/armor-class-algebra";
+import { directTargetCover } from "@dnd/shared-algebras/cover-algebra";
+import {
+  admittedArmorClassBehindCover,
+  weaponAttackArmorClass,
+} from "./attack-target-cover.ts";
 import { Match } from "effect";
 import { allocateBattleEffectOccurrenceForCreature } from "../effect-execution-ref.ts";
 
@@ -85,7 +89,6 @@ import { weaponMasteryToppleSavingThrowHole } from "./weapon-mastery-topple-hole
 import { resolveWeaponMasteryGraze } from "./weapon-mastery-graze.ts";
 
 import {
-  activeEffectArmorClass,
   activeOngoingFeatureOccurrencesForCombatant,
   ongoingFeatureProfileForSourceKey,
 } from "./creature-state-execution.ts";
@@ -1289,7 +1292,7 @@ function ordinaryObjectAttackTargetIssues<
         ...(input.objectFact.objectId === input.objectId
           ? []
           : ["the table fact object does not match the selected object"]),
-        ...(input.objectFact.cover === "total"
+        ...(directTargetCover(input.objectFact.cover) === null
           ? ["Total Cover prevents direct targeting"]
           : []),
         ...(attackTargetConstraint(input.attack).kind ===
@@ -1450,15 +1453,12 @@ function resolveOrdinaryObjectAttackRoll<
     { readonly tag: "ready" }
   >;
 }): OrdinaryObjectAttackRollOutcome {
-  const coverBonus =
-    input.objectFact.cover === "half"
-      ? 2
-      : input.objectFact.cover === "threeQuarters"
-        ? 5
-        : 0;
   const hit = attackRollHitsWithCriticalThreshold(
     input.rollPreparation.effectiveAttackRoll,
-    Number(input.objectFact.armorClass) + coverBonus,
+    admittedArmorClassBehindCover(
+      Number(input.objectFact.armorClass),
+      input.objectFact.cover,
+    ),
     criticalThresholdForAttack(
       input.input.state.combatants.get(input.attackerId),
       input.attack,
@@ -2205,9 +2205,16 @@ export function resolveSelectedAttackProcedure<
   const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
 
   const criticalThreshold = criticalThresholdForAttack(attacker, attack);
+  const targetArmorClass = weaponAttackArmorClass(
+    input.state,
+    attackerId,
+    target,
+    attack,
+    fillSet.targetSpatialFacts,
+  );
   const ordinaryHit = attackRollHitsWithCriticalThreshold(
     effectiveAttackRoll,
-    currentArmorClass(activeEffectArmorClass(input.state, target)),
+    targetArmorClass,
     criticalThreshold,
   );
   const missToHitReplacement = selectedAttackRollMissToHitReplacement({
@@ -4575,9 +4582,16 @@ function resolveWeaponMasteryCleaveAfterPrimaryDamage(input: {
     input.state.combatants.get(input.subject.actorId),
     cleaveAttack,
   );
+  const cleaveTargetArmorClass = weaponAttackArmorClass(
+    input.state,
+    input.subject.actorId,
+    secondTarget,
+    cleaveAttack,
+    cleaveTargetFacts,
+  );
   const ordinaryCleaveHit = attackRollHitsWithCriticalThreshold(
     effectiveCleaveAttackRoll,
-    currentArmorClass(activeEffectArmorClass(input.state, secondTarget)),
+    cleaveTargetArmorClass,
     cleaveCriticalThreshold,
   );
   const cleaveMissToHitReplacement = selectedAttackRollMissToHitReplacement({
@@ -5226,9 +5240,16 @@ function resolveHuntersPreyHordeBreakerAfterPrimaryDamage(input: {
     input.state.combatants.get(input.subject.actorId),
     hordeBreakerAttack,
   );
+  const hordeBreakerTargetArmorClass = weaponAttackArmorClass(
+    input.state,
+    input.subject.actorId,
+    secondTarget,
+    hordeBreakerAttack,
+    targetFacts,
+  );
   const hit = attackRollHitsWithCriticalThreshold(
     effectiveHordeBreakerAttackRoll,
-    currentArmorClass(activeEffectArmorClass(input.state, secondTarget)),
+    hordeBreakerTargetArmorClass,
     criticalThreshold,
   );
   const rolledState = consumeHelpAttackForAttackRoll(

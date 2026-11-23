@@ -13,7 +13,6 @@ import {
   spendAction,
   spendActivationResource,
 } from "@dnd/shared-algebras/action-economy-algebra";
-import { currentArmorClass } from "@dnd/shared-algebras/armor-class-algebra";
 import { damageAmount as toDamageAmount } from "@dnd/shared/types";
 import {
   attackRollHits,
@@ -51,7 +50,7 @@ import {
   recordAttackRollOngoingFeatures,
   requiredSpellAttackRollMode,
 } from "./attack-roll.ts";
-import { activeEffectArmorClass } from "./creature-state-execution.ts";
+import { spellAttackArmorClass } from "./attack-target-cover.ts";
 import {
   applyMovableLightSpellEffect,
   applySpatialMeleeSpellAttackProxyEffect,
@@ -1238,10 +1237,14 @@ function prepareTargetedSpellAttackRoll(
     };
   }
   const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll);
-  const ordinaryHit = attackRollHits(
-    effectiveAttackRoll,
-    currentArmorClass(activeEffectArmorClass(input.input.state, input.target)),
+  const targetArmorClass = spellAttackArmorClass(
+    input.input.state,
+    input.input.subject.actorId,
+    input.target,
+    input.invocation,
+    input.fillSet.targetSpatialFacts,
   );
+  const ordinaryHit = attackRollHits(effectiveAttackRoll, targetArmorClass);
   const missToHitReplacement = selectedAttackRollMissToHitReplacement({
     state: input.input.state,
     subject: input.input.subject,
