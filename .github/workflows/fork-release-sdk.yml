@@ -1,0 +1,44 @@
+# Fork only (anentropic/5e-quint): build upstream's SDK as @anentropic/dnd-sdk and attach the
+# tarball to a GitHub release. Run by hand from the Actions tab. See FORK.md.
+name: Fork SDK release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-release-sdk
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release @anentropic/dnd-sdk
+    if: github.repository == 'anentropic/5e-quint' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.19.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --strict-peer-dependencies
+
+      - name: Build, check and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/fork/release-sdk.mjs
