@@ -3,7 +3,8 @@
 
 // RAW anchors:
 // - equipment.md, Ammunition: an Ammunition-property weapon requires matching
-//   ammunition and each attack expends one piece.
+//   ammunition and each attack expends one piece. Drawing the ammunition is
+//   part of the attack, and a one-handed weapon needs a free hand to load.
 // - monsters.md, Ammunition and Ranged Attacks: a monster that
 //   requires ammunition carries the necessary ammunition.
 module ammunitionLifecycle {
@@ -38,6 +39,26 @@ module ammunitionLifecycle {
   ): bool =
     legalAmmunitionStock(stock) and
     ammunitionRemaining(stock, ammunitionKind) > 0
+
+  // Drawing the ammunition is part of the attack, and loading a one-handed
+  // weapon needs a free hand: one that holds nothing and grapples no one.
+  // A stat block never states what each hand holds (ASSUMPTIONS.md A64), so
+  // its loading hand is not stated and does not refuse the attack.
+  type LoadingHand =
+    | LoadingHandFree
+    | LoadingHandOccupied
+    | LoadingHandNotStated
+
+  pure def ammunitionCanBeDrawn(loadingHand: LoadingHand): bool =
+    loadingHand != LoadingHandOccupied
+
+  pure def ammunitionAttackReady(
+    stock: AmmunitionStock,
+    ammunitionKind: AmmunitionKind,
+    loadingHand: LoadingHand,
+  ): bool =
+    ammunitionAttackAvailable(stock, ammunitionKind) and
+    ammunitionCanBeDrawn(loadingHand)
 
   pure def ammunitionAfterAcceptedAttack(
     stock: AmmunitionStock,

@@ -3,6 +3,7 @@ module ammunitionLifecycleTests {
   import ammunitionLifecycle.* from "./ammunition-lifecycle"
 
   pure val arrowStock = { ammunitionKind: ArrowAmmunition, remaining: 2 }
+  pure val slingBulletStock = { ammunitionKind: SlingBulletAmmunition, remaining: 1 }
   pure val boltStock = { ammunitionKind: BoltAmmunition, remaining: 1 }
 
   run ammunitionAvailabilityAndExactSpend = all {
@@ -39,5 +40,18 @@ module ammunitionLifecycleTests {
     assert(ammunitionAfterAcceptedAttack({ ammunitionKind: BulletAmmunition, remaining: 1 }, BulletAmmunition).remaining == 0),
     assert(ammunitionAfterAcceptedAttack({ ammunitionKind: NeedleAmmunition, remaining: 1 }, NeedleAmmunition).remaining == 0),
     assert(ammunitionAfterAcceptedAttack({ ammunitionKind: SlingBulletAmmunition, remaining: 1 }, SlingBulletAmmunition).remaining == 0),
+  }
+
+  run ammunitionAttackNeedsAFreeHandToLoad = all {
+    assert(ammunitionAttackReady(slingBulletStock, SlingBulletAmmunition, LoadingHandFree)),
+    assert(not(ammunitionAttackReady(slingBulletStock, SlingBulletAmmunition, LoadingHandOccupied))),
+    assert(ammunitionAttackReady(slingBulletStock, SlingBulletAmmunition, LoadingHandNotStated)),
+    assert(
+      not(ammunitionAttackReady(
+        { ammunitionKind: SlingBulletAmmunition, remaining: 0 },
+        SlingBulletAmmunition,
+        LoadingHandFree,
+      ))
+    ),
   }
 }
