@@ -85,7 +85,6 @@ import {
   sourceDamageRollPenaltyRollForDamageRoll,
 } from "./damage-helpers.ts";
 import {
-  attackRollAfterD20TestRerolls,
   attackRollD20TestRerolls,
   attackRollHoleWithD20TestRerollOptions,
   battleStateAfterHeroicInspirationReroll,
@@ -591,7 +590,7 @@ export function resolveChainedSpellAttackDamageAct(input: {
       );
     }
     /* v8 ignore stop -- @preserve */
-    const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll.value);
+    const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
 
     const stepCover = chainedSpellAttackStepStatedCover({
       invocation: input.invocation,

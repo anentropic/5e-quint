@@ -7,7 +7,6 @@ import {
 } from "../battle-action-options.ts";
 import { spendAmmunitionForAcceptedAttackPendingContinuation } from "../battle-ammunition.ts";
 import { stateWithThrownWeaponReleasedPendingContinuation } from "./thrown-weapon-release.ts";
-import { thrownWeaponLandingIssue } from "./thrown-weapon-attack.ts";
 // Opportunity attack resolution owns the movement-triggered Reaction procedure.
 // KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE
 // KERNEL-COVERAGE: runtime-owner BATTLE.FEATURE.WEAPON_MASTERY_GRAZE
@@ -105,7 +104,7 @@ import {
   opportunityAttackOptionForReactor,
 } from "./movement-speed.ts";
 import {
-  qualifyAttackEnemyProximity,
+  qualifyAttackTargetFacts,
   attackTargetIsLegal,
   attackTargetStatedCover,
 } from "./attack-spatial.ts";
@@ -651,19 +650,14 @@ function reactionAttackTargetSpatialFacts(input: {
   if (facts === undefined) return missingReactionAttackDistance(input.fillSet);
   const targetIssue = reactionAttackTargetIssue(input, facts);
   if (targetIssue !== null) return targetIssue;
-  const enemyProximity = qualifyAttackEnemyProximity(
+  const enemyProximity = qualifyAttackTargetFacts(
     input.state,
     input.subject.reactorId,
+    input.subject.targetId,
     input.attack,
     facts,
   );
   if (isSpatialQualificationIssue(enemyProximity)) return enemyProximity;
-  const landingIssue = thrownWeaponLandingIssue(
-    input.subject.reactorId,
-    input.attack,
-    facts,
-  );
-  if (landingIssue !== null) return { tag: "invalid", message: landingIssue };
   return { tag: "ok", facts, enemyProximity };
 }
 

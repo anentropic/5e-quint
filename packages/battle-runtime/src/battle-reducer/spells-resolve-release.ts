@@ -1243,7 +1243,7 @@ function prepareTargetedSpellAttackRoll(
       ),
     };
   }
-  const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll);
+  const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
   const targetArmorClass = spellAttackArmorClass(
     input.input.state,
     input.input.subject.actorId,

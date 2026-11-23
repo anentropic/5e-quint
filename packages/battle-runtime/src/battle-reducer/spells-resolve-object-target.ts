@@ -23,7 +23,6 @@ import {
 } from "../optional-property.ts";
 import { attackRollIsCriticalHit } from "./attack-resolution.ts";
 import {
-  attackRollAfterD20TestRerolls,
   attackRollD20TestRerolls,
   attackRollHoleWithD20TestRerollOptions,
   battleStateAfterHeroicInspirationReroll,
@@ -370,7 +369,7 @@ function resolveObjectTargetSpellAttackCore(
   }
   /* v8 ignore stop -- @preserve */
 
-  const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll);
+  const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
   const hit = attackRollHits(
     effectiveAttackRoll,
     admittedArmorClassBehindCover(objectFact.armorClass, objectFact.cover),

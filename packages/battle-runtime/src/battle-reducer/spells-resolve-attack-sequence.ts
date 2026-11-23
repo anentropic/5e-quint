@@ -82,7 +82,6 @@ import {
 import { reactionSpellTargetFactsForAfterDamage } from "./reaction-triggered-spells.ts";
 import { d20TestNaturalOneRerollOutcomeIssue } from "./d20-test-natural-one-reroll.ts";
 import {
-  attackRollAfterD20TestRerolls,
   attackRollD20TestRerolls,
   attackRollHoleWithD20TestRerollOptions,
   battleStateAfterHeroicInspirationReroll,
@@ -528,9 +527,7 @@ function resolveSpellAttackSequenceCreaturePart(input: {
     );
   }
   /* v8 ignore stop -- @preserve */
-  const effectiveAttackRoll = attackRollAfterD20TestRerolls(
-    input.partFill.attackRoll,
-  );
+  const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
   const targetArmorClass = spellAttackArmorClass(
     input.state,
     input.actorId,
@@ -1226,7 +1223,7 @@ function resolveSpellAttackSequenceObjectPart(input: {
     );
   }
   /* v8 ignore stop -- @preserve */
-  const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll);
+  const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
   const hit = attackRollHits(
     effectiveAttackRoll,
     admittedArmorClassBehindCover(objectFact.armorClass, objectFact.cover),

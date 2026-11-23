@@ -71,7 +71,6 @@ import {
   unexpectedSourceDamageRollPenaltyRoll,
 } from "./damage-helpers.ts";
 import {
-  attackRollAfterD20TestRerolls,
   attackRollD20TestRerolls,
   attackRollHoleWithD20TestRerollOptions,
   battleStateAfterHeroicInspirationReroll,
@@ -499,7 +498,7 @@ function resolveAttackBurstSaveDamageSpellAct(input: {
     );
   }
   /* v8 ignore stop -- @preserve */
-  const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll);
+  const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
 
   const targetArmorClass = spellAttackArmorClass(
     input.input.state,
