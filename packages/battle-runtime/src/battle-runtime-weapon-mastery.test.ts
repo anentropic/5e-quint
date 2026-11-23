@@ -1431,7 +1431,7 @@ describe("battle runtime: Weapon Mastery", () => {
     const throughMovement = [
       ...throughMovementDecision,
       movementFill(movement, {
-        movementCostFeet: 10,
+        distanceFeet: 10,
         provokedOpportunityAttacks: [],
       }),
     ];

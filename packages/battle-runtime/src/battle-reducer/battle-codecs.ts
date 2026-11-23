@@ -84,6 +84,10 @@ import {
 } from "../active-effect/codecs.ts";
 import { BattleRoundSchema } from "../active-effect/round-codec.ts";
 import {
+  BATTLE_MOVEMENT_PATH_ACTIVITIES,
+  BATTLE_MOVEMENT_PATH_DIFFICULT_TERRAIN,
+} from "../active-effect/execution-vocabulary.ts";
+import {
   BATTLE_CUNNING_STRIKE_OPTION_SELECTION_IDS,
   CUNNING_STRIKE_END_TURN_COVER_DEGREES,
   MONK_FOCUS_BATTLE_OPTIONS_SUPPORT_PROFILE,
@@ -3948,7 +3952,6 @@ type BattleOrdinaryMovementFillValueEncoded =
     };
     readonly fixedCostMovementReplacement?: {
       readonly kind: "fixedCostMovementReplacement";
-      readonly distanceFeet: number;
       readonly landing:
         | {
             readonly kind: "legalLanding";
@@ -4975,9 +4978,17 @@ type BattleFillEncoded =
       readonly relationshipFacts?: BattleSavingThrowRelationshipFactsEncoded;
     };
 
+const BattleMovementPathSegmentSchema = Schema.Struct({
+  distanceFeet: MovementFeet,
+  activity: Schema.Literals(BATTLE_MOVEMENT_PATH_ACTIVITIES),
+  difficultTerrain: Schema.Literals(BATTLE_MOVEMENT_PATH_DIFFICULT_TERRAIN),
+  movesCloserThroughDirectionalArea: Schema.Boolean,
+  draggedGrappledTargetIds: Schema.Array(CombatantId),
+});
+
 const BattleMovementFillValueCommonSchemaFields = {
   speedKind: Schema.Literals(BATTLE_MOVEMENT_SPEED_KINDS),
-  movementCostFeet: MovementFeet,
+  path: Schema.NonEmptyArray(BattleMovementPathSegmentSchema),
   provokedOpportunityAttacks: Schema.Array(
     battleInterruptAttackExecutionSelectionWithFields({
       reactorId: CombatantId,
@@ -5037,8 +5048,6 @@ const BattleMovementFillValueCommonSchemaFields = {
           }),
         ]),
       ),
-      totalDistanceFeet: MovementFeet,
-      difficultTerrainDistanceFeet: MovementFeet,
     }),
   ),
   directionalPersistentAreaMovement: Schema.optionalKey(
@@ -5049,20 +5058,6 @@ const BattleMovementFillValueCommonSchemaFields = {
       sourceProcedureRef: BattleProcedureExecutionRef,
       areaId: BattleAreaId,
       directionId: BattleLineDirectionId,
-      totalDistanceFeet: MovementFeet,
-      closerDistanceFeet: MovementFeet,
-    }),
-  ),
-  grappleDrag: Schema.optionalKey(
-    Schema.Struct({
-      kind: Schema.Literal("grappleDrag"),
-      totalDistanceFeet: MovementFeet,
-      targets: Schema.NonEmptyArray(
-        Schema.Struct({
-          targetId: CombatantId,
-          distanceFeet: MovementFeet,
-        }),
-      ),
     }),
   ),
   creatureSpaceTraversal: Schema.optionalKey(
@@ -5108,7 +5103,6 @@ const BattleOrdinaryMovementFillValueSchema = Schema.Struct({
   fixedCostMovementReplacement: Schema.optionalKey(
     Schema.Struct({
       kind: Schema.Literal("fixedCostMovementReplacement"),
-      distanceFeet: MovementFeet,
       landing: Schema.Union([
         Schema.Struct({
           kind: Schema.Literal("legalLanding"),

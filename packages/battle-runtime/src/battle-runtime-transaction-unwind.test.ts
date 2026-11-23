@@ -230,7 +230,7 @@ function movementWithOpportunityAttack(
   >,
 ) {
   return movementFill(hole, {
-    movementCostFeet: 5,
+    distanceFeet: 5,
     provokedOpportunityAttacks: [
       {
         reactorId,
@@ -245,7 +245,7 @@ function movementWithoutOpportunityAttacks(
   hole: Extract<BattleHole, { readonly kind: "movement" }>,
 ) {
   return movementFill(hole, {
-    movementCostFeet: 5,
+    distanceFeet: 5,
     provokedOpportunityAttacks: [],
   });
 }
