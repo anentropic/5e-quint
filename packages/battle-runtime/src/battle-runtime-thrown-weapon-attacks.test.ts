@@ -646,7 +646,7 @@ describe("battle runtime: thrown weapon attacks", () => {
           : battleProjectedCombatantAdmissionLeafIssueMessage(issue),
       ),
     ).toEqual([
-      "Character weapon one-handed damage requires a Versatile weapon held two-handed with its Versatile damage.",
+      "Character weapon one-handed damage requires a Versatile weapon held two-handed.",
     ]);
   });
 

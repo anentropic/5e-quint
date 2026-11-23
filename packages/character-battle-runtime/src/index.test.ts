@@ -11091,6 +11091,37 @@ describe("Character Build battle projection", () => {
     );
   });
 
+  test("starts a battle with a level 11 Monk holding a Quarterstaff two-handed", () => {
+    // Martial Arts d10 replaces the Versatile d8, so the held damage no
+    // longer equals the Versatile damage that `oneHandedDamage` sits beside.
+    const init = battleCreatureInitFromCharacterBuild({
+      combatantId: combatantId("level-11-monk"),
+      characterId: characterId("character:level-11-monk"),
+      displayName: "Level 11 Monk",
+      build: monkBuild({
+        level: 11,
+        weaponUnitId: "weapon_quarterstaff",
+        str: 12,
+        dex: 16,
+        grip: "two_handed",
+      }),
+      initiative: initiativeScore(10),
+      ammunitionStocks: [],
+      unitLibrary,
+    });
+    expect(expectSuccess(init).creatureInit.attack?.weapon).toMatchObject({
+      damage: { kind: "dice", dice: 1, dieSize: 10 },
+      oneHandedDamage: { kind: "dice", dice: 1, dieSize: 10 },
+    });
+
+    const session = startBattleFromProjectedRosterFixture({
+      battleId: battleId("battle-level-11-monk-two-handed-quarterstaff"),
+      projections: [init],
+    });
+
+    expect(session).toMatchObject({ _tag: "Success" });
+  });
+
   test("offers a tied finesse ability without adding proficiency to an untrained weapon", () => {
     const fighterBuild = equippedFighterBuild({
       weaponUnitId: syntheticFinesseWeaponUnitId,
