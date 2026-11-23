@@ -780,6 +780,7 @@ const EXECUTION_IDENTITY_COLLISION_EXEMPTIONS = [
     "battleRuntimeCommandBoundExecutionReferences",
     "runtimeCommandEffectOccurrenceKey",
     "runtimeCommandAreaMembershipTrigger",
+    "runtimeCommandReferenceKey",
   ].flatMap((identifier) =>
     exactCollision(
       "command",

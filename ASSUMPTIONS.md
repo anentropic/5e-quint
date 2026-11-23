@@ -337,6 +337,37 @@ where that attack originates. `.references/srd-5.2.1/playing-the-game.md`,
 originates on the opposite side of the cover." The model reads the leap as
 travelling from the previous target, so the attack originates there.
 
+## A60: The free object interaction belongs to the creature's own turn
+
+**Assumption:** Battle offers the free object interaction only on the
+creature's own turn, while it can act (it isn't Incapacitated), and not while
+Command's Halt applies. The first interaction each turn is free unless the
+table rules that the object needs an action; any other takes the Utilize
+action. The free interaction isn't tied to a moment of the move or the action:
+the table says when it happens. Off its turn a creature has no free
+interaction, not even during readied movement, but Ready can hold an object
+interaction as its readied action. Releasing it takes that readied Utilize
+action, whatever the table rules about the object. Any other off-turn
+interaction is the table's ruling, outside Battle's costs. Battle also leaves
+reach to the table: it offers the pickup of a fallen weapon wherever the weapon
+lies, and the caller takes it only when the table rules the creature can reach
+it.
+
+**Rules basis / gap:** `.references/srd-5.2.1/playing-the-game.md`, "Your
+Turn," lets a creature "interact with one object or feature of the environment
+for free, during either your move or action," and requires the Utilize action
+for a second object. `.references/srd-5.2.1/rules-glossary.md`, "Ready
+[Action]," lets a creature choose "the action you will take in response to
+that trigger, or ... to move up to your Speed," with the example "I'll pull
+the lever that opens it." `.references/srd-5.2.1/rules-glossary.md`,
+"Incapacitated," says "You can't take any action, Bonus Action, or Reaction,"
+and `.references/srd-5.2.1/spells.md`, "Command," says that under Halt the
+target "doesn't move and takes no action." The SRD doesn't say whether a
+creature that can't act may still interact during its move, or whether a
+Reaction, including readied movement, comes with a free interaction. The model
+ties the free interaction to a turn the creature can act on, and lets a
+readied interaction take only the action Ready held.
+
 ## A61: A Prone Levitated creature can't move along a path
 
 **Assumption:** A creature that is both Prone and the target of Levitate has no

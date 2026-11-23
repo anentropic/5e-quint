@@ -42,7 +42,10 @@ import {
   holeInstanceKey,
 } from "@dnd/shared-algebras/runtime-hole-algebra";
 import { ArmorClassSchema as BattleArmorClassSchema } from "@dnd/shared-algebras/armor-class-algebra";
-import { AttackOnceOrDashDisengageHideUtilizeActionRestrictionSchema } from "@dnd/shared-algebras/action-economy-algebra";
+import {
+  AttackOnceOrDashDisengageHideUtilizeActionRestrictionSchema,
+  OBJECT_INTERACTION_STATES,
+} from "@dnd/shared-algebras/action-economy-algebra";
 import { RETAINED_COMPANION_PROTOCOL_TAGS } from "@dnd/shared-algebras/companion-protocol-algebra";
 import {
   AmmunitionKindSchema,
@@ -2536,6 +2539,12 @@ const BattleHolePayloadMembers = [
   }),
   pairedBattleHoleMember({
     ...BattleHoleBaseFieldsSchema,
+    kind: Schema.Literal("objectInteractionRuling"),
+    actorId: CombatantId,
+    objectInteraction: Schema.Literals(OBJECT_INTERACTION_STATES),
+  }),
+  pairedBattleHoleMember({
+    ...BattleHoleBaseFieldsSchema,
     kind: Schema.Literal("toolPossessionFacts"),
     actorId: CombatantId,
     toolIds: Schema.Tuple([Schema.Literal("poisoners_kit")]),
@@ -4699,6 +4708,13 @@ type BattleFillEncoded =
       };
     }
   | {
+      readonly kind: "objectInteractionRuling";
+      readonly holeId: string;
+      readonly value: {
+        readonly requiresUtilize: boolean;
+      };
+    }
+  | {
       readonly kind: "toolPossessionFacts";
       readonly holeId: string;
       readonly value: {
@@ -5846,6 +5862,13 @@ export const BattleFillSchema: Schema.Codec<
       }),
     }),
     Schema.Struct({
+      kind: Schema.Literal("objectInteractionRuling"),
+      holeId: BattleHoleIdSchema,
+      value: Schema.Struct({
+        requiresUtilize: Schema.Boolean,
+      }),
+    }),
+    Schema.Struct({
       kind: Schema.Literal("toolPossessionFacts"),
       holeId: BattleHoleIdSchema,
       value: Schema.Struct({
@@ -6243,6 +6266,7 @@ const BattleTurnSnapshotInferredSchema = Schema.Struct({
   actionResources: Schema.Array(RuntimeActionResourceSchema),
   actionTakenThisTurn: Schema.Boolean,
   bonusActionQuotaAvailable: Schema.Boolean,
+  objectInteraction: Schema.Literals(OBJECT_INTERACTION_STATES),
   spellSlotUsesThisTurn: Schema.Array(
     Schema.Union([
       Schema.Struct({
@@ -8602,6 +8626,7 @@ function serializedBattleHoleExecutionReferences(
         ),
       ],
       heldObjectFacts: noSerializedExecutionReferences,
+      objectInteractionRuling: noSerializedExecutionReferences,
       weaponAttackDamageEnhancementTargetItem: (value) => [
         source(value.sourceProcedureRef),
       ],
@@ -8915,6 +8940,8 @@ function serializedRuntimeCommandReferencePolicy(
       persistentAreaSaveCompositeSave: actorOwned,
       standFromProne: actorOwned,
       dropProne: actorOwned,
+      interactWithObject: actorOwned,
+      pickUpHeldWeapon: actorOwned,
       linkedDefenseResistanceDamageShareSeparation: actorOwned,
       endPersistentAreaSaveConditionEscapeForAreaRemoval: actorOwned,
       endPersistentAreaSaveConditionEscapeForDeparture: actorOwned,

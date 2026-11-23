@@ -18,8 +18,8 @@ import {
   battleTablePositionId,
   type CombatantId,
 } from "./identity.ts";
+import { heldWeaponPickupTransition } from "./battle-reducer/battle-object-lifecycle.ts";
 import {
-  applyBattleHeldWeaponPickup,
   type BattleFill,
   type BattleHole,
   type BattleResolutionResult,
@@ -479,13 +479,9 @@ describe("battle runtime: thrown weapon attacks", () => {
       ),
     ).toEqual(["unarmedStrike"]);
 
-    const pickedUp = applyBattleHeldWeaponPickup(completed.state, {
-      interaction: {
-        actorId: fighterId,
-        objectId: mainDaggerId,
-        actorSpace: { kind: "actorSpace", positionId: landingPosition },
-      },
-      loadoutSlot: "mainWeapon",
+    const pickedUp = heldWeaponPickupTransition(completed.state, {
+      actorId: fighterId,
+      objectId: mainDaggerId,
     });
     if (pickedUp.tag !== "applied") {
       throw new Error(`Expected the pickup, got ${pickedUp.reason}.`);
