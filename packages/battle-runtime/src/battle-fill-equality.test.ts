@@ -820,7 +820,7 @@ describe("resubmitted fill continuity", () => {
       holeId: holeId("continuity-hole:movement"),
       value: {
         speedKind: "walk",
-        movementCostFeet: movementFeet(feet),
+        distanceFeet: feet,
         provokedOpportunityAttacks: [],
       },
     });
