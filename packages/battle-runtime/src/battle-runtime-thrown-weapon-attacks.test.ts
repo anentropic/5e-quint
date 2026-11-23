@@ -368,15 +368,57 @@ function withReadiedThrownDagger(
       expiresAt: { kind: "startOfTurn", combatantId: fighterId },
     }),
   };
-  const release = {
-    tag: "runtimeCommand",
-    actorId: targetId,
-    command: "releaseReadiedAttack",
-    reactorId: fighterId,
-    targetId,
-    procedureRef: subject.procedureRef,
-  } as const satisfies BattleSubject;
-  return { state: readied, attack: subject, release };
+  const awaiting = resolveBattleSubject({
+    state: readied,
+    subject: {
+      tag: "runtimeCommand",
+      actorId: targetId,
+      command: "reportReadyTrigger",
+      readiedActorId: fighterId,
+    },
+    fills: [],
+  });
+  if (awaiting.tag !== "needsHoles") {
+    throw new Error("Expected the readied attack trigger checkpoint.");
+  }
+  const pending = battleFrontierInterruptDecisionForState(awaiting.state);
+  const choice = pending?.choices.find(
+    (candidate) =>
+      candidate.kind === "nestedProcedure" &&
+      candidate.subject.command === "releaseReadiedAttack" &&
+      candidate.subject.targetId === targetId,
+  );
+  if (
+    pending === null ||
+    choice?.kind !== "nestedProcedure" ||
+    choice.subject.command !== "releaseReadiedAttack"
+  ) {
+    throw new Error("Expected the offered readied attack.");
+  }
+  const release = choice.subject;
+  // The trigger checkpoint admits the release with its first fill; later
+  // fills continue the active release from the state it left.
+  const releaseWith = (
+    fills: readonly BattleFill[],
+  ): BattleResolutionResult => {
+    const begun = resolveBattleInterrupt({
+      state: awaiting.state,
+      fill: interruptDecisionFill(pending.decisionHole, {
+        kind: "resolve",
+        responderId: fighterId,
+        choice: {
+          kind: "releaseReadiedAttack",
+          targetId,
+          procedureRef: release.procedureRef,
+          fills: fills.slice(0, 1),
+        },
+      }),
+    });
+    return fills.length <= 1 || begun.tag !== "needsHoles"
+      ? begun
+      : resolveBattleSubject({ state: begun.state, subject: release, fills });
+  };
+  return { state: awaiting.state, attack: subject, release, releaseWith };
 }
 
 describe("battle runtime: thrown weapon attacks", () => {
@@ -940,7 +982,7 @@ describe("battle runtime: thrown weapon attacks", () => {
   });
 
   test("a readied thrown Dagger needs a landing fact, leaves the hand once its hit is accepted, and is reported when its damage ends the attack", () => {
-    const { state, attack, release } = withReadiedThrownDagger(
+    const { attack, release, releaseWith } = withReadiedThrownDagger(
       battleWithDaggers({ mainHand: "dagger", goblinActsFirst: true }),
     );
     const targetFacts = (facts: readonly BattleTargetSpatialFact[]) => ({
@@ -953,13 +995,7 @@ describe("battle runtime: thrown weapon attacks", () => {
       ],
     });
 
-    expect(
-      resolveBattleSubject({
-        state,
-        subject: release,
-        fills: [targetFacts([])],
-      }),
-    ).toMatchObject({
+    expect(releaseWith([targetFacts([])])).toMatchObject({
       tag: "invalid",
       reason: "invalidFill",
       message:
@@ -967,16 +1003,9 @@ describe("battle runtime: thrown weapon attacks", () => {
     });
 
     const target = targetFacts([landingFact(attack)]);
-    const roll = requireHole(
-      resolveBattleSubject({ state, subject: release, fills: [target] }),
-      "attackRoll",
-    );
+    const roll = requireHole(releaseWith([target]), "attackRoll");
     const hit = attackRollFill(roll, { total: 20, naturalD20: 15 });
-    const awaitingDamage = resolveBattleSubject({
-      state,
-      subject: release,
-      fills: [target, hit],
-    });
+    const awaitingDamage = releaseWith([target, hit]);
     const damage = requireHole(awaitingDamage, "rolledDice");
     if (awaitingDamage.tag !== "needsHoles") {
       throw new Error("Expected the readied attack's damage hole.");
@@ -1008,7 +1037,7 @@ describe("battle runtime: thrown weapon attacks", () => {
   });
 
   test("a readied thrown Dagger also lands on a miss", () => {
-    const { state, attack, release } = withReadiedThrownDagger(
+    const { attack, releaseWith } = withReadiedThrownDagger(
       battleWithDaggers({ mainHand: "dagger", goblinActsFirst: true }),
     );
     const target = {
@@ -1020,29 +1049,19 @@ describe("battle runtime: thrown weapon attacks", () => {
         landingFact(attack),
       ],
     };
-    const roll = requireHole(
-      resolveBattleSubject({ state, subject: release, fills: [target] }),
-      "attackRoll",
-    );
+    const roll = requireHole(releaseWith([target]), "attackRoll");
     const missed = requireResolved(
-      resolveBattleSubject({
-        state,
-        subject: release,
-        fills: [target, attackRollFill(roll, { total: 2, naturalD20: 2 })],
-      }),
+      releaseWith([target, attackRollFill(roll, { total: 2, naturalD20: 2 })]),
     );
 
     expect(missed.droppedObjects).toEqual([thrownDaggerDrop(attack)]);
   });
 
   test("a released readied throw with no input asks for its fixed target's facts", () => {
-    const { state, attack, release } = withReadiedThrownDagger(
+    const { attack, releaseWith } = withReadiedThrownDagger(
       battleWithDaggers({ mainHand: "dagger", goblinActsFirst: true }),
     );
-    const hole = requireHole(
-      resolveBattleSubject({ state, subject: release, fills: [] }),
-      "targetChoice",
-    );
+    const hole = requireHole(releaseWith([]), "targetChoice");
     expect(hole).toMatchObject({
       holeId: ATTACK_TARGET_HOLE_ID,
       choices: [goblinId],
@@ -1067,28 +1086,15 @@ describe("battle runtime: thrown weapon attacks", () => {
       noEnemyNear(attack),
       landingFact(attack),
     ]);
-    requireHole(
-      resolveBattleSubject({ state, subject: release, fills: [target] }),
-      "attackRoll",
-    );
+    requireHole(releaseWith([target]), "attackRoll");
 
     const otherTargetId = combatantId("thrown-release-other-target");
-    expect(
-      resolveBattleSubject({
-        state,
-        subject: release,
-        fills: [{ ...target, value: otherTargetId }],
-      }),
-    ).toMatchObject({
+    expect(releaseWith([{ ...target, value: otherTargetId }])).toMatchObject({
       tag: "invalid",
       message: "Readied target is fixed by the reaction trigger.",
     });
     expect(
-      resolveBattleSubject({
-        state,
-        subject: release,
-        fills: [targetFill(hole, goblinId, [landingFact(attack)])],
-      }),
+      releaseWith([targetFill(hole, goblinId, [landingFact(attack)])]),
     ).toMatchObject({
       tag: "invalid",
       message:
@@ -1237,7 +1243,7 @@ describe("battle runtime: thrown weapon attacks", () => {
   });
 
   test("a readied thrown Dagger whose damage roll opens a Reaction window lands by the attack's end", () => {
-    const { state, attack, release } = withReadiedThrownDagger(
+    const { attack, releaseWith } = withReadiedThrownDagger(
       battleWithCuttingWordsTarget(),
       bardId,
     );
@@ -1250,20 +1256,14 @@ describe("battle runtime: thrown weapon attacks", () => {
         landingFact(attack),
       ],
     };
-    const roll = requireHole(
-      resolveBattleSubject({ state, subject: release, fills: [target] }),
-      "attackRoll",
-    );
+    const roll = requireHole(releaseWith([target]), "attackRoll");
     const hit = attackRollFill(roll, { total: 20, naturalD20: 10 });
-    const damage = requireHole(
-      resolveBattleSubject({ state, subject: release, fills: [target, hit] }),
-      "rolledDice",
-    );
-    const awaitingReaction = resolveBattleSubject({
-      state,
-      subject: release,
-      fills: [target, hit, damageRollFill(damage, 4)],
-    });
+    const damage = requireHole(releaseWith([target, hit]), "rolledDice");
+    const awaitingReaction = releaseWith([
+      target,
+      hit,
+      damageRollFill(damage, 4),
+    ]);
     if (awaitingReaction.tag !== "needsHoles") {
       throw new Error("Expected the readied damage roll's Reaction window.");
     }
