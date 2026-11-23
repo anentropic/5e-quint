@@ -177,7 +177,6 @@ type ComparableAttackRollResult = Pick<
       BattleAttackRollResult,
       | "activatedOngoingFeatureProcedureRef"
       | "missToHitReplacementProcedureRef"
-      | "spellAttackReroll"
       | "d20TestRerolls"
     >
   >;
@@ -192,7 +191,6 @@ function attackRollResultsEqual(
     a.activatedOngoingFeatureProcedureRef ===
       b.activatedOngoingFeatureProcedureRef &&
     a.missToHitReplacementProcedureRef === b.missToHitReplacementProcedureRef &&
-    spellAttackRerollDecisionsEqual(a.spellAttackReroll, b.spellAttackReroll) &&
     attackRollD20TestRerollDecisionListsEqual(
       a.d20TestRerolls,
       b.d20TestRerolls,
@@ -213,22 +211,6 @@ function attackRollD20TestRerollDecisionListsEqual(
       d20TestRollRerollDecisionsEqual(decision, b[index]),
     )
   );
-}
-
-function spellAttackRerollDecisionsEqual(
-  a: BattleAttackRollResult["spellAttackReroll"],
-  b: BattleAttackRollResult["spellAttackReroll"],
-): boolean {
-  if (a === undefined || b === undefined) {
-    return a === b;
-  }
-  if (a.kind !== b.kind || a.effectKind !== b.effectKind) {
-    return false;
-  }
-  if (a.kind === "decline" || b.kind === "decline") {
-    return a.kind === b.kind;
-  }
-  return attackRollResultsEqual(a.replacement, b.replacement);
 }
 
 function d20TestRollRerollDecisionsEqual<EffectKind extends string>(
