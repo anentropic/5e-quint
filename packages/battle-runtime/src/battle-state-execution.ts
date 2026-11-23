@@ -180,6 +180,7 @@ import {
   movementFeet,
   type Condition,
   type CoverType,
+  type RuledCoverType,
   type D6RollResult,
   type DamageDieSize,
   type ReadonlyNonEmptyArray,
@@ -1705,7 +1706,7 @@ export type BattleOpportunityAttackThreat = {
    * The degree of cover the table rules between the reactor and the mover.
    * Without it, no cover applies.
    */
-  readonly cover?: CoverType;
+  readonly cover?: RuledCoverType;
 } & BattleOpportunityAttackSelection;
 export type BattleTargetSpatialFact =
   | {
@@ -1750,7 +1751,7 @@ export type BattleTargetSpatialFact =
        * The degree of cover the table rules between the actor and the target.
        * Without it, no cover applies.
        */
-      readonly cover?: CoverType;
+      readonly cover?: RuledCoverType;
     } & BattleAttackExecutionSelection)
   | {
       readonly kind: "attackAttackerCannotSeeTarget";
@@ -1784,7 +1785,7 @@ export type BattleTargetSpatialFact =
        * The degree of cover the table rules between the caster and the target.
        * Without it, no cover applies.
        */
-      readonly cover?: CoverType;
+      readonly cover?: RuledCoverType;
     }
   | {
       /**
@@ -1828,7 +1829,7 @@ export type BattleTargetSpatialFact =
        * The degree of cover the table rules between the familiar and the target.
        * Without it, no cover applies.
        */
-      readonly cover?: CoverType;
+      readonly cover?: RuledCoverType;
     }
   | {
       readonly kind: "spellTargetKnownWilling";
@@ -1852,7 +1853,7 @@ export type BattleTargetSpatialFact =
        * The degree of cover the table rules between the force and the target.
        * Without it, no cover applies.
        */
-      readonly cover?: CoverType;
+      readonly cover?: RuledCoverType;
     }
   | {
       readonly kind: "linkedEffectPairedWornComponents";
@@ -1878,7 +1879,7 @@ export type BattleTargetSpatialFact =
        * The degree of cover the table rules between the caster and the object.
        * Without it, no cover applies.
        */
-      readonly cover?: CoverType;
+      readonly cover?: RuledCoverType;
       readonly armorClass: ArmorClass;
       readonly damageDisposition: BattleObjectDamageDisposition;
     }
@@ -1978,7 +1979,7 @@ export type BattleTargetSpatialFact =
        * The degree of cover the table rules between the previous target and this one.
        * Without it, no cover applies.
        */
-      readonly cover?: CoverType;
+      readonly cover?: RuledCoverType;
     }
   | {
       readonly kind: "spellTargetsInPointOriginSphere";
