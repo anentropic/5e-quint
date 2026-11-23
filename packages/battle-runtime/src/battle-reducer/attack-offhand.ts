@@ -97,6 +97,7 @@ import {
 import {
   attackHitTriggerKind,
   attackKindForDeflectRedirect,
+  attackTargetIsLegal,
 } from "./movement-speed.ts";
 
 import { attackFillSet } from "./attack-fill-set.ts";
