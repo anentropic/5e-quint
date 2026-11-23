@@ -22,8 +22,8 @@ import {
   battleTablePositionId,
   type CombatantId,
 } from "./identity.ts";
+import { heldWeaponPickupTransition } from "./battle-reducer/battle-object-lifecycle.ts";
 import {
-  applyBattleHeldWeaponPickup,
   type BattleFill,
   type BattleHole,
   type BattleResolutionResult,
@@ -401,15 +401,57 @@ function withReadiedThrownDagger(
       expiresAt: { kind: "startOfTurn", combatantId: fighterId },
     }),
   };
-  const release = {
-    tag: "runtimeCommand",
-    actorId: targetId,
-    command: "releaseReadiedAttack",
-    reactorId: fighterId,
-    targetId,
-    procedureRef: subject.procedureRef,
-  } as const satisfies BattleSubject;
-  return { state: readied, attack: subject, release };
+  const awaiting = resolveBattleSubject({
+    state: readied,
+    subject: {
+      tag: "runtimeCommand",
+      actorId: targetId,
+      command: "reportReadyTrigger",
+      readiedActorId: fighterId,
+    },
+    fills: [],
+  });
+  if (awaiting.tag !== "needsHoles") {
+    throw new Error("Expected the readied attack trigger checkpoint.");
+  }
+  const pending = battleFrontierInterruptDecisionForState(awaiting.state);
+  const choice = pending?.choices.find(
+    (candidate) =>
+      candidate.kind === "nestedProcedure" &&
+      candidate.subject.command === "releaseReadiedAttack" &&
+      candidate.subject.targetId === targetId,
+  );
+  if (
+    pending === null ||
+    choice?.kind !== "nestedProcedure" ||
+    choice.subject.command !== "releaseReadiedAttack"
+  ) {
+    throw new Error("Expected the offered readied attack.");
+  }
+  const release = choice.subject;
+  // The trigger checkpoint admits the release with its first fill; later
+  // fills continue the active release from the state it left.
+  const releaseWith = (
+    fills: readonly BattleFill[],
+  ): BattleResolutionResult => {
+    const begun = resolveBattleInterrupt({
+      state: awaiting.state,
+      fill: interruptDecisionFill(pending.decisionHole, {
+        kind: "resolve",
+        responderId: fighterId,
+        choice: {
+          kind: "releaseReadiedAttack",
+          targetId,
+          procedureRef: release.procedureRef,
+          fills: fills.slice(0, 1),
+        },
+      }),
+    });
+    return fills.length <= 1 || begun.tag !== "needsHoles"
+      ? begun
+      : resolveBattleSubject({ state: begun.state, subject: release, fills });
+  };
+  return { state: awaiting.state, attack: subject, release, releaseWith };
 }
 
 describe("battle runtime: thrown weapon attacks", () => {
@@ -512,13 +554,9 @@ describe("battle runtime: thrown weapon attacks", () => {
       ),
     ).toEqual(["unarmedStrike"]);
 
-    const pickedUp = applyBattleHeldWeaponPickup(completed.state, {
-      interaction: {
-        actorId: fighterId,
-        objectId: mainDaggerId,
-        actorSpace: { kind: "actorSpace", positionId: landingPosition },
-      },
-      loadoutSlot: "mainWeapon",
+    const pickedUp = heldWeaponPickupTransition(completed.state, {
+      actorId: fighterId,
+      objectId: mainDaggerId,
     });
     if (pickedUp.tag !== "applied") {
       throw new Error(`Expected the pickup, got ${pickedUp.reason}.`);
@@ -604,7 +642,7 @@ describe("battle runtime: thrown weapon attacks", () => {
           : battleProjectedCombatantAdmissionLeafIssueMessage(issue),
       ),
     ).toEqual([
-      "Character weapon one-handed damage requires a Versatile weapon held two-handed with its Versatile damage.",
+      "Character weapon one-handed damage requires a Versatile weapon held two-handed.",
     ]);
   });
 
@@ -623,6 +661,51 @@ describe("battle runtime: thrown weapon attacks", () => {
     expect(
       completed.state.groundObjects.get(fighterId)?.has(mainDaggerId),
     ).toBe(true);
+  });
+
+  test("a thrown Dagger leaves the hand once its hit is accepted, before its damage", () => {
+    const state = battleWithDaggers({ mainHand: "dagger" });
+    const subject = attackSubjectFor(state, "thrown");
+    const target = thrownTargetFill(state, subject, [
+      noEnemyNear(subject),
+      landingFact(subject),
+    ]);
+    const roll = attackRollFill(
+      requireHole(
+        resolveBattleSubject({ state, subject, fills: [target] }),
+        "attackRoll",
+      ),
+      { total: 20, naturalD20: 10 },
+    );
+    const awaitingDamage = resolveBattleSubject({
+      state,
+      subject,
+      fills: [target, roll],
+    });
+    if (awaitingDamage.tag !== "needsHoles") {
+      throw new Error("Expected the thrown Dagger's damage hole.");
+    }
+    expect(
+      awaitingDamage.state.groundObjects.get(fighterId)?.get(mainDaggerId)
+        ?.positionId,
+    ).toBe(landingFact(subject).positionId);
+
+    const completed = requireResolved(
+      resolveBattleSubject({
+        state: awaitingDamage.state,
+        subject,
+        fills: [
+          target,
+          roll,
+          damageRollFill(requireHole(awaitingDamage, "rolledDice"), 3),
+        ],
+      }),
+    );
+    expect(completed.droppedObjects).toEqual([thrownDaggerDrop(subject)]);
+    expect(
+      completed.state.groundObjects.get(fighterId)?.get(mainDaggerId)
+        ?.positionId,
+    ).toBe(landingFact(subject).positionId);
   });
 
   test("a melee Dagger attack keeps the Dagger in hand", () => {
@@ -974,8 +1057,8 @@ describe("battle runtime: thrown weapon attacks", () => {
     ]);
   });
 
-  test("a readied thrown Dagger needs a landing fact, stays in hand until its damage, then lands", () => {
-    const { state, attack, release } = withReadiedThrownDagger(
+  test("a readied thrown Dagger needs a landing fact, leaves the hand once its hit is accepted, and is reported when its damage ends the attack", () => {
+    const { attack, release, releaseWith } = withReadiedThrownDagger(
       battleWithDaggers({ mainHand: "dagger", goblinActsFirst: true }),
     );
     const targetFacts = (facts: readonly BattleTargetSpatialFact[]) => ({
@@ -988,13 +1071,7 @@ describe("battle runtime: thrown weapon attacks", () => {
       ],
     });
 
-    expect(
-      resolveBattleSubject({
-        state,
-        subject: release,
-        fills: [targetFacts([])],
-      }),
-    ).toMatchObject({
+    expect(releaseWith([targetFacts([])])).toMatchObject({
       tag: "invalid",
       reason: "invalidFill",
       message:
@@ -1002,21 +1079,22 @@ describe("battle runtime: thrown weapon attacks", () => {
     });
 
     const target = targetFacts([landingFact(attack)]);
-    const roll = requireHole(
-      resolveBattleSubject({ state, subject: release, fills: [target] }),
-      "attackRoll",
-    );
+    const roll = requireHole(releaseWith([target]), "attackRoll");
     const hit = attackRollFill(roll, { total: 20, naturalD20: 15 });
-    const awaitingDamage = resolveBattleSubject({
-      state,
-      subject: release,
-      fills: [target, hit],
-    });
+    const awaitingDamage = releaseWith([target, hit]);
     const damage = requireHole(awaitingDamage, "rolledDice");
     if (awaitingDamage.tag !== "needsHoles") {
       throw new Error("Expected the readied attack's damage hole.");
     }
-    expect(awaitingDamage.state.groundObjects.has(fighterId)).toBe(false);
+    expect(
+      awaitingDamage.state.groundObjects.get(fighterId)?.get(mainDaggerId)
+        ?.positionId,
+    ).toBe(landingFact(attack).positionId);
+    expect(
+      attackActionOptionsForActor(awaitingDamage.state, fighterId).map(
+        (option) => option.kind,
+      ),
+    ).toEqual(["unarmedStrike"]);
 
     const resolved = requireResolved(
       resolveBattleSubject({
@@ -1035,7 +1113,7 @@ describe("battle runtime: thrown weapon attacks", () => {
   });
 
   test("a readied thrown Dagger also lands on a miss", () => {
-    const { state, attack, release } = withReadiedThrownDagger(
+    const { attack, releaseWith } = withReadiedThrownDagger(
       battleWithDaggers({ mainHand: "dagger", goblinActsFirst: true }),
     );
     const target = {
@@ -1047,19 +1125,57 @@ describe("battle runtime: thrown weapon attacks", () => {
         landingFact(attack),
       ],
     };
-    const roll = requireHole(
-      resolveBattleSubject({ state, subject: release, fills: [target] }),
-      "attackRoll",
-    );
+    const roll = requireHole(releaseWith([target]), "attackRoll");
     const missed = requireResolved(
-      resolveBattleSubject({
-        state,
-        subject: release,
-        fills: [target, attackRollFill(roll, { total: 2, naturalD20: 2 })],
-      }),
+      releaseWith([target, attackRollFill(roll, { total: 2, naturalD20: 2 })]),
     );
 
     expect(missed.droppedObjects).toEqual([thrownDaggerDrop(attack)]);
+  });
+
+  test("a released readied throw with no input asks for its fixed target's facts", () => {
+    const { attack, releaseWith } = withReadiedThrownDagger(
+      battleWithDaggers({ mainHand: "dagger", goblinActsFirst: true }),
+    );
+    const hole = requireHole(releaseWith([]), "targetChoice");
+    expect(hole).toMatchObject({
+      holeId: ATTACK_TARGET_HOLE_ID,
+      choices: [goblinId],
+      requiresTableSpatialFact: true,
+      attack: {
+        actorId: fighterId,
+        selection: { procedureRef: attack.procedureRef },
+        targetConstraint: { kind: "rangedRange" },
+        requiresThrownWeaponLanding: true,
+      },
+    });
+    if (hole.attack === undefined) {
+      throw new Error("Expected the readied attack's target hole.");
+    }
+    const target = targetFill(hole, goblinId, [
+      attackTargetSpatialFact(
+        fighterId,
+        goblinId,
+        hole.attack.selection,
+        movementFeet(15),
+      ),
+      noEnemyNear(attack),
+      landingFact(attack),
+    ]);
+    requireHole(releaseWith([target]), "attackRoll");
+
+    const otherTargetId = combatantId("thrown-release-other-target");
+    expect(releaseWith([{ ...target, value: otherTargetId }])).toMatchObject({
+      tag: "invalid",
+      message: "Readied target is fixed by the reaction trigger.",
+    });
+    expect(
+      releaseWith([targetFill(hole, goblinId, [landingFact(attack)])]),
+    ).toMatchObject({
+      tag: "invalid",
+      message:
+        "Fixed-target reaction attacks require an exact attack target distance fact.",
+    });
   });
 
   test("a thrown Dagger whose hit opens a Reaction window is reported by the attack's end", () => {
@@ -1083,6 +1199,11 @@ describe("battle runtime: thrown weapon attacks", () => {
     if (awaitingReaction.tag !== "needsHoles") {
       throw new Error("Expected the thrown Dagger hit's Reaction window.");
     }
+    // The hit is accepted, so the Dagger has left the hand while the window
+    // is open; the result that ends the attack reports it.
+    expect(
+      awaitingReaction.state.groundObjects.get(fighterId)?.has(mainDaggerId),
+    ).toBe(true);
     const pending = battleFrontierInterruptDecisionForState(
       awaitingReaction.state,
     );
@@ -1116,6 +1237,9 @@ describe("battle runtime: thrown weapon attacks", () => {
     if (afterReaction.tag !== "needsHoles") {
       throw new Error("Expected the damage roll after Uncanny Dodge.");
     }
+    expect(
+      afterReaction.state.groundObjects.get(fighterId)?.has(mainDaggerId),
+    ).toBe(true);
     const completed = requireResolved(
       resolveBattleSubject({
         state: afterReaction.state,
@@ -1171,7 +1295,7 @@ describe("battle runtime: thrown weapon attacks", () => {
         subject: move,
         fills: [
           movementFill(moveHole, {
-            movementCostFeet: 5,
+            distanceFeet: 5,
             provokedOpportunityAttacks: [
               {
                 reactorId: fighterId,
@@ -1195,7 +1319,7 @@ describe("battle runtime: thrown weapon attacks", () => {
   });
 
   test("a readied thrown Dagger whose damage roll opens a Reaction window lands by the attack's end", () => {
-    const { state, attack, release } = withReadiedThrownDagger(
+    const { attack, releaseWith } = withReadiedThrownDagger(
       battleWithCuttingWordsTarget(),
       bardId,
     );
@@ -1208,20 +1332,14 @@ describe("battle runtime: thrown weapon attacks", () => {
         landingFact(attack),
       ],
     };
-    const roll = requireHole(
-      resolveBattleSubject({ state, subject: release, fills: [target] }),
-      "attackRoll",
-    );
+    const roll = requireHole(releaseWith([target]), "attackRoll");
     const hit = attackRollFill(roll, { total: 20, naturalD20: 10 });
-    const damage = requireHole(
-      resolveBattleSubject({ state, subject: release, fills: [target, hit] }),
-      "rolledDice",
-    );
-    const awaitingReaction = resolveBattleSubject({
-      state,
-      subject: release,
-      fills: [target, hit, damageRollFill(damage, 4)],
-    });
+    const damage = requireHole(releaseWith([target, hit]), "rolledDice");
+    const awaitingReaction = releaseWith([
+      target,
+      hit,
+      damageRollFill(damage, 4),
+    ]);
     if (awaitingReaction.tag !== "needsHoles") {
       throw new Error("Expected the readied damage roll's Reaction window.");
     }
@@ -1479,8 +1597,11 @@ function battleWithHellishRebukeTarget(): BattleRuntimeSession {
 const dartId = battleObjectId("main:weapon_dart");
 
 /** A Wizard holding a Dart, who knows True Strike. */
-function dartBattle() {
+function dartBattle(
+  target: Pick<Parameters<typeof spellBattle>[0], "targetSpellcasting"> = {},
+) {
   return spellBattle({
+    ...target,
     cantrips: [spellRecord(trueStrikeUnitId)],
     spellSlots: [],
     attack: zeroAbilityWeaponAttackWithSyntheticMastery("weapon_dart"),
@@ -1613,6 +1734,100 @@ describe("battle runtime: a thrown Dart", () => {
         state,
         subject: act.subject,
         fills: [damageType, target, roll, damage],
+      }),
+    );
+  });
+
+  test("a True Strike Dart whose damage opens an after-damage Reaction window is reported once, when the window closes", () => {
+    const session = dartBattle({
+      targetSpellcasting: wizardSpellcasting({
+        cantrips: [],
+        preparedSpells: [spellRecord("hellish_rebuke")],
+        spellSlots: [{ spellLevel: 2, count: 1 }],
+      }),
+    });
+    const rebuke = requireCharacterSpellProcedureRefForTest(
+      session,
+      spellTargetId,
+      spellSlotInvocationRef("hellish_rebuke", 2, "saveGatedDamage"),
+    );
+    const act = spellAct({ session, spellId: trueStrikeUnitId });
+    const damageType: BattleFill = {
+      kind: "damageTypeChoice",
+      holeId: requireFixtureHole(act.initialHoles, "damageTypeChoice").holeId,
+      value: "radiant",
+    };
+    const state = session.state;
+    const landingTarget = dartTargetFill(
+      dartHoles(
+        resolveBattleSubject({
+          state,
+          subject: act.subject,
+          fills: [damageType],
+        }),
+      ),
+    );
+    const target: BattleFill = {
+      ...landingTarget,
+      spatialFacts: [
+        ...(landingTarget.spatialFacts ?? []),
+        {
+          kind: "reactionSpellDamagerVisibleWithinRange",
+          reactorId: spellTargetId,
+          damageSourceId: spellCasterId,
+          sourceProcedureRef: rebuke,
+          rangeFeet: movementFeet(60),
+        },
+      ],
+    };
+    const roll = attackRollFill(
+      requireFixtureHole(
+        dartHoles(
+          resolveBattleSubject({
+            state,
+            subject: act.subject,
+            fills: [damageType, target],
+          }),
+        ),
+        "attackRoll",
+      ),
+      { total: 20, naturalD20: 12 },
+    );
+    const damage = damageRollFillWithGroups(
+      requireFixtureHole(
+        dartHoles(
+          resolveBattleSubject({
+            state,
+            subject: act.subject,
+            fills: [damageType, target, roll],
+          }),
+        ),
+        "rolledDice",
+      ),
+      [[2], [3]],
+    );
+    const awaitingReaction = resolveBattleSubject({
+      state,
+      subject: act.subject,
+      fills: [damageType, target, roll, damage],
+    });
+    expect(
+      requireFixtureHole(dartHoles(awaitingReaction), "interruptDecision"),
+    ).toBeDefined();
+    if (awaitingReaction.tag !== "needsHoles") {
+      throw new Error("Expected the Hellish Rebuke after-damage window.");
+    }
+
+    expectDartLandedAndReported(
+      resolveBattleInterrupt({
+        state: awaitingReaction.state,
+        fill: interruptDecisionFill(
+          findHole(
+            battleResolutionHolesForTest(awaitingReaction),
+            "interruptDecision",
+          ),
+          { kind: "decline", responderId: spellTargetId },
+        ),
       }),
     );
   });

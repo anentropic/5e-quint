@@ -11067,6 +11067,38 @@ describe("Character Build battle projection", () => {
   );
 
   test.each([
+    { grip: "one_handed", leftHandUse: "free" },
+    { grip: "two_handed", leftHandUse: "mainWeapon" },
+  ] as const)(
+    "initializes a $grip Longsword in the hands its grip uses",
+    ({ grip, leftHandUse }) => {
+      const init = expectSuccess(
+        battleCreatureInitFromCharacterBuild({
+          combatantId: combatantId(`longsword-${grip}`),
+          characterId: characterId(`character:longsword-${grip}`),
+          displayName: "Longsword Fighter",
+          build: equippedFighterBuild({
+            weaponUnitId: authoredUnitId("weapon_longsword"),
+            str: 16,
+            dex: 10,
+            grip,
+          }),
+          initiative: initiativeScore(10),
+          ammunitionStocks: [],
+          unitLibrary,
+        }),
+      );
+
+      expect(init.creatureInit.kind).toBe("character");
+      if (init.creatureInit.kind !== "character") return;
+      expect(init.creatureInit.armorClass).toMatchObject({
+        leftHandUse,
+        rightHandUse: "mainWeapon",
+      });
+    },
+  );
+
+  test.each([
     { grip: "one_handed", dieSize: 10 },
     { grip: "two_handed", dieSize: 10 },
   ] as const)(
@@ -11135,6 +11167,37 @@ describe("Character Build battle projection", () => {
     expect(attack?.weapon.damage).toEqual(
       expect.objectContaining({ kind: "dice", dice: 1, dieSize: 8 }),
     );
+  });
+
+  test("starts a battle with a level 11 Monk holding a Quarterstaff two-handed", () => {
+    // Martial Arts d10 replaces the Versatile d8, so the held damage no
+    // longer equals the Versatile damage that `oneHandedDamage` sits beside.
+    const init = battleCreatureInitFromCharacterBuild({
+      combatantId: combatantId("level-11-monk"),
+      characterId: characterId("character:level-11-monk"),
+      displayName: "Level 11 Monk",
+      build: monkBuild({
+        level: 11,
+        weaponUnitId: "weapon_quarterstaff",
+        str: 12,
+        dex: 16,
+        grip: "two_handed",
+      }),
+      initiative: initiativeScore(10),
+      ammunitionStocks: [],
+      unitLibrary,
+    });
+    expect(expectSuccess(init).creatureInit.attack?.weapon).toMatchObject({
+      damage: { kind: "dice", dice: 1, dieSize: 10 },
+      oneHandedDamage: { kind: "dice", dice: 1, dieSize: 10 },
+    });
+
+    const session = startBattleFromProjectedRosterFixture({
+      battleId: battleId("battle-level-11-monk-two-handed-quarterstaff"),
+      projections: [init],
+    });
+
+    expect(session).toMatchObject({ _tag: "Success" });
   });
 
   test("offers a tied finesse ability without adding proficiency to an untrained weapon", () => {

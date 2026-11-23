@@ -41,6 +41,7 @@ export const INITIAL_TURN_RESOURCES = resetTurnActionEconomy({
   currentHasBonusAction: false,
   actionOrBonusActionExclusion: { kind: "notRestricted" },
   movementActionBonusActionExclusion: { kind: "notRestricted" },
+  objectInteraction: "available",
   compelledHalt: null,
   jumpDistanceMultiplier: null,
   heightenedStepOfTheWindCarriedCreatures: [],
@@ -342,6 +343,9 @@ export type AttackFillSet =
         | Extract<BattleFill, { readonly kind: "grappleOutcome" }>
         | undefined;
       readonly weaponMasteryGrazeDecision:
+        | Extract<BattleFill, { readonly kind: "unitFeatureDecision" }>
+        | undefined;
+      readonly huntersPreyHordeBreakerGrazeDecision:
         | Extract<BattleFill, { readonly kind: "unitFeatureDecision" }>
         | undefined;
     }

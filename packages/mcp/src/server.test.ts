@@ -2914,6 +2914,7 @@ describe("MCP server route", () => {
       "Second Wind",
       "Move",
       "Drop Prone",
+      "Interact with an Object",
       "Ready",
       "End Turn",
     ]);
@@ -3052,7 +3053,7 @@ describe("MCP server route", () => {
       continuationActs
         .filter(({ label }) => label !== "Attack")
         .map(({ label }) => label),
-    ).toEqual(["Move", "Drop Prone", "End Turn"]);
+    ).toEqual(["Move", "Drop Prone", "Interact with an Object", "End Turn"]);
     expect(attackSubjects).toHaveLength(8);
     expect(
       attackSubjects.every(
@@ -3079,7 +3080,7 @@ describe("MCP server route", () => {
       ["rolled,rolled", "rolled,static", "static,rolled", "static,static"],
     ]);
 
-    function missAttackThroughMcp(attackName: string, ranged: boolean) {
+    function missAttackThroughMcp(attackName: string) {
       const subject = battleAttackSubjectForName(root, "goblin", attackName);
       const afterTarget = readPayload(
         handleToolCall(root, "fill_battle_hole", {
@@ -3096,7 +3097,7 @@ describe("MCP server route", () => {
                 distanceFeet: movementFeet(5),
                 ...battleAttackSelection(subject, attackName),
               },
-              ...(ranged
+              ...(attackName === "Shortbow"
                 ? [
                     {
                       kind: "rangedAttackEnemyProximity",
@@ -3105,7 +3106,7 @@ describe("MCP server route", () => {
                       enemies: [
                         {
                           enemyId: "fighter",
-                          distanceFeet: 5,
+                          distanceFeet: movementFeet(5),
                           enemyCanSeeAttacker: true,
                         },
                       ],
@@ -3140,7 +3141,7 @@ describe("MCP server route", () => {
       return resolved;
     }
 
-    const firstAttack = missAttackThroughMcp("Scimitar", false);
+    const firstAttack = missAttackThroughMcp("Scimitar");
     const betweenAttacks = readPayload(
       handleToolCall(root, "discover_battle_acts", {}),
     );
@@ -3197,7 +3198,7 @@ describe("MCP server route", () => {
       }),
     );
 
-    const secondAttack = missAttackThroughMcp("Shortbow", true);
+    const secondAttack = missAttackThroughMcp("Shortbow");
     expect(secondAttack.envelope.checkpoint.currentActorId).toBe("goblin");
     expect(
       secondAttack.envelope.checkpoint.turn.actionResources.some(
@@ -3249,7 +3250,15 @@ describe("MCP server route", () => {
           holeId: "battle:movement",
           value: {
             speedKind: "walk",
-            movementCostFeet: 10,
+            path: [
+              {
+                distanceFeet: 10,
+                activity: "ordinary",
+                difficultTerrain: "none",
+                movesCloserThroughDirectionalArea: false,
+                draggedGrappledTargetIds: [],
+              },
+            ],
             provokedOpportunityAttacks: [],
           },
         },
@@ -3750,6 +3759,7 @@ describe("MCP server route", () => {
       "Second Wind",
       "Move",
       "Drop Prone",
+      "Interact with an Object",
       "End Turn",
     ]);
     expect(root.sessionStore.getPendingBattleTransaction()).toBeNull();
@@ -3846,6 +3856,7 @@ describe("MCP server route", () => {
       "Nimble Escape",
       "Move",
       "Drop Prone",
+      "Interact with an Object",
       "Ready",
       "End Turn",
     ]);
@@ -4818,6 +4829,19 @@ describe("MCP server route", () => {
         initiative: 14,
       },
     ]);
+    const session = root.sessionStore.battleSession;
+    if (session === null) throw new Error("Expected the retained Battle.");
+    const [present] = session.state.companions.values();
+    expect(present).toBeDefined();
+    for (const field of [
+      "reappearanceCombatantId",
+      "resolvedStatBlockId",
+      "hitPoints",
+      "ammunitionStocks",
+      "reactionAvailable",
+    ]) {
+      expect(present).not.toHaveProperty(field);
+    }
   });
 
   test("end_battle preserves the active battle when character handoff ownership is invalid", () => {
@@ -8282,6 +8306,7 @@ describe("MCP server route", () => {
       "Second Wind",
       "Move",
       "Drop Prone",
+      "Interact with an Object",
       "Ready",
       "End Turn",
     ]);
@@ -8391,6 +8416,7 @@ describe("MCP server route", () => {
       "Nimble Escape",
       "Move",
       "Drop Prone",
+      "Interact with an Object",
       "Ready",
       "End Turn",
     ]);

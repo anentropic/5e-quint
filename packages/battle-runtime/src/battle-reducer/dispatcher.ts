@@ -70,6 +70,7 @@ export {
 import {
   type BattleSubject,
   type BattleSubjectAction,
+  type BattleInterruptSubject,
   type ActionHideSubject,
   type ActionSearchSubject,
 } from "../battle-subjects.ts";
@@ -188,6 +189,10 @@ import {
   isMovementProcedureSubject,
   resolveMovementProcedure,
 } from "./movement-procedures.ts";
+import {
+  isObjectInteractionSubject,
+  resolveObjectInteraction,
+} from "./object-interaction.ts";
 import { resolveEndTurnCommand } from "./turn-boundary-lifecycle.ts";
 import {
   isPersistentSpatialSpellProcedureSubject,
@@ -212,6 +217,7 @@ import type {
 } from "../battle-state-execution.ts";
 import { bonusActionDashTemporaryHitPointsProfilesForActor } from "./hole-helpers.ts";
 import { admitBattleResolutionInput } from "./resolution-admission.ts";
+import { stateWithAcceptedThrowInHand } from "./thrown-weapon-release.ts";
 import { battleSubjectActionEligibilityIssue } from "./action-eligibility.ts";
 
 type ResolveBattleSubjectInternalOptions = {
@@ -384,6 +390,23 @@ function resolveBattleSubjectInternal(
     /* v8 ignore stop -- @preserve */
     return resolveBattleSubjectInternal(normalizedAdmission.input, options);
   }
+  const replayState = stateWithAcceptedThrowInHand(input.state, input.subject);
+  if (replayState !== input.state) {
+    const replayAdmission = admitBattleResolutionInput({
+      ...input,
+      state: replayState,
+    });
+    /* v8 ignore start -- @preserve -- Putting a thrown weapon back in hand changes only ground objects and preserves every admitted procedure binding. */
+    if (replayAdmission.tag === "staleCharacterProcedure") {
+      return invalidResult(
+        input.state,
+        "staleSubject",
+        "The selected character procedure reference is no longer bound to this actor.",
+      );
+    }
+    /* v8 ignore stop -- @preserve */
+    return resolveBattleSubjectInternal(replayAdmission.input, options);
+  }
   const d20TestNaturalOneRerollResult = resolveD20TestNaturalOneRerollFills({
     resolutionInput: input,
     resolvePrefix: (prefixInput) =>
@@ -395,17 +418,35 @@ function resolveBattleSubjectInternal(
   return resolveBattleSubjectAfterD20TestNaturalOneReroll(input, options);
 }
 
+const INTERRUPT_COMMAND_REQUIRES_CHECKPOINT = {
+  // Discovery also exposes direct release; its owner validates and consumes the held spell.
+  releaseReadiedSpell: false,
+  releaseReadiedMovement: true,
+  releaseReadiedAction: true,
+  releaseReadiedAttack: true,
+  castTriggeredReactionSpell: true,
+  castAttackHitBonusActionSpell: true,
+  opportunityAttack: true,
+  retaliationAttack: true,
+} as const satisfies Record<BattleInterruptSubject["command"], boolean>;
+
 function interruptSubjectRequiresCheckpoint(
   input: AdmittedBattleResolutionInput,
   options: ResolveBattleSubjectInternalOptions,
 ): boolean {
+  const subject = input.subject;
+  const commandRequiresCheckpoint =
+    subject.tag === "runtimeCommand" &&
+    Object.entries(INTERRUPT_COMMAND_REQUIRES_CHECKPOINT).some(
+      ([command, required]) => required && command === subject.command,
+    );
   return (
-    input.state.interruptStack.length > 0 &&
+    (input.state.interruptStack.length > 0 || commandRequiresCheckpoint) &&
     options.interruptRouteOptions.replayingInterruptedProcedure !== true &&
     options.readiedActionActorId === undefined &&
     !(
-      input.subject.tag === "runtimeCommand" &&
-      input.subject.command === "reportReadyTrigger"
+      subject.tag === "runtimeCommand" &&
+      subject.command === "reportReadyTrigger"
     )
   );
 }
@@ -965,23 +1006,8 @@ function resolveBattleSubjectAfterD20TestNaturalOneReroll(
         ...handledInterruptRouteOption,
       });
     }
-    if (
-      subject.tag === "runtimeCommand" &&
-      subject.command === "replaceSelfTransformationMode"
-    ) {
-      return resolveReplaceSelfTransformationModeCommand({
-        ...input,
-        subject,
-      });
-    }
-    if (
-      subject.tag === "runtimeCommand" &&
-      subject.command === "controlledVerticalSuspensionAltitudeControl"
-    ) {
-      return resolveControlledVerticalSuspensionAltitudeControlCommand({
-        ...input,
-        subject,
-      });
+    if (isObjectInteractionSubject(subject)) {
+      return resolveObjectInteraction({ ...input, subject });
     }
     if (isPersistentSpatialSpellProcedureSubject(subject)) {
       return resolvePersistentSpatialSpellProcedureCommand({
@@ -991,6 +1017,18 @@ function resolveBattleSubjectAfterD20TestNaturalOneReroll(
       });
     }
     if (subject.tag === "runtimeCommand") {
+      if (subject.command === "replaceSelfTransformationMode") {
+        return resolveReplaceSelfTransformationModeCommand({
+          ...input,
+          subject,
+        });
+      }
+      if (subject.command === "controlledVerticalSuspensionAltitudeControl") {
+        return resolveControlledVerticalSuspensionAltitudeControlCommand({
+          ...input,
+          subject,
+        });
+      }
       if (subject.command === "protectionRelevantEffectSave") {
         return resolveProtectionRelevantEffectSaveCommand({
           ...input,

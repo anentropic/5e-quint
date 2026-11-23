@@ -1,3 +1,4 @@
+import { testMovementPath } from "./battle-runtime.test-support.ts";
 import { battleResolutionHolesForTest } from "./battle-runtime.test-support.ts";
 import { battleRuntimeSessionForTest } from "./battle-runtime-session.test-support.ts";
 import { resolveBattleSubject } from "./battle-runtime.test-support.ts";
@@ -352,14 +353,13 @@ function discoverMovementDamage(
     subject,
     fills: [fill],
   });
-  expect(result).toMatchObject({
-    tag: "needsHoles",
-    holes: [expect.objectContaining({ kind: "rolledDice" })],
-  });
+  expect(result).toMatchObject({ tag: "needsHoles" });
   if (result.tag !== "needsHoles") {
     throw new Error("Expected Spike Growth movement damage hole.");
   }
-  expect(requireResultHole(result, "rolledDice")).toMatchObject({
+  const holes = battleResolutionHolesForTest(result);
+  expect(holes).toEqual([expect.objectContaining({ kind: "rolledDice" })]);
+  expect(requireHole(holes, "rolledDice")).toMatchObject({
     areaMovementDistanceDamage: {
       distanceFeet: movementFeet(damageDistanceFeet),
       damage: {
@@ -370,7 +370,7 @@ function discoverMovementDamage(
   });
   return {
     ...state,
-    holes: battleResolutionHolesForTest(result),
+    holes,
     pendingMovement: { subject, fill },
     lastResult: "needsHoles",
   };
@@ -420,7 +420,10 @@ function spikeGrowthMovementFill(
   hazard: SpikeGrowthHazardEffect,
 ): Extract<BattleFill, { readonly kind: "movement" }> {
   return movementFill(hole, {
-    movementCostFeet,
+    path: testMovementPath({
+      distanceFeet: difficultTerrainDistanceFeet,
+      difficultTerrain: "areaDifficultTerrain",
+    }),
     provokedOpportunityAttacks: [],
     areaDifficultTerrain: {
       kind: "areaDifficultTerrain",
@@ -434,8 +437,6 @@ function spikeGrowthMovementFill(
           damageDistanceFeet: movementFeet(damageDistanceFeet),
         },
       ],
-      totalDistanceFeet: movementFeet(movementTotalFeet),
-      difficultTerrainDistanceFeet: movementFeet(difficultTerrainDistanceFeet),
     },
   });
 }

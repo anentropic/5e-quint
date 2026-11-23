@@ -10,11 +10,11 @@
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.passive-ability-check-roll-mode
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.remarkable-athlete
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.hide-action-obscurement-permission
+import { weaponAttackIsThrown } from "./thrown-weapon-attack.ts";
 import {
   consumeHelpAbilityChecks,
   helpAbilityCheckGrantsAdvantage,
 } from "./help-ability-check.ts";
-import { weaponAttackIsThrown } from "./thrown-weapon-attack.ts";
 import { optionalProperty } from "../optional-property.ts";
 import { Match } from "effect";
 import { canSpendBonusAction } from "@dnd/shared-algebras/action-economy-algebra";
@@ -327,6 +327,10 @@ export function battleHoleFamilyKind(hole: BattleHole): BattleHoleFamilyKind {
         () => "toolPossessionFacts" as const,
       ),
       byBattleHoleKind(
+        "objectInteractionRuling",
+        () => "objectInteractionRuling" as const,
+      ),
+      byBattleHoleKind(
         "temporaryHitPointChoice",
         () => "temporaryHitPointChoice" as const,
       ),
@@ -334,6 +338,8 @@ export function battleHoleFamilyKind(hole: BattleHole): BattleHoleFamilyKind {
         "unitFeatureDecision",
         () => "unitFeatureDecision" as const,
       ),
+    )
+    .pipe(
       byBattleHoleKind(
         "wildShapeEquipmentDisposition",
         () => "wildShapeEquipmentDisposition" as const,

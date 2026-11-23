@@ -1,3 +1,4 @@
+import { ordinaryMovementPath } from "./battle-reducer/movement-path.ts";
 import {
   battleResolutionHolesForTest,
   rangedAttackEnemyProximityFactsForTest,
@@ -6,6 +7,7 @@ import { assertStatBlockForTest } from "@dnd/surface/surface/stat-block-catalog.
 import {
   abilityModifier,
   defaultArmorClassState,
+  loadoutHandUses,
 } from "@dnd/shared-algebras/armor-class-algebra";
 import { Result } from "effect";
 import {
@@ -217,14 +219,11 @@ export function characterCreature(input: {
           ? input.armorClass
           : {
               ...defaultArmorClassState(),
-              leftHandUse:
-                selectedLoadout.shield !== undefined
-                  ? "shield"
-                  : selectedLoadout.offHandWeapon !== undefined
-                    ? "offWeapon"
-                    : "free",
-              rightHandUse:
-                selectedLoadout.weapon === undefined ? "free" : "mainWeapon",
+              ...loadoutHandUses({
+                holdsShield: selectedLoadout.shield !== undefined,
+                holdsOffHandWeapon: selectedLoadout.offHandWeapon !== undefined,
+                mainWeaponGrip: selectedLoadout.weapon?.grip,
+              }),
             },
       size: "medium",
       speed: { walkFeet: movementFeet(30) },
@@ -808,12 +807,20 @@ export function attackRollFill(
 
 export function movementFill(
   hole: Extract<BattleHole, { readonly kind: "movement" }>,
-  value: {
+  value: (
+    | { readonly distanceFeet: number; readonly path?: never }
+    | {
+        readonly path: Extract<
+          BattleFill,
+          { readonly kind: "movement" }
+        >["value"]["path"];
+        readonly distanceFeet?: never;
+      }
+  ) & {
     readonly speedKind?: Extract<
       BattleFill,
       { readonly kind: "movement" }
     >["value"]["speedKind"];
-    readonly movementCostFeet: number;
     readonly provokedOpportunityAttacks: Extract<
       BattleFill,
       { readonly kind: "movement" }
@@ -845,7 +852,8 @@ export function movementFill(
     holeId: hole.holeId,
     value: {
       speedKind: value.speedKind ?? "walk",
-      movementCostFeet: movementFeet(value.movementCostFeet),
+      path:
+        value.path ?? ordinaryMovementPath(movementFeet(value.distanceFeet)),
       provokedOpportunityAttacks: value.provokedOpportunityAttacks,
       ...(value.fixedCostMovementReplacement === undefined
         ? {}

@@ -4,7 +4,7 @@
     "plans/rules-kernel-coverage/qnt-owner-roles.jsonl"
   ],
   "provenance": {
-    "registryCommit": "dad0380d76fadd8f5dd00c71a17d8469cdec8d23",
+    "registryCommit": "44c2646f79ff451b014d5fe8ea0978cd60bae81f",
     "generator": {
       "path": "scripts/spell-lifecycle-owner-manifest.cjs",
       "sha256": "ba903bab8bc134d711ea81052abfbf0c0ec78df56db45a273c909adbdda6d15f"
@@ -12,11 +12,11 @@
     "inputs": [
       {
         "path": "plans/rules-kernel-coverage/obligations.jsonl",
-        "sha256": "0c9ef7a46a0062b15d4b6194b1f57094836a9fdd351c7a825f5c22c364330e17"
+        "sha256": "54fbb3a942cb7b0bf7157da04e613dbd67f05c92a41eb3a7f5ebc354534004dc"
       },
       {
         "path": "plans/rules-kernel-coverage/qnt-owner-roles.jsonl",
-        "sha256": "f1453c17bdb16f6d7628d42db6140ddacca73bc4f8e77c719e2fc0d10568bfe6"
+        "sha256": "7aa282e3a72504e2d94f3fa2fb27de4e532ce2f8d841cd4b58476ef1651d9179"
       }
     ]
   },
@@ -488,6 +488,7 @@
     "packages/battle-runtime/src/battle-reducer/interrupt-lifecycle.ts",
     "packages/battle-runtime/src/battle-reducer/linked-defense-damage-share.ts",
     "packages/battle-runtime/src/battle-reducer/magic-suppression-action-interdiction.ts",
+    "packages/battle-runtime/src/battle-reducer/movement-path.ts",
     "packages/battle-runtime/src/battle-reducer/movement-speed.ts",
     "packages/battle-runtime/src/battle-reducer/ongoing-feature-helpers.ts",
     "packages/battle-runtime/src/battle-reducer/persistent-area-save-damage-binding.ts",
@@ -604,6 +605,7 @@
     "packages/battle-runtime/src/battle-runtime-hunters-mark-and-hex.test.ts",
     "packages/battle-runtime/src/battle-runtime-interrupt-lifecycle-continuation-boundaries.test.ts",
     "packages/battle-runtime/src/battle-runtime-mage-armor-and-armor-of-shadows.test.ts",
+    "packages/battle-runtime/src/battle-runtime-reaction-graze.test.ts",
     "packages/battle-runtime/src/battle-runtime-transaction-unwind.test.ts",
     "packages/battle-runtime/src/blur-attack-roll-defense-lifecycle.mbt.test.ts",
     "packages/battle-runtime/src/cloudkill-area-hazard.mbt.test.ts",
@@ -949,8 +951,8 @@
   ],
   "pathCounts": {
     "obligationCount": 58,
-    "sourceOrPure": 247,
-    "parityOrFixture": 101,
+    "sourceOrPure": 248,
+    "parityOrFixture": 102,
     "qntFixtureSpec": 46,
     "deferredLaterIssue": 2
   },

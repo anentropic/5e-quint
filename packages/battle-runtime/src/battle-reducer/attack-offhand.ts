@@ -1,3 +1,6 @@
+import { requiredAttackRollMode } from "./attack-roll.ts";
+import { qualifyAttackTargetFacts } from "./attack-spatial.ts";
+import { isSpatialQualificationIssue } from "./ranged-attack-close-combat.ts";
 // Light-property off-hand attack resolution extracted from attack-resolution.ts.
 
 // RAW-COVERAGE: runtime-owner RAW-QCORE7-MOVEMENT-GRAPPLE-001 RAW-PTG-REACTIONS-002 RAW-PTG-REACTIONS-004 RAW-PTG-REACTIONS-005 RAW-PTG-REACTIONS-006 RAW-QCORE9-UNIT-FEATURE-PROFILES-001 RAW-QCORE10-SPELL-PROCEDURE-PROFILES-001
@@ -34,7 +37,6 @@ import {
   attackRollOngoingFeatureActivations,
   consumeHelpAttackForAttackRoll,
   recordAttackRollOngoingFeatures,
-  requiredAttackRollMode,
 } from "./attack-roll.ts";
 
 import { normalizeBattleGrapples } from "./creature-state-leaves.ts";
@@ -80,8 +82,7 @@ import {
 } from "./attack-damage-events.ts";
 import { maybeOpenInterruptWindow } from "./interrupt-execution.ts";
 import { snapshotBattle } from "./battle-snapshot.ts";
-import { attackTargetFactsIssue } from "./attack-spatial.ts";
-import { withThrownWeaponReleased } from "./thrown-weapon-release.ts";
+import { stateWithThrownWeaponReleasedPendingContinuation } from "./thrown-weapon-release.ts";
 
 import { attackTargetHole, revealHidden } from "./hole-helpers.ts";
 import { needsHolesResult } from "./needs-holes-result.ts";
@@ -97,6 +98,7 @@ import {
 import {
   attackHitTriggerKind,
   attackKindForDeflectRedirect,
+  attackTargetIsLegal,
 } from "./movement-speed.ts";
 
 import { attackFillSet } from "./attack-fill-set.ts";
@@ -109,10 +111,13 @@ import {
   eligibleWeaponDamageDiceRollChoiceProcedureRefs,
 } from "./statblock-attacks.ts";
 
+import type { CombatantId } from "../identity.ts";
 import type {
   BattleAttackDamageEvent,
+  BattleCreatureState,
   BattleResolutionResult,
   BattleState,
+  BattleTargetSpatialFact,
   MartialArtsBonusUnarmedStrikeBattleResolutionInput,
   OffHandAttackBattleResolutionInput,
 } from "../battle-state-execution.ts";
@@ -189,6 +194,36 @@ type BonusActionAttackConfig = {
   ) => boolean;
 };
 
+/**
+ * A bonus action attack's roll mode once its target facts qualify it the way
+ * every attack's do: a legal target, a ranged attack's enemy proximity, and a
+ * thrown weapon's landing.
+ */
+function bonusActionAttackRollMode(
+  state: BattleState,
+  attackerId: CombatantId,
+  target: BattleCreatureState,
+  attack: SupportedAttackActionOption,
+  facts: readonly BattleTargetSpatialFact[],
+): ReturnType<typeof requiredAttackRollMode> {
+  const enemyProximity = qualifyAttackTargetFacts(
+    state,
+    attackerId,
+    target.combatantId,
+    attack,
+    facts,
+  );
+  if (isSpatialQualificationIssue(enemyProximity)) return enemyProximity;
+  return requiredAttackRollMode(
+    state,
+    attackerId,
+    target,
+    attack,
+    facts,
+    enemyProximity,
+  );
+}
+
 function resolveBonusActionAttack(
   input: BonusActionAttackBattleResolutionInput,
   config: BonusActionAttackConfig,
@@ -235,7 +270,16 @@ function resolveBonusActionAttack(
   }
   const target = input.state.combatants.get(fillSet.targetId);
   /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
-  if (target == null || target.combatantId === input.subject.actorId) {
+  if (
+    target == null ||
+    !attackTargetIsLegal(
+      input.state,
+      input.subject.actorId,
+      target.combatantId,
+      attack,
+      fillSet.targetSpatialFacts,
+    )
+  ) {
     return invalidResult(
       input.state,
       "invalidFill",
@@ -243,23 +287,19 @@ function resolveBonusActionAttack(
     );
   }
   /* v8 ignore stop -- @preserve */
-  const targetFactsIssue = attackTargetFactsIssue(
+  const initialRequiredRollMode = bonusActionAttackRollMode(
     input.state,
     input.subject.actorId,
-    target.combatantId,
+    target,
     attack,
     fillSet.targetSpatialFacts,
   );
-  if (targetFactsIssue !== null) {
-    return invalidResult(input.state, "invalidFill", targetFactsIssue);
-  }
-  const spendBonusActionAttack = (state: BattleState) =>
-    withThrownWeaponReleased({
-      result: spendOffHandBonusAction(state),
-      attackerId: input.subject.actorId,
-      attack,
-      facts: fillSet.targetSpatialFacts,
-    });
+  if (typeof initialRequiredRollMode === "object")
+    return invalidResult(
+      input.state,
+      "invalidFill",
+      initialRequiredRollMode.message,
+    );
   if (fillSet.attackRoll == null) {
     /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
     if (fillSet.damageRoll != null || fillSet.damageDispositionFilled) {
@@ -274,13 +314,7 @@ function resolveBonusActionAttack(
       attackRollHole(
         input.state.combatants.get(input.subject.actorId),
         attack,
-        requiredAttackRollMode(
-          input.state,
-          input.subject.actorId,
-          target,
-          attack,
-          fillSet.targetSpatialFacts,
-        ),
+        initialRequiredRollMode,
         attackRollOngoingFeatureActivations(
           input.state,
           input.subject.actorId,
@@ -327,13 +361,10 @@ function resolveBonusActionAttack(
   }
   /* v8 ignore stop -- @preserve */
   const requiredRollMode = attackRollModeWithOptionalOngoingFeature(
-    input.state,
-    input.subject.actorId,
-    target,
-    attack,
-    fillSet.targetSpatialFacts,
+    initialRequiredRollMode,
     fillSet.attackRoll.activatedOngoingFeatureProcedureRef,
   );
+
   /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
   if (
     fillSet.attackRoll.activatedOngoingFeatureProcedureRef !== undefined &&
@@ -422,10 +453,16 @@ function resolveBonusActionAttack(
     input.subject.actorId,
     target.combatantId,
   );
-  attackRolledState = spendAmmunitionForAcceptedAttackPendingContinuation({
-    state: attackRolledState,
-    actorId: input.subject.actorId,
+  attackRolledState = stateWithThrownWeaponReleasedPendingContinuation({
+    state: spendAmmunitionForAcceptedAttackPendingContinuation({
+      state: attackRolledState,
+      actorId: input.subject.actorId,
+      attack,
+      subject: input.subject,
+    }),
+    attackerId: input.subject.actorId,
     attack,
+    facts: fillSet.targetSpatialFacts,
     subject: input.subject,
   });
   const critical = attackRollHitIsCritical({
@@ -603,7 +640,7 @@ function resolveBonusActionAttack(
       return invalidResult(input.state, "invalidFill", relationshipIssue);
     }
     /* v8 ignore stop -- @preserve */
-    return spendBonusActionAttack(attackRolledState);
+    return spendOffHandBonusAction(attackRolledState);
   }
   if (hit && fillSet.damageRoll != null) {
     const damageValidation = validateAttackDamageFill(
@@ -844,7 +881,7 @@ function resolveBonusActionAttack(
       input.handledInterruptTrigger,
     );
     if (attackDamageReactionWindow !== null) {
-      const spent = spendBonusActionAttack(attackDamageReactionWindow.state);
+      const spent = spendOffHandBonusAction(attackDamageReactionWindow.state);
       return spent.tag === "invalid"
         ? spent
         : {
@@ -949,7 +986,7 @@ function resolveBonusActionAttack(
       return invalidResult(input.state, "invalidFill", cunningStrike.message);
     }
     /* v8 ignore stop -- @preserve */
-    const spent = spendBonusActionAttack(cunningStrike.state);
+    const spent = spendOffHandBonusAction(cunningStrike.state);
     if (spent.tag === "invalid") {
       return spent;
     }
@@ -978,7 +1015,7 @@ function resolveBonusActionAttack(
     return spent;
   }
 
-  return spendBonusActionAttack(attackRolledState);
+  return spendOffHandBonusAction(attackRolledState);
 }
 
 export function spendOffHandBonusAction(

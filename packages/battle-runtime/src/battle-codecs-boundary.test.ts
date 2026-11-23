@@ -1,3 +1,4 @@
+import { STRICT_OBJECT_PARSE_OPTIONS } from "@dnd/shared/json-schema";
 import { Schema } from "effect";
 import { Result } from "effect";
 import { describe, expect, test } from "vitest";
@@ -1738,7 +1739,10 @@ describe("battle shake-awake physical reachability codec", () => {
 
 describe("battle codec execution-reference boundaries", () => {
   test("parses a D20 Test roll as one coherent single or multiple-die value", () => {
-    const valid = Schema.decodeUnknownResult(BattleFillSchema)({
+    const valid = Schema.decodeUnknownResult(
+      BattleFillSchema,
+      STRICT_OBJECT_PARSE_OPTIONS,
+    )({
       kind: "attackRoll",
       holeId: holeId("d20-valid"),
       value: {
@@ -1753,7 +1757,10 @@ describe("battle codec execution-reference boundaries", () => {
     });
     expect(Result.isSuccess(valid)).toBe(true);
 
-    const removedSelectionField = Schema.decodeUnknownResult(BattleFillSchema)({
+    const removedSelectionField = Schema.decodeUnknownResult(
+      BattleFillSchema,
+      STRICT_OBJECT_PARSE_OPTIONS,
+    )({
       kind: "attackRoll",
       holeId: holeId("d20-removed-selection-field"),
       value: {
@@ -1769,17 +1776,19 @@ describe("battle codec execution-reference boundaries", () => {
     });
     expect(Result.isFailure(removedSelectionField)).toBe(true);
 
-    const legacyIndependentFacts = Schema.decodeUnknownResult(BattleFillSchema)(
-      {
-        kind: "attackRoll",
-        holeId: holeId("d20-legacy-independent-facts"),
-        value: { total: 10, naturalD20: 10, rollMode: "normal" },
-      },
-    );
+    const legacyIndependentFacts = Schema.decodeUnknownResult(
+      BattleFillSchema,
+      STRICT_OBJECT_PARSE_OPTIONS,
+    )({
+      kind: "attackRoll",
+      holeId: holeId("d20-legacy-independent-facts"),
+      value: { total: 10, naturalD20: 10, rollMode: "normal" },
+    });
     expect(Result.isFailure(legacyIndependentFacts)).toBe(true);
 
     const missingRolledOutcomeFact = Schema.decodeUnknownResult(
       BattleFillSchema,
+      STRICT_OBJECT_PARSE_OPTIONS,
     )({
       kind: "concentrationSavingThrow",
       holeId: holeId("d20-missing-rolled-outcome-fact"),
@@ -1789,6 +1798,7 @@ describe("battle codec execution-reference boundaries", () => {
 
     const explicitWithoutRollOutcome = Schema.decodeUnknownResult(
       BattleFillSchema,
+      STRICT_OBJECT_PARSE_OPTIONS,
     )({
       kind: "concentrationSavingThrow",
       holeId: holeId("d20-explicit-without-roll-outcome"),
@@ -2366,7 +2376,15 @@ describe("battle codec execution-reference boundaries", () => {
       holeId: holeId("exact-movement-occurrences"),
       value: {
         speedKind: "walk",
-        movementCostFeet: 20,
+        path: [
+          {
+            distanceFeet: 20,
+            activity: "ordinary",
+            difficultTerrain: "none",
+            movesCloserThroughDirectionalArea: false,
+            draggedGrappledTargetIds: [],
+          },
+        ],
         provokedOpportunityAttacks: [],
         areaDifficultTerrain: {
           kind: "areaDifficultTerrain",
@@ -2380,8 +2398,6 @@ describe("battle codec execution-reference boundaries", () => {
               damageDistanceFeet: 5,
             },
           ],
-          totalDistanceFeet: 10,
-          difficultTerrainDistanceFeet: 5,
         },
         directionalPersistentAreaMovement: {
           kind: "directionalPersistentAreaMovement",
@@ -2390,8 +2406,6 @@ describe("battle codec execution-reference boundaries", () => {
           sourceProcedureRef: fixture.sourceProcedureRef,
           areaId: battleAreaId("area:codec-gust"),
           directionId: battleLineDirectionId("direction:codec-gust"),
-          totalDistanceFeet: 10,
-          closerDistanceFeet: 5,
         },
         controlledVerticalSuspensionMovement: {
           kind: "controlledVerticalSuspensionMovement",
@@ -2436,7 +2450,15 @@ describe("battle codec execution-reference boundaries", () => {
       holeId: holeId("missing-terrain-occurrence"),
       value: {
         speedKind: "walk",
-        movementCostFeet: 10,
+        path: [
+          {
+            distanceFeet: 10,
+            activity: "ordinary",
+            difficultTerrain: "none",
+            movesCloserThroughDirectionalArea: false,
+            draggedGrappledTargetIds: [],
+          },
+        ],
         provokedOpportunityAttacks: [],
         areaDifficultTerrain: {
           kind: "areaDifficultTerrain",
@@ -2449,8 +2471,6 @@ describe("battle codec execution-reference boundaries", () => {
               damageDistanceFeet: 5,
             },
           ],
-          totalDistanceFeet: 5,
-          difficultTerrainDistanceFeet: 5,
         },
       },
     },
@@ -2459,7 +2479,15 @@ describe("battle codec execution-reference boundaries", () => {
       holeId: holeId("missing-gust-occurrence"),
       value: {
         speedKind: "walk",
-        movementCostFeet: 10,
+        path: [
+          {
+            distanceFeet: 10,
+            activity: "ordinary",
+            difficultTerrain: "none",
+            movesCloserThroughDirectionalArea: false,
+            draggedGrappledTargetIds: [],
+          },
+        ],
         provokedOpportunityAttacks: [],
         directionalPersistentAreaMovement: {
           kind: "directionalPersistentAreaMovement",
@@ -2467,8 +2495,6 @@ describe("battle codec execution-reference boundaries", () => {
           sourceProcedureRef: fixture.sourceProcedureRef,
           areaId: battleAreaId("area:codec-gust"),
           directionId: battleLineDirectionId("direction:codec-gust"),
-          totalDistanceFeet: 5,
-          closerDistanceFeet: 5,
         },
       },
     },
@@ -2477,7 +2503,15 @@ describe("battle codec execution-reference boundaries", () => {
       holeId: holeId("missing-levitate-movement-occurrence"),
       value: {
         speedKind: "walk",
-        movementCostFeet: 10,
+        path: [
+          {
+            distanceFeet: 10,
+            activity: "ordinary",
+            difficultTerrain: "none",
+            movesCloserThroughDirectionalArea: false,
+            draggedGrappledTargetIds: [],
+          },
+        ],
         provokedOpportunityAttacks: [],
         controlledVerticalSuspensionMovement: {
           kind: "controlledVerticalSuspensionMovement",
@@ -3387,7 +3421,9 @@ describe("battle codec act ownership boundaries", () => {
     }
     const dodgeResponse = declarationHole.responseChoices.find(
       (response) =>
-        response.kind === "action" && response.subject.action === "dodge",
+        response.kind === "action" &&
+        response.subject.tag === "action" &&
+        response.subject.action === "dodge",
     );
     if (dodgeResponse?.kind !== "action") {
       throw new Error("Expected Ready to offer Dodge as an ordinary action.");
@@ -3487,7 +3523,7 @@ describe("battle codec act ownership boundaries", () => {
       subject: moveSubject,
       fills: [
         movementFill(movement, {
-          movementCostFeet: 5,
+          distanceFeet: 5,
           provokedOpportunityAttacks: [
             {
               reactorId: fighterId,

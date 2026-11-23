@@ -59,13 +59,13 @@
       "module/binding:resolveCastAttackHitBonusActionSpellCommand": 33
     },
     "packages/battle-runtime/src/battle-reducer/attack-main.ts": {
-      "module/binding:attackPostDuplicateHitInterceptionFillsArePresent": 26,
+      "module/binding:attackPostDuplicateHitInterceptionFillsArePresent": 22,
       "module/binding:brutalStrikeSelection": 10,
       "module/binding:resolveAdditionalWeaponAttackDamage": 9,
       "module/binding:resolveBrutalStrikeForcefulBlowMovement": 16,
       "module/binding:resolveGrapplerPunchAndGrabAfterHit": 12,
       "module/binding:resolveHuntersPreyHordeBreakerAfterPrimaryDamage": 21,
-      "module/binding:resolveSelectedAttackProcedure": 215,
+      "module/binding:resolveSelectedAttackProcedure": 213,
       "module/binding:resolveWeaponMasteryCleaveAfterPrimaryDamage": 20
     },
     "packages/battle-runtime/src/battle-reducer/attack-offhand.ts": {
@@ -91,7 +91,7 @@
       "module/binding:activeEffectGrantsAttackRollMode/call:target?.activeEffects.some:argument-0": 17,
       "module/binding:applyWeaponMasteryToppleSavingThrow": 9,
       "module/binding:attackRollOngoingFeatureActivationProfile": 13,
-      "module/binding:attackRollSourceFlags": 23,
+      "module/binding:attackRollSourceFlags": 22,
       "module/binding:tacticalMasterReplacementSelection": 9
     },
     "packages/battle-runtime/src/battle-reducer/attack-routes.ts": {
@@ -107,7 +107,6 @@
       "module/binding:applyBattleMovement": 11
     },
     "packages/battle-runtime/src/battle-reducer/battle-object-lifecycle.ts": {
-      "module/binding:applyBattleHeldWeaponPickup": 11,
       "module/binding:characterEffectiveLoadoutFromOrigin": 13
     },
     "packages/battle-runtime/src/battle-reducer/combatant-lifecycle-routes.ts": {
@@ -133,11 +132,7 @@
       "module/binding:conditionImmunityTemporaryHitPointRouteForResolution": 11
     },
     "packages/battle-runtime/src/battle-reducer/creature-state-execution.ts": {
-      "module/binding:combatantCanStillHoldBoundWeaponItem": 11,
-      "module/binding:groundEffectiveCharacterArmorClass": 14
-    },
-    "packages/battle-runtime/src/battle-reducer/creature-state-leaves.ts": {
-      "module/binding:combatantHandUses": 18
+      "module/binding:combatantCanStillHoldBoundWeaponItem": 11
     },
     "packages/battle-runtime/src/battle-reducer/creature-state.ts": {
       "module/binding:battleCreatureStateAdmissionFromInit": 30
@@ -166,7 +161,7 @@
       "module/binding:damageRelationshipQuestions": 14
     },
     "packages/battle-runtime/src/battle-reducer/dispatcher.ts": {
-      "module/binding:resolveBattleSubjectAfterD20TestNaturalOneReroll/call:iife:argument--1": 69
+      "module/binding:resolveBattleSubjectAfterD20TestNaturalOneReroll/call:iife:argument--1": 68
     },
     "packages/battle-runtime/src/battle-reducer/effect-lifecycle-routes.ts": {
       "module/binding:repeatSaveConditionEffectRouteForResolution": 10,
@@ -243,13 +238,10 @@
       "module/binding:resolveMonkFocusOption": 11
     },
     "packages/battle-runtime/src/battle-reducer/movement-procedures.ts": {
-      "module/binding:parseBattleMovement": 26,
+      "module/binding:parseBattleMovement": 25,
       "module/binding:resolveFixedCostMovementReplacementCommand": 12,
       "module/binding:resolveMoveCommand": 9,
-      "module/binding:resolveMovementEffectsAfterMovement": 16,
-      "module/binding:validateAreaDifficultTerrainMovementFact": 18,
-      "module/binding:validateGrappleDragMovementFact": 13,
-      "module/binding:validateMovementCostFacts": 21
+      "module/binding:resolveMovementEffectsAfterMovement": 16
     },
     "packages/battle-runtime/src/battle-reducer/movement-routes.ts": {
       "module/binding:creatureSpaceMovementPermissionRouteForResolution": 12,
@@ -553,7 +545,7 @@
       "module/binding:testCharacterD20Statistics": 13
     },
     "packages/battle-runtime/src/battle-subjects.ts": {
-      "module/binding:battleSubjectKey/call:Match.orElse:argument-0/call:Match.when:argument-1:selector-2299b7f5d44c": 18,
+      "module/binding:battleSubjectKey/call:Match.orElse:argument-0/call:Match.when:argument-1:selector-2299b7f5d44c": 13,
       "module/binding:isCharacterProcedureBattleSubject": 9
     },
     "packages/battle-runtime/src/character-battle-resources.ts": {
@@ -695,7 +687,6 @@
       "module/binding:applyDraftFill": 9
     },
     "packages/character-creation-runtime/src/finalization.ts": {
-      "module/binding:applyClassFeatureAbilityScoreIncreases": 10,
       "module/binding:classFeatureAcquisitionAbilityCheckBonusFeature": 11,
       "module/binding:decodedUnitProficiencySubjects": 16,
       "module/binding:executableSupportIssues": 12,

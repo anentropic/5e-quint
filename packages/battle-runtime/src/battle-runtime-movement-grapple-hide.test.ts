@@ -36,6 +36,8 @@ import {
   targetIsNoMoreThanOneSizeLarger,
 } from "./battle-reducer/movement-speed.ts";
 import { GRAPPLE_TARGET_REACH_FEET } from "./battle-reducer/domain-constants.ts";
+import { battleStateWithGroundObjects } from "./battle-reducer/battle-object-lifecycle.ts";
+import { PRONE_MOVEMENT_PATH_MESSAGE } from "./battle-reducer/movement-path.ts";
 import type {
   BattleState,
   BattleSubject,
@@ -106,6 +108,7 @@ import {
   targetFill,
   testBattleCreatureStateWithConditions,
   testCharacterD20Statistics,
+  testMovementPath,
   testUnarmedStrikeDamageAttack,
   unitFeatureDecisionFill,
   unitLibrary,
@@ -663,7 +666,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
           }),
         ],
@@ -678,7 +681,15 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
       holeId: "battle:movement",
       value: {
         speedKind: "walk",
-        movementCostFeet: 10,
+        path: [
+          {
+            distanceFeet: 10,
+            activity: "ordinary",
+            difficultTerrain: "none",
+            movesCloserThroughDirectionalArea: false,
+            draggedGrappledTargetIds: [],
+          },
+        ],
         provokedOpportunityAttacks: [],
         creatureSpaceTraversal: {
           kind: "occupiedCreatureSpaceTraversal",
@@ -724,7 +735,15 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
           holeId: "battle:movement",
           value: {
             speedKind: "walk",
-            movementCostFeet: 10,
+            path: [
+              {
+                distanceFeet: 10,
+                activity: "ordinary",
+                difficultTerrain: "none",
+                movesCloserThroughDirectionalArea: false,
+                draggedGrappledTargetIds: [],
+              },
+            ],
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: {
               kind: "occupiedCreatureSpaceTraversal",
@@ -746,7 +765,15 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
           holeId: "battle:movement",
           value: {
             speedKind: "walk",
-            movementCostFeet: 10,
+            path: [
+              {
+                distanceFeet: 10,
+                activity: "ordinary",
+                difficultTerrain: "none",
+                movesCloserThroughDirectionalArea: false,
+                draggedGrappledTargetIds: [],
+              },
+            ],
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: {
               kind: "occupiedCreatureSpaceTraversal",
@@ -768,7 +795,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
     ).toBe(true);
   });
 
-  test("BattleFillSchema rejects empty Grapple Drag Movement facts", () => {
+  test("BattleFillSchema rejects a Movement fill without a path", () => {
     expect(
       Result.isFailure(
         Schema.decodeUnknownResult(BattleFillSchema)({
@@ -776,13 +803,8 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
           holeId: "battle:movement",
           value: {
             speedKind: "walk",
-            movementCostFeet: 10,
+            path: [],
             provokedOpportunityAttacks: [],
-            grappleDrag: {
-              kind: "grappleDrag",
-              totalDistanceFeet: 10,
-              targets: [],
-            },
           },
         }),
       ),
@@ -864,7 +886,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: {
               kind: "occupiedCreatureSpaceTraversal",
@@ -965,7 +987,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
           subject,
           fills: [
             movementFill(hole, {
-              movementCostFeet: 10,
+              distanceFeet: 10,
               provokedOpportunityAttacks: [],
               creatureSpaceTraversal: {
                 kind: "occupiedCreatureSpaceTraversal",
@@ -1063,7 +1085,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: derivation.creatureSpaceTraversal,
           }),
@@ -1111,7 +1133,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: {
               kind: "occupiedCreatureSpaceTraversal",
@@ -1159,7 +1181,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: {
               kind: "occupiedCreatureSpaceTraversal",
@@ -1250,7 +1272,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 5,
+            distanceFeet: 5,
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: derivation.creatureSpaceTraversal,
           }),
@@ -1299,7 +1321,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: {
               kind: "occupiedCreatureSpaceTraversal",
@@ -1506,7 +1528,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: {
               kind: "occupiedCreatureSpaceTraversal",
@@ -1586,7 +1608,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: {
               ...traversal,
@@ -1608,7 +1630,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: {
               ...traversal,
@@ -1663,7 +1685,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
             creatureSpaceTraversal: {
               kind: "occupiedCreatureSpaceTraversal",
@@ -1719,8 +1741,6 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
           areaId,
         },
       ],
-      totalDistanceFeet: movementFeet(10),
-      difficultTerrainDistanceFeet: movementFeet(5),
     };
 
     expect(
@@ -1729,7 +1749,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
             areaDifficultTerrain,
           }),
@@ -1738,15 +1758,20 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
     ).toMatchObject({
       tag: "invalid",
       message:
-        "Area Difficult Terrain movement must spend total distance plus 1 extra foot for every foot moved through Difficult Terrain.",
+        "Area Difficult Terrain movement fact requires a movement path segment in that area's Difficult Terrain.",
     });
 
+    // The runtime prices the path: 5 feet of Grease cost 10, and 5 more feet
+    // in the open cost 5.
     const movementResult = resolveBattleSubject({
       state: greased,
       subject,
       fills: [
         movementFill(hole, {
-          movementCostFeet: 15,
+          path: testMovementPath(
+            { distanceFeet: 5, difficultTerrain: "areaDifficultTerrain" },
+            { distanceFeet: 5 },
+          ),
           provokedOpportunityAttacks: [],
           areaDifficultTerrain,
         }),
@@ -1816,13 +1841,20 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
     );
     // SRD 5.2.1 "Crawling": 5 feet in the open cost 10, and 5 feet of
     // Difficult Terrain cost 15, so the 10-foot crawl costs 25.
-    const crawl = (movementCostFeet: number) =>
+    const crawl = (activity: "ordinary" | "crawling") =>
       resolveBattleSubject({
         state: prone,
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet,
+            path: testMovementPath(
+              {
+                distanceFeet: 5,
+                activity,
+                difficultTerrain: "areaDifficultTerrain",
+              },
+              { distanceFeet: 5, activity },
+            ),
             provokedOpportunityAttacks: [],
             areaDifficultTerrain: {
               kind: "areaDifficultTerrain",
@@ -1835,20 +1867,17 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
                   areaId,
                 },
               ],
-              totalDistanceFeet: movementFeet(10),
-              difficultTerrainDistanceFeet: movementFeet(5),
             },
           }),
         ],
       });
 
-    expect(crawl(15)).toMatchObject({
+    expect(crawl("ordinary")).toMatchObject({
       tag: "invalid",
-      message:
-        "Area Difficult Terrain movement must spend total distance plus 1 extra foot for every foot moved through Difficult Terrain. A Prone mover is crawling and also spends 1 extra foot for every foot moved.",
+      message: PRONE_MOVEMENT_PATH_MESSAGE,
     });
     expect(
-      requireResolved(crawl(25)).state.combatants.get(wizardId),
+      requireResolved(crawl("crawling")).state.combatants.get(wizardId),
     ).toMatchObject({ movementSpentFeet: movementFeet(25) });
   });
 
@@ -1899,7 +1928,10 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 10,
+            path: testMovementPath(
+              { distanceFeet: 5, difficultTerrain: "areaDifficultTerrain" },
+              { distanceFeet: 5 },
+            ),
             provokedOpportunityAttacks: [],
             areaDifficultTerrain: {
               kind: "areaDifficultTerrain",
@@ -1912,8 +1944,6 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
                   areaId,
                 },
               ],
-              totalDistanceFeet: movementFeet(10),
-              difficultTerrainDistanceFeet: movementFeet(5),
             },
           }),
         ],
@@ -2029,7 +2059,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
       throw new Error("Expected readied movement Reaction movement hole.");
     }
     const readiedMove = movementFill(readiedMovementHole, {
-      movementCostFeet: 5,
+      distanceFeet: 5,
       provokedOpportunityAttacks: [],
     });
 
@@ -2063,7 +2093,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
       ),
     };
     const provokingReadiedMove = movementFill(readiedMovementHole, {
-      movementCostFeet: 5,
+      distanceFeet: 5,
       provokedOpportunityAttacks: [goblinThreat],
     });
     const opportunityWindow = resolveBattleInterrupt({
@@ -2237,7 +2267,9 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
     }
     const dodgeResponse = declarationHole.responseChoices.find(
       (response) =>
-        response.kind === "action" && response.subject.action === "dodge",
+        response.kind === "action" &&
+        response.subject.tag === "action" &&
+        response.subject.action === "dodge",
     );
     if (dodgeResponse?.kind !== "action") {
       throw new Error("Expected an offered Dodge response.");
@@ -2315,7 +2347,9 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
     }
     const helpResponse = declarationHole.responseChoices.find(
       (response) =>
-        response.kind === "action" && response.subject.action === "helpAttack",
+        response.kind === "action" &&
+        response.subject.tag === "action" &&
+        response.subject.action === "helpAttack",
     );
     if (helpResponse?.kind !== "action") {
       throw new Error("Expected an offered Help response.");
@@ -2693,7 +2727,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 20,
+            distanceFeet: 20,
             provokedOpportunityAttacks: [],
           }),
         ],
@@ -2878,7 +2912,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
       subject,
       fills: [
         movementFill(hole, {
-          movementCostFeet: 10,
+          distanceFeet: 10,
           provokedOpportunityAttacks: [],
         }),
       ],
@@ -2921,7 +2955,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject: moveSubject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 20,
+            distanceFeet: 20,
             provokedOpportunityAttacks: [],
           }),
         ],
@@ -2971,7 +3005,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet: 35,
+            distanceFeet: 35,
             provokedOpportunityAttacks: [],
           }),
         ],
@@ -3030,7 +3064,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         fills: [
           movementFill(initialMoveHole, {
             speedKind: "walk",
-            movementCostFeet: 30,
+            distanceFeet: 30,
             provokedOpportunityAttacks: [],
           }),
         ],
@@ -3054,7 +3088,7 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         fills: [
           movementFill(remainingMoveHole, {
             speedKind: "climb",
-            movementCostFeet: 10,
+            distanceFeet: 10,
             provokedOpportunityAttacks: [],
           }),
         ],
@@ -3354,6 +3388,73 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
     expect(grappled.state.grapples).toEqual([
       expect.objectContaining({ targetId: goblinId, escapeDc: 13 }),
     ]);
+  });
+
+  test("a main weapon held two-handed leaves no hand free to Grapple", () => {
+    const grappleSubject: BattleSubject = {
+      tag: "action",
+      actorId: fighterId,
+      action: "grapple",
+    };
+    const longswordObjectId = battleObjectId("main:weapon_longsword");
+    const battleWithLongswordGrip = (grip: "one_handed" | "two_handed") =>
+      startBattleRight({
+        battleId: battleId(`battle-grapple-longsword-${grip}`),
+        combatants: [
+          characterSeed({
+            initiative: 20,
+            selectedLoadout: {
+              weapon: {
+                itemId: longswordObjectId,
+                unitId: parseSharedUnitId("weapon_longsword"),
+                grip,
+              },
+            },
+          }),
+          statBlockCreatureInit({ initiative: 10 }),
+        ],
+      });
+    const grappleAfterTarget = (state: BattleState) => {
+      const target = requireHole(
+        resolveBattleSubject({ state, subject: grappleSubject, fills: [] }),
+        "targetChoice",
+      );
+      return resolveBattleSubject({
+        state,
+        subject: grappleSubject,
+        fills: [targetFill(target, goblinId)],
+      });
+    };
+
+    const twoHanded = battleWithLongswordGrip("two_handed");
+    expect(grappleAfterTarget(twoHanded)).toMatchObject({
+      tag: "invalid",
+      reason: "invalidFill",
+      message: "Grapple requires a free hand.",
+    });
+    requireHole(
+      grappleAfterTarget(battleWithLongswordGrip("one_handed")),
+      "grappleOutcome",
+    );
+
+    const dropped = battleStateWithGroundObjects(twoHanded, [
+      {
+        actorId: fighterId,
+        objectId: longswordObjectId,
+        positionId: battleTablePositionId("two-handed-longsword-drop"),
+        source: {
+          kind: "spell",
+          sourceCombatantId: fighterId,
+          sourceProcedureRef: battleProcedureExecutionRefForTest(
+            "two-handed-longsword-drop",
+          ),
+        },
+      },
+    ]);
+    if (dropped.tag !== "applied") {
+      throw new Error("Expected the two-handed Longsword drop to apply.");
+    }
+    requireHole(grappleAfterTarget(dropped.state), "grappleOutcome");
   });
 
   test("Grapple escape DC derives from the attacker's Strength", () => {
@@ -3779,30 +3880,28 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
       "movement",
     );
     // SRD 5.2.1 "Crawling" and "Grappled": 10 feet + 10 crawling + 10 drag.
-    const drag = (movementCostFeet: number) =>
+    const drag = (activity: "ordinary" | "crawling") =>
       resolveBattleSubject({
         state: prone,
         subject,
         fills: [
           movementFill(hole, {
-            movementCostFeet,
+            path: testMovementPath({
+              distanceFeet: 10,
+              activity,
+              draggedGrappledTargetIds: [goblinId],
+            }),
             provokedOpportunityAttacks: [],
-            grappleDrag: {
-              kind: "grappleDrag",
-              totalDistanceFeet: movementFeet(10),
-              targets: [{ targetId: goblinId, distanceFeet: movementFeet(10) }],
-            },
           }),
         ],
       });
 
-    expect(drag(20)).toMatchObject({
+    expect(drag("ordinary")).toMatchObject({
       tag: "invalid",
-      message:
-        "Grapple drag movement must spend total distance plus 1 extra foot for every foot a non-exempt Grappled target is dragged. A Prone mover is crawling and also spends 1 extra foot for every foot moved.",
+      message: PRONE_MOVEMENT_PATH_MESSAGE,
     });
     expect(
-      requireResolved(drag(30)).state.combatants.get(fighterId),
+      requireResolved(drag("crawling")).state.combatants.get(fighterId),
     ).toMatchObject({ movementSpentFeet: movementFeet(30) });
   });
 
@@ -3812,16 +3911,10 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
       actorId: fighterId,
       command: "move",
     };
-    const grappleDrag = {
-      kind: "grappleDrag" as const,
-      totalDistanceFeet: movementFeet(10),
-      targets: [
-        {
-          targetId: goblinId,
-          distanceFeet: movementFeet(10),
-        },
-      ] as const,
-    };
+    const dragPath = testMovementPath({
+      distanceFeet: 10,
+      draggedGrappledTargetIds: [goblinId],
+    });
     const grappled = fighterGrapplesGoblin(fighterVsGoblinBattle()).state;
     const normalHole = requireHole(
       resolveBattleSubject({ state: grappled, subject, fills: [] }),
@@ -3834,16 +3927,36 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(normalHole, {
-            movementCostFeet: 10,
+            path: testMovementPath({
+              distanceFeet: 10,
+              draggedGrappledTargetIds: [fighterId],
+            }),
             provokedOpportunityAttacks: [],
-            grappleDrag,
           }),
         ],
       }),
     ).toMatchObject({
       tag: "invalid",
       message:
-        "Grapple drag movement must spend total distance plus 1 extra foot for every foot a non-exempt Grappled target is dragged.",
+        "Movement path segment can only drag a creature Grappled by the mover.",
+    });
+    expect(
+      resolveBattleSubject({
+        state: grappled,
+        subject,
+        fills: [
+          movementFill(normalHole, {
+            path: testMovementPath({
+              distanceFeet: 10,
+              draggedGrappledTargetIds: [goblinId, goblinId],
+            }),
+            provokedOpportunityAttacks: [],
+          }),
+        ],
+      }),
+    ).toMatchObject({
+      tag: "invalid",
+      message: "Movement path segment drags the same Grappled creature twice.",
     });
 
     const normalMoved = requireResolved(
@@ -3852,9 +3965,8 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(normalHole, {
-            movementCostFeet: 20,
+            path: dragPath,
             provokedOpportunityAttacks: [],
-            grappleDrag,
           }),
         ],
       }),
@@ -3883,9 +3995,8 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject,
         fills: [
           movementFill(grapplerHole, {
-            movementCostFeet: 10,
+            path: dragPath,
             provokedOpportunityAttacks: [],
-            grappleDrag,
           }),
         ],
       }),
@@ -4010,34 +4121,6 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
       }),
       "movement",
     );
-    const grappleDrag = {
-      kind: "grappleDrag" as const,
-      totalDistanceFeet: movementFeet(10),
-      targets: [
-        {
-          targetId: skeletonId,
-          distanceFeet: movementFeet(10),
-        },
-      ] as const,
-    };
-
-    expect(
-      resolveBattleSubject({
-        state: enlarged,
-        subject: moveSubject,
-        fills: [
-          movementFill(moveHole, {
-            movementCostFeet: 10,
-            provokedOpportunityAttacks: [],
-            grappleDrag,
-          }),
-        ],
-      }),
-    ).toMatchObject({
-      tag: "invalid",
-      message:
-        "Grapple drag movement must spend total distance plus 1 extra foot for every foot a non-exempt Grappled target is dragged.",
-    });
 
     const moved = requireResolved(
       resolveBattleSubject({
@@ -4045,9 +4128,11 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
         subject: moveSubject,
         fills: [
           movementFill(moveHole, {
-            movementCostFeet: 20,
+            path: testMovementPath({
+              distanceFeet: 10,
+              draggedGrappledTargetIds: [skeletonId],
+            }),
             provokedOpportunityAttacks: [],
-            grappleDrag,
           }),
         ],
       }),

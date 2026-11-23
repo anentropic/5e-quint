@@ -14,6 +14,7 @@ import {
   battleResubmittedFillKeepsAcceptedFill,
   type BattleContinuationComparableFill,
 } from "./battle-reducer/battle-fill-equality.ts";
+import { ordinaryMovementPath } from "./battle-reducer/movement-path.ts";
 import { combatantId } from "./battle-runtime.test-support.ts";
 import {
   battleCharacterExecutionScopeRef,
@@ -22,6 +23,8 @@ import {
   battleProcedureExecutionRef,
 } from "./identity.ts";
 import {
+  BATTLE_MOVEMENT_PATH_ACTIVITIES,
+  BATTLE_MOVEMENT_PATH_DIFFICULT_TERRAIN,
   type BattleAttackRollResult,
   type BattleD20TestRoll,
   type BattleD20TestNaturalOneRerollDecision,
@@ -251,19 +254,34 @@ const acrobaticMovementArbitrary: fc.Arbitrary<
     paths: [path],
     withoutFallingDuringMovement: true,
   }));
+const movementPathSegmentArbitrary: fc.Arbitrary<
+  MovementFill["value"]["path"][number]
+> = fc.record({
+  distanceFeet: fc.integer({ min: 1, max: 120 }).map(movementFeet),
+  activity: fc.constantFrom(...BATTLE_MOVEMENT_PATH_ACTIVITIES),
+  difficultTerrain: fc.constantFrom(...BATTLE_MOVEMENT_PATH_DIFFICULT_TERRAIN),
+  movesCloserThroughDirectionalArea: fc.boolean(),
+  draggedGrappledTargetIds: fc.array(combatantIdArbitrary, { maxLength: 2 }),
+});
+const movementPathArbitrary: fc.Arbitrary<MovementFill["value"]["path"]> = fc
+  .tuple(
+    movementPathSegmentArbitrary,
+    fc.array(movementPathSegmentArbitrary, { maxLength: 2 }),
+  )
+  .map(([first, rest]) => [first, ...rest]);
 const movementFillArbitrary: fc.Arbitrary<MovementFill> = fc
   .tuple(
     battleHoleIdArbitrary,
     fc.constantFrom("walk" as const, "fly" as const, "swim" as const),
-    fc.integer({ min: 0, max: 120 }).map(movementFeet),
+    movementPathArbitrary,
     fc.option(acrobaticMovementArbitrary, { nil: undefined }),
   )
-  .map(([holeId, speedKind, movementCostFeet, acrobaticMovement]) => ({
+  .map(([holeId, speedKind, path, acrobaticMovement]) => ({
     kind: "movement",
     holeId,
     value: {
       speedKind,
-      movementCostFeet,
+      path,
       provokedOpportunityAttacks: [],
       ...(acrobaticMovement === undefined ? {} : { acrobaticMovement }),
     },
@@ -803,7 +821,7 @@ describe("resubmitted fill continuity", () => {
       holeId: holeId("continuity-hole:movement"),
       value: {
         speedKind: "walk",
-        movementCostFeet: movementFeet(feet),
+        path: ordinaryMovementPath(movementFeet(feet)),
         provokedOpportunityAttacks: [],
       },
     });

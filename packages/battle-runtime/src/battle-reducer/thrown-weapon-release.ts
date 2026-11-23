@@ -14,11 +14,15 @@ import type {
   BattleTerminalResolutionResult,
 } from "../battle-state-execution.ts";
 import type { SupportedAttackActionOption } from "../battle-action-options.ts";
-import type { BattleSubject } from "../battle-subjects.ts";
+import { type BattleSubject, sameBattleSubject } from "../battle-subjects.ts";
 import type { BattleObjectId, CombatantId } from "../identity.ts";
-import { battleStateWithGroundObjects } from "./battle-object-lifecycle.ts";
+import {
+  battleStateWithGroundObjects,
+  battleStateWithoutGroundObject,
+} from "./battle-object-lifecycle.ts";
 import { snapshotBattle } from "./battle-snapshot.ts";
 import { interruptedProcedureSubject } from "./interrupt-execution.ts";
+import { spellInvocationForRouteSubject } from "./reducer-route-spell-query.ts";
 import {
   isThrownWeaponAttack,
   thrownWeaponLanding,
@@ -74,12 +78,69 @@ export function stateWithThrownWeaponReleased(input: {
       source: { kind: "thrownWeaponAttack", procedureRef: attack.procedureRef },
     },
   ]);
-  /* v8 ignore start -- @preserve -- A held weapon can't already be on the ground: the attack option needs it in hand. */
+  /* v8 ignore start -- @preserve -- An attack path throws its weapon once per resolution: at the accepted roll of a pending attack, or as an attack resolved in one step ends. */
   if (placed.tag === "conflict") {
     return input.state;
   }
   /* v8 ignore stop -- @preserve */
   return placed.state;
+}
+
+/**
+ * The state after a pending attack's roll was accepted: a thrown weapon rests
+ * at its landing position, and the subject's continuation records the throw so
+ * that resuming the subject replays the roll with the weapon back in hand.
+ */
+export function stateWithThrownWeaponReleasedPendingContinuation(input: {
+  readonly state: BattleState;
+  readonly attackerId: CombatantId;
+  readonly attack: SupportedAttackActionOption;
+  readonly facts: readonly BattleTargetSpatialFact[];
+  readonly subject: BattleSubject;
+}): BattleState {
+  const released = stateWithThrownWeaponReleased(input);
+  if (released === input.state || !isThrownWeaponAttack(input.attack)) {
+    return input.state;
+  }
+  const phase = released.subjectResolutionPhase;
+  return {
+    ...released,
+    subjectResolutionPhase: {
+      ...(phase.kind === "subjectContinuation" &&
+      sameBattleSubject(phase.subject, input.subject)
+        ? phase
+        : { kind: "subjectContinuation", subject: input.subject }),
+      acceptedThrownWeaponRelease: {
+        actorId: input.attackerId,
+        objectId: input.attack.weaponObjectId,
+      },
+    },
+  };
+}
+
+/**
+ * The state a resumed subject replays from: a weapon its accepted roll threw
+ * is back in the thrower's hand, so the replayed roll throws it again. Any
+ * other subject, or a weapon no longer where that throw left it, keeps the
+ * state as it is.
+ */
+export function stateWithAcceptedThrowInHand(
+  state: BattleState,
+  subject: BattleSubject,
+): BattleState {
+  const phase = state.subjectResolutionPhase;
+  if (
+    phase.kind !== "subjectContinuation" ||
+    phase.acceptedThrownWeaponRelease === undefined ||
+    !sameBattleSubject(phase.subject, subject)
+  ) {
+    return state;
+  }
+  const { actorId, objectId } = phase.acceptedThrownWeaponRelease;
+  const grounded = state.groundObjects.get(actorId)?.get(objectId);
+  return grounded?.source.kind === "thrownWeaponAttack"
+    ? battleStateWithoutGroundObject(state, actorId, objectId)
+    : state;
 }
 
 /**
@@ -145,37 +206,79 @@ function thrownWeaponAttackFinished(input: {
   const landedNow =
     input.stateBefore.groundObjects.get(input.actorId)?.has(input.objectId) !==
     true;
+  // The resolved result ends its subject, so only a frame still on the stack
+  // keeps the attack in flight after it, whatever its continuation recorded.
   return (
     (landedNow ||
-      thrownWeaponAttackIsInFlight(
-        input.stateBefore,
-        input.actorId,
-        input.source,
-      )) &&
-    !thrownWeaponAttackIsInFlight(input.state, input.actorId, input.source)
+      subjectContinuationRecordsThrow({
+        ...input,
+        state: input.stateBefore,
+      }) ||
+      thrownWeaponAttackIsInterrupted({
+        ...input,
+        state: input.stateBefore,
+      })) &&
+    !thrownWeaponAttackIsInterrupted(input)
+  );
+}
+
+/** Whether the pending subject's continuation records the weapon's throw. */
+function subjectContinuationRecordsThrow(input: {
+  readonly state: BattleState;
+  readonly actorId: CombatantId;
+  readonly objectId: BattleObjectId;
+}): boolean {
+  const phase = input.state.subjectResolutionPhase;
+  return (
+    phase.kind === "subjectContinuation" &&
+    phase.acceptedThrownWeaponRelease?.actorId === input.actorId &&
+    phase.acceptedThrownWeaponRelease.objectId === input.objectId
   );
 }
 
 /**
- * Whether the attack that threw a weapon is still in flight: a frame on the
- * interrupt stack resumes a subject by the thrower naming that attack.
+ * Whether the attack that threw a weapon waits on an interrupt: a frame on the
+ * interrupt stack resumes a subject by the thrower that made that attack.
  */
-function thrownWeaponAttackIsInFlight(
-  state: BattleState,
-  attackerId: CombatantId,
-  source: ThrownWeaponDropSource,
-): boolean {
-  return state.interruptStack.some((frame) => {
+function thrownWeaponAttackIsInterrupted(input: {
+  readonly state: BattleState;
+  readonly actorId: CombatantId;
+  readonly objectId: BattleObjectId;
+  readonly source: ThrownWeaponDropSource;
+}): boolean {
+  return input.state.interruptStack.some((frame) => {
     const procedure = interruptFrameProcedure(frame);
+    if (procedure === undefined) return false;
+    const subject = interruptedProcedureSubject(procedure);
     return (
-      procedure !== undefined &&
-      subjectNamesAttack(
-        interruptedProcedureSubject(procedure),
-        attackerId,
-        source.procedureRef,
+      subjectNamesAttack(subject, input.actorId, input.source.procedureRef) ||
+      subjectHostsWeaponAttack(
+        input.state,
+        subject,
+        input.actorId,
+        input.objectId,
       )
     );
   });
+}
+
+/**
+ * A spell subject hosts a weapon attack when its caster is the thrower and
+ * the spell makes its attack with that weapon, as a spell-hosted weapon
+ * attack does with its component weapon.
+ */
+function subjectHostsWeaponAttack(
+  state: BattleState,
+  subject: BattleSubject,
+  attackerId: CombatantId,
+  objectId: BattleObjectId,
+): boolean {
+  if (!("actorId" in subject) || subject.actorId !== attackerId) return false;
+  const invocation = spellInvocationForRouteSubject(state, subject);
+  return (
+    invocation?.procedure === "spellHostedWeaponAttack" &&
+    invocation.componentWeaponObjectId === objectId
+  );
 }
 
 /** The procedure an interrupt frame resumes, if it resumes one. */

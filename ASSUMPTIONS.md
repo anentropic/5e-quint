@@ -249,35 +249,22 @@ model reads "doesn't move" as covering any voluntary change of the target's
 position, so Halt suppresses Drop Prone as it suppresses Movement and Stand from
 Prone.
 
-## A53: Graze is not offered when it would deal 0 damage
+## A54: Graze fixes outgoing damage; Vulnerability doubles damage taken
 
-**Assumption:** After a missed attack roll with a Graze weapon, the attacker is
-asked whether to use Graze only when the ability modifier used for the attack
-roll is 1 or more. With a modifier of 0 or less, the miss ends the attack and no
-Graze decision is asked.
+**Assumption:** Graze's restriction fixes the attacker's outgoing damage at the
+attack ability modifier, with a minimum of 0. The target then applies Immunity,
+Resistance, and Vulnerability normally. With a +3 attack ability modifier and
+Vulnerability to the weapon's damage type, the target takes 6 Graze damage.
+Damage bonuses, extra dice, and attack riders do not increase the outgoing
+Graze amount.
 
-**Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Graze" lets
-the attacker deal damage equal to the ability modifier used for the attack
-roll, and `.references/srd-5.2.1/playing-the-game.md`, "Damage Rolls" says
-"it's possible to deal 0 damage but not negative damage". So the SRD fixes the
-amount: a modifier of 0 or less deals 0. It doesn't say whether the attacker is
-still asked to choose. Since either answer leaves the battle unchanged, the
-model doesn't ask.
-
-## A54: Graze damage is still doubled by Vulnerability
-
-**Assumption:** A target with Vulnerability to the weapon's damage type takes
-double Graze damage, as it does any other damage of that type. Resistance and
-Immunity also apply as usual.
-
-**Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Graze" says
-"the damage can be increased only by increasing the ability modifier". The SRD
-doesn't say whether that limit covers the target's Vulnerability.
-`.references/srd-5.2.1/playing-the-game.md`, "Order of Application" applies
-"bonuses, penalties, or multipliers" first and Vulnerability last, as part of
-the damage the target takes. The model reads Graze's limit as excluding the
-first step (damage bonuses and riders on the attacker's side) and leaves the
-target's Resistance and Vulnerability as the general rule applies them.
+**Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Graze," permits
+increasing its damage only by increasing the ability modifier.
+`.references/srd-5.2.1/playing-the-game.md`, "Order of Application," applies
+Vulnerability after other damage adjustments and Resistance. The SRD does not
+explicitly settle whether Graze's restriction also prevents that target-side
+adjustment. This model applies the restriction to outgoing damage and permits
+Vulnerability to double the damage taken by the target.
 
 ## A55: Different reroll sources may apply sequentially to the same die
 
@@ -312,22 +299,28 @@ damage only "to make a melee attack". The SRD doesn't say whether a thrown
 weapon counts as held with two hands when its damage is rolled. The model reads
 the throw as releasing the weapon, so it is no longer held then.
 
-## A58: A loadout grip holds the main weapon for the whole battle
+## A58: Any weapon may be held with both hands
 
-**Assumption:** A character's loadout records one grip for the main weapon,
-and Battle Runtime keeps it for the whole battle. Any weapon may take the
-`two_handed` grip, and a Two-Handed weapon needs it. A `two_handed` grip uses
-both hands, so the loadout can't also hold a shield or an off-hand weapon. A
-Versatile weapon held with the `two_handed` grip deals its Versatile damage on
-every melee attack; it isn't switched to one hand from one attack to the next.
+**Assumption:** A loadout's main weapon has a grip. Any weapon may take the
+`two_handed` grip, and a Two-Handed weapon needs it. A `two_handed` grip
+occupies both hands, so the same loadout can't also hold a shield or an
+off-hand weapon, and neither hand is free for a grapple or a held object. A
+Versatile weapon deals its Versatile damage on a melee attack while it is held
+with the `two_handed` grip.
 
 **Rules basis / gap:** `.references/srd-5.2.1/equipment.md`, "Two-Handed"
 says such a weapon "requires two hands when you attack with it", and
 "Versatile" says the weapon "can be used with one or two hands" and deals its
 Versatile damage "when used with two hands to make a melee attack". The SRD
 says when two hands are required, not that any other weapon can't be held in
-both, and it doesn't say when a creature changes how it holds a weapon. The
-model fixes the grip in the loadout, as Battle Runtime already takes it.
+both.
+
+**Temporary implementation restriction (not a rules assumption):** Battle
+Runtime keeps the loadout's grip for the whole battle; a creature can't yet
+change grip during a battle. Changing grip in battle, and offering the starting
+grip in equipment setup, is tracked in
+[#669](https://github.com/dearlordylord/5e-quint/issues/669), which retires
+this restriction.
 
 ## A59: A Chromatic Orb leap measures cover from the previous target
 
@@ -343,3 +336,67 @@ where that attack originates. `.references/srd-5.2.1/playing-the-game.md`,
 "Cover," says a target benefits from cover only "when an attack or other effect
 originates on the opposite side of the cover." The model reads the leap as
 travelling from the previous target, so the attack originates there.
+
+## A60: The free object interaction belongs to the creature's own turn
+
+**Assumption:** Battle offers the free object interaction only on the
+creature's own turn, while it can act (it isn't Incapacitated), and not while
+Command's Halt applies. The first interaction each turn is free unless the
+table rules that the object needs an action; any other takes the Utilize
+action. The free interaction isn't tied to a moment of the move or the action:
+the table says when it happens. Off its turn a creature has no free
+interaction, not even during readied movement, but Ready can hold an object
+interaction as its readied action. Releasing it takes that readied Utilize
+action, whatever the table rules about the object. Any other off-turn
+interaction is the table's ruling, outside Battle's costs. Battle also leaves
+reach to the table: it offers the pickup of a fallen weapon wherever the weapon
+lies, and the caller takes it only when the table rules the creature can reach
+it.
+
+**Rules basis / gap:** `.references/srd-5.2.1/playing-the-game.md`, "Your
+Turn," lets a creature "interact with one object or feature of the environment
+for free, during either your move or action," and requires the Utilize action
+for a second object. `.references/srd-5.2.1/rules-glossary.md`, "Ready
+[Action]," lets a creature choose "the action you will take in response to
+that trigger, or ... to move up to your Speed," with the example "I'll pull
+the lever that opens it." `.references/srd-5.2.1/rules-glossary.md`,
+"Incapacitated," says "You can't take any action, Bonus Action, or Reaction,"
+and `.references/srd-5.2.1/spells.md`, "Command," says that under Halt the
+target "doesn't move and takes no action." The SRD doesn't say whether a
+creature that can't act may still interact during its move, or whether a
+Reaction, including readied movement, comes with a free interaction. The model
+ties the free interaction to a turn the creature can act on, and lets a
+readied interaction take only the action Ready held.
+
+## A61: A Prone Levitated creature can't move along a path
+
+**Assumption:** A creature that is both Prone and the target of Levitate has no
+movement along a path. It can still spend movement to right itself.
+
+**Rules basis / gap:** `.references/srd-5.2.1/rules-glossary.md`, "Prone,"
+says: "Your only movement options are to crawl or to spend an amount of
+movement equal to half your Speed (round down) to right yourself."
+`.references/srd-5.2.1/spells.md`, "Levitate," says the target "can move only
+by pushing or pulling against a fixed object or surface within reach ..., which
+allows it to move as if it were climbing." Each rule names the only movement
+the creature has, and the SRD doesn't say how they combine. The model applies
+both limits, and no movement is both crawling and climbing, so every path is
+refused while righting itself stays available. The QNT owner is
+`moveLevitatedTargetWithWitness` in `battle-runtime-levitate-creature.qnt`.
+
+## A62: A Jump spends its fixed movement whatever its path crosses
+
+**Assumption:** A creature that jumps with the Jump spell spends exactly 10
+feet of movement, even when its path crosses Difficult Terrain, a spell's
+Difficult Terrain, or a Gust of Wind Line it moves closer through. The areas'
+other effects, such as damage for each distance moved, still apply.
+
+**Rules basis / gap:** `.references/srd-5.2.1/spells.md`, "Jump," says the
+creature "can jump up to 30 feet by spending 10 feet of movement," a fixed
+spend rather than a cost per foot. `.references/srd-5.2.1/rules-glossary.md`,
+"Long Jump," says only that landing in Difficult Terrain needs a DC 10
+Dexterity (Acrobatics) check, so a jump doesn't pay Difficult Terrain's extra
+foot for each foot it passes over. The SRD doesn't say whether a surcharge for
+each foot moved, such as Gust of Wind's, changes the fixed spend. The model
+treats every such surcharge alike and leaves the spend at 10 feet. The QNT
+owner is `battle-runtime-jump-movement.qnt`, which admits only that spend.

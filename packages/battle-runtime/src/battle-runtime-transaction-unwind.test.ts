@@ -230,7 +230,7 @@ function movementWithOpportunityAttack(
   >,
 ) {
   return movementFill(hole, {
-    movementCostFeet: 5,
+    distanceFeet: 5,
     provokedOpportunityAttacks: [
       {
         reactorId,
@@ -245,7 +245,7 @@ function movementWithoutOpportunityAttacks(
   hole: Extract<BattleHole, { readonly kind: "movement" }>,
 ) {
   return movementFill(hole, {
-    movementCostFeet: 5,
+    distanceFeet: 5,
     provokedOpportunityAttacks: [],
   });
 }
@@ -304,7 +304,9 @@ function readySession(
   const response = declarationHole.responseChoices.find((candidate) =>
     responseKind === "movement"
       ? candidate.kind === "movement"
-      : candidate.kind === "action" && candidate.subject.action === "dodge",
+      : candidate.kind === "action" &&
+        candidate.subject.tag === "action" &&
+        candidate.subject.action === "dodge",
   );
   if (response === undefined) {
     throw new Error(`Expected a Ready ${responseKind} response.`);

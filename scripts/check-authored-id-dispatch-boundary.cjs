@@ -780,6 +780,7 @@ const EXECUTION_IDENTITY_COLLISION_EXEMPTIONS = [
     "battleRuntimeCommandBoundExecutionReferences",
     "runtimeCommandEffectOccurrenceKey",
     "runtimeCommandAreaMembershipTrigger",
+    "runtimeCommandReferenceKey",
   ].flatMap((identifier) =>
     exactCollision(
       "command",
@@ -1141,9 +1142,9 @@ const EXECUTION_IDENTITY_COLLISION_EXEMPTIONS = [
   ...[
     "WildShapeShieldLoadoutObjectRefSchema",
     "characterBattleLoadoutShieldOffhandIssues",
+    "holdsShield",
     "shield",
     "shieldAvailable",
-    "shieldGrounded",
     "shieldWorn",
     "usesShield",
     "wieldingShield",
@@ -1181,7 +1182,6 @@ const EXECUTION_IDENTITY_COLLISION_EXEMPTIONS = [
   ...[
     "applyStepOfTheWindJumpDistanceMultiplier",
     "jumpDistanceMultiplier",
-    "jumpMovementValidation",
     "maxJumpDistanceFeet",
     "withJumpDistanceMultiplier",
   ].flatMap((identifier) =>
@@ -2807,10 +2807,28 @@ EXECUTION_IDENTITY_COLLISION_EXEMPTIONS.push(
   ),
 );
 
+EXECUTION_IDENTITY_COLLISION_EXEMPTIONS.push(
+  ...exactCollisionsAt(
+    "command",
+    "packages/battle-runtime/src/battle-reducer/dispatcher.ts",
+    [
+      {
+        identifier: "INTERRUPT_COMMAND_REQUIRES_CHECKPOINT",
+        roles: ["declaration-identifier"],
+      },
+      {
+        identifier: "commandRequiresCheckpoint",
+        roles: ["declaration-identifier"],
+      },
+    ],
+    "command names the runtime interrupt protocol, not the Command spell",
+  ),
+);
+
 const EXECUTION_IDENTITY_COLLISION_SITE_EVIDENCE = {
-  sha256: "1ec3b0889dade6aa5c8c869ddbba134d5a5c26d0756ec0e45b790c31824ad788",
-  siteCount: 1708,
-  violationCount: 1826,
+  sha256: "00033fd6ac8cbf48e7c36cec6e2f039f1f539acc1c831e427a98e5d57a2b398b",
+  siteCount: 1724,
+  violationCount: 1844,
 };
 
 function escapeForRegExp(text) {

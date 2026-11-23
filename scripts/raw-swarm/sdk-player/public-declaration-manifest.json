@@ -1,0 +1,14 @@
+{
+  "comparisonBaseline": {
+    "commit": "993cb0b11152316f8bd7e16693366267bf2ee16d",
+    "files": 530,
+    "bytes": 4667450,
+    "pathLedgerSha256": "fd48241ce438eb0f780a8fc8bfaf0035af6f4d0c686f2590dbe965420794083e"
+  },
+  "measure": {
+    "files": 388,
+    "bytes": 9747389
+  },
+  "pathLedgerSha256": "69b80e52c97e1740d9fce480308d823e591da09c010bfd9e0b5447fda0922644",
+  "contentLedgerSha256": "2510e670b4c96643cdc75bac2f0472e3e972aa3a1e97ecb2248210e0cd283445"
+}

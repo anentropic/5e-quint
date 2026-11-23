@@ -1,3 +1,4 @@
+import { ordinaryMovementPath } from "./battle-reducer/movement-path.ts";
 import { battleResolutionHolesForTest } from "./battle-runtime.test-support.ts";
 // RAW-COVERAGE: verification-owner:focused-mbt RAW-PTG-REACTIONS-003 RAW-QCORE7-MOVEMENT-GRAPPLE-001
 // KERNEL-COVERAGE: parity-witness BATTLE.MOVEMENT.FRONTIER_AND_RESOURCE_SPEND
@@ -8,12 +9,14 @@ import {
   defineDriver,
   focusedMbtMaxSteps,
   mbtSpecPath,
+  mbtPickSchemas,
   mbtTraceCount,
   numberFromQuintInt,
   quintStateRecord,
   quintVariantTag,
   run,
   stateCheck,
+  stringLiteralField,
 } from "./battle-runtime-mbt-driver-kit.test-support.ts";
 import {
   decodeRuleCoreComponentRoute,
@@ -23,16 +26,24 @@ import {
 import { Result } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { defaultArmorClassState } from "@dnd/shared-algebras/armor-class-algebra";
+import {
+  defaultArmorClassState,
+  loadoutHandUses,
+} from "@dnd/shared-algebras/armor-class-algebra";
+import { unitId as parseSharedUnitId } from "@dnd/shared/game-facts";
 import {
   abilityModifier,
   attackBonus,
   Hp,
   movementFeet,
+  WEAPON_GRIPS,
+  type HandUse,
+  type WeaponGrip,
 } from "@dnd/shared/types";
 
 import {
   battleId,
+  battleObjectId,
   battleFrontierInterruptDecisionForState,
   characterId,
   combatantId,
@@ -50,6 +61,7 @@ import {
 } from "./index.ts";
 import { testCharacterD20Statistics } from "./battle-runtime-test-d20-statistics.ts";
 import { battleInitializationIssueMessage } from "./battle-reducer/api-lifecycle.ts";
+import { combatantHandUses } from "./battle-reducer/creature-state-leaves.ts";
 import {
   resolveBattleSubject,
   attackExecutionSelectionForSubjectForTest,
@@ -88,6 +100,9 @@ type RuleCoreMovementProjection = RuleCoreComponentRoutedProjection & {
   readonly actionAvailable: boolean;
   readonly grappleActive: boolean;
   readonly grappleEscapeDc: number;
+  readonly mainWeaponGrip: WeaponGrip;
+  readonly leftHandUse: HandUse;
+  readonly rightHandUse: HandUse;
   readonly holes: readonly RuleCoreMovementMbtHole[];
   readonly pendingOpportunityAttack: boolean;
   readonly lastResult: RuleCoreMovementResult;
@@ -106,7 +121,7 @@ const movementOverspendCostFeet = 35;
 const componentOwner = "RuleCoreMovementGrappleOwner";
 
 const driverSchema = {
-  init: {},
+  init: { mainWeaponGrip: mbtPickSchemas.stringLiteral(...WEAPON_GRIPS) },
   doDiscoverMovement: {},
   doSpendMovement: {},
   doSpendShortMovement: {},
@@ -122,6 +137,7 @@ const driverSchema = {
   doDropProne: {},
   doDiscoverGrapple: {},
   doSelectGrappleTarget: {},
+  doRejectGrappleWithoutFreeHand: {},
   doResolveGrappleSuccess: {},
   doResolveGrappleFailure: {},
   doStartGrappledTargetTurn: {},
@@ -134,15 +150,15 @@ const driverSchema = {
 
 function createRuleCoreMovementDriver() {
   return defineDriver(driverSchema, () => {
-    let state = ruleCoreMovementBattle();
+    let state = ruleCoreMovementBattle("one_handed");
     let holes: readonly BattleHole[] = [];
     let lastResult: RuleCoreMovementProjection["lastResult"] = "init";
     let lastInvalidReason: RuleCoreMovementProjection["lastInvalidReason"] =
       "none";
     let currentActor: RuleCoreMovementProjection["currentActor"] = fighterActor;
 
-    function reset(): void {
-      state = ruleCoreMovementBattle();
+    function reset(mainWeaponGrip: WeaponGrip): void {
+      state = ruleCoreMovementBattle(mainWeaponGrip);
       holes = [];
       lastResult = "init";
       lastInvalidReason = "none";
@@ -191,7 +207,7 @@ function createRuleCoreMovementDriver() {
           subject: { tag: "runtimeCommand", actorId, command: "move" },
           fills: [
             movementFill(hole, {
-              movementCostFeet: input.costFeet,
+              distanceFeet: input.costFeet,
               provokedOpportunityAttacks: input.provokesOpportunityAttack
                 ? [
                     {
@@ -213,8 +229,14 @@ function createRuleCoreMovementDriver() {
       );
     }
 
+    function selectGrappleTarget(): void {
+      resolveSubject({ tag: "action", actorId, action: "grapple" }, [
+        grappleTargetFill(requireTargetChoiceHole(holes)),
+      ]);
+    }
+
     return {
-      init: reset,
+      init: ({ mainWeaponGrip }) => reset(mainWeaponGrip),
       doDiscoverMovement: () =>
         resolveSubject({ tag: "runtimeCommand", actorId, command: "move" }),
       doSpendMovement: () =>
@@ -288,10 +310,8 @@ function createRuleCoreMovementDriver() {
         }),
       doDiscoverGrapple: () =>
         resolveSubject({ tag: "action", actorId, action: "grapple" }),
-      doSelectGrappleTarget: () =>
-        resolveSubject({ tag: "action", actorId, action: "grapple" }, [
-          grappleTargetFill(requireTargetChoiceHole(holes)),
-        ]),
+      doSelectGrappleTarget: selectGrappleTarget,
+      doRejectGrappleWithoutFreeHand: selectGrappleTarget,
       doResolveGrappleSuccess: () =>
         resolveSubject({ tag: "action", actorId, action: "grapple" }, [
           grappleTargetFill(requireTargetChoiceHoleFromState()),
@@ -384,7 +404,7 @@ describe("rule-core Movement focused MBT", () => {
   );
 });
 
-function ruleCoreMovementBattle(): BattleState {
+function ruleCoreMovementBattle(mainWeaponGrip: WeaponGrip): BattleState {
   return startBattleRight({
     battleId: battleId("rule-core-movement"),
     combatants: [
@@ -394,6 +414,7 @@ function ruleCoreMovementBattle(): BattleState {
         displayName: "Rule Core Mover",
         initiative: 20,
         prone: true,
+        mainWeaponGrip,
       }),
       movementCreature({
         combatantId: observerId,
@@ -401,6 +422,7 @@ function ruleCoreMovementBattle(): BattleState {
         displayName: "Rule Core Observer",
         initiative: 10,
         prone: false,
+        mainWeaponGrip: undefined,
       }),
     ],
   });
@@ -422,6 +444,7 @@ function movementCreature(input: {
   readonly displayName: string;
   readonly initiative: number;
   readonly prone: boolean;
+  readonly mainWeaponGrip: WeaponGrip | undefined;
 }): BattleCreatureInit {
   const conditions = input.prone ? (["prone"] as const) : undefined;
   return {
@@ -437,14 +460,30 @@ function movementCreature(input: {
       knownLanguages: ["Common"],
       d20Statistics: testCharacterD20Statistics(),
       weaponMasteries: [],
-      armorClass: defaultArmorClassState(),
+      armorClass: {
+        ...defaultArmorClassState(),
+        ...loadoutHandUses({
+          holdsShield: false,
+          holdsOffHandWeapon: false,
+          mainWeaponGrip: input.mainWeaponGrip,
+        }),
+      },
       size: "medium",
       speed: { walkFeet: movementFeet(movementSpeedFeet) },
       currentHp: Hp(12),
       maxHp: Hp(12),
       tempHp: Hp(0),
       ...(conditions === undefined ? {} : { conditions }),
-      selectedLoadout: {},
+      selectedLoadout:
+        input.mainWeaponGrip === undefined
+          ? {}
+          : {
+              weapon: {
+                itemId: battleObjectId("main:weapon_longsword"),
+                unitId: parseSharedUnitId("weapon_longsword"),
+                grip: input.mainWeaponGrip,
+              },
+            },
       attack: null,
       unarmedStrike: {
         kind: "unarmedStrike",
@@ -475,6 +514,19 @@ function projectRuleCoreMovementState(input: {
   if (actor === undefined) {
     throw new Error("Expected rule-core Movement actor in battle snapshot.");
   }
+  const actorState = input.state.combatants.get(actorId);
+  if (actorState === undefined || actorState.origin.kind !== "character") {
+    throw new Error("Expected rule-core Movement character actor state.");
+  }
+  const mainWeaponGrip = actorState.origin.selectedLoadout.weapon?.grip;
+  if (mainWeaponGrip === undefined) {
+    throw new Error("Expected rule-core Movement actor main weapon grip.");
+  }
+  const hands = combatantHandUses(
+    input.state,
+    actorState,
+    input.state.grapples,
+  );
   const grapple = input.state.grapples.find(
     (candidate) =>
       candidate.grapplerId === actorId && candidate.targetId === observerId,
@@ -489,6 +541,9 @@ function projectRuleCoreMovementState(input: {
     actionAvailable: snapshot.turn.actionResources.length > 0,
     grappleActive: grapple !== undefined,
     grappleEscapeDc: grapple === undefined ? 0 : Number(grapple.escapeDc),
+    mainWeaponGrip,
+    leftHandUse: hands.left,
+    rightHandUse: hands.right,
     holes: input.holes.map(projectMovementHole),
     pendingOpportunityAttack:
       battleFrontierInterruptDecisionForState(input.state)?.trigger ===
@@ -501,7 +556,7 @@ function projectRuleCoreMovementState(input: {
 function movementFill(
   hole: Extract<BattleHole, { readonly kind: "movement" }>,
   value: {
-    readonly movementCostFeet: number;
+    readonly distanceFeet: number;
     readonly provokedOpportunityAttacks: Extract<
       BattleFill,
       { readonly kind: "movement" }
@@ -513,7 +568,7 @@ function movementFill(
     holeId: hole.holeId,
     value: {
       speedKind: "walk",
-      movementCostFeet: movementFeet(value.movementCostFeet),
+      path: ordinaryMovementPath(movementFeet(value.distanceFeet)),
       provokedOpportunityAttacks: value.provokedOpportunityAttacks,
     },
   };
@@ -626,6 +681,12 @@ function normalizeRuleCoreMovementQuintState(
     state["qDashBonusFeet"],
     "qDashBonusFeet",
   );
+  const grappleActive = booleanField(state, "qGrappleActive");
+  const mainWeaponGrip = stringLiteralField(
+    state,
+    "qMainWeaponGrip",
+    WEAPON_GRIPS,
+  );
   return {
     componentRoute: decodeRuleCoreComponentRoute(state["qComponentRoute"]),
     currentActor: currentActorName(state["qCurrentActor"]),
@@ -638,11 +699,20 @@ function normalizeRuleCoreMovementQuintState(
     prone: booleanField(state, "qProne"),
     disengaged: booleanField(state, "qDisengaged"),
     actionAvailable: booleanField(state, "qActionAvailable"),
-    grappleActive: booleanField(state, "qGrappleActive"),
+    grappleActive,
     grappleEscapeDc: numberFromQuintInt(
       state["qGrappleEscapeDc"],
       "qGrappleEscapeDc",
     ),
+    mainWeaponGrip,
+    // The hands the Quint grip and Grapple hold: the main weapon takes the
+    // right hand, a two-handed grip the left too, and a Grapple the free one.
+    leftHandUse: grappleActive
+      ? "grapple"
+      : mainWeaponGrip === "two_handed"
+        ? "mainWeapon"
+        : "free",
+    rightHandUse: "mainWeapon",
     holes: protocol.holes,
     pendingOpportunityAttack: booleanField(state, "qPendingOpportunityAttack"),
     lastResult: movementResult(protocol.lastResult),

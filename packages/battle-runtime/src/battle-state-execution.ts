@@ -1,3 +1,4 @@
+import type { BoundSupportedAttackActionOption } from "./battle-action-options.ts";
 import type { AuthoredSpellInvocationCastingFacts } from "./procedure-execution/spell-invocation-casting-facts.ts";
 // KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE
 import type { AttackPresentationJoinIssue } from "./attack-presentation-contract.ts";
@@ -139,6 +140,8 @@ export type {
 // KERNEL-COVERAGE: runtime-owner BATTLE.FEATURE.METAMAGIC_SEEKING_SPELL_ATTACK_REROLL BATTLE.FEATURE.METAMAGIC_EMPOWERED_DAMAGE_DICE_REROLL
 import type {
   ActionEconomyState,
+  ObjectInteractionRuling,
+  ObjectInteractionState,
   RuntimeActionResource,
 } from "@dnd/shared-algebras/action-economy-algebra";
 import type {
@@ -341,11 +344,17 @@ import type {
   BattleCompelledBehaviorOption,
   BattleOngoingSpellEffectRef,
   BattleOngoingSpellOccurrenceRef,
+  BattleMovementPathActivity,
+  BattleMovementPathDifficultTerrain,
   WeaponAttackDamageEnhancementBonus,
   SpellAttackKind,
   SpellConditionRepeatSave,
 } from "./active-effect/execution-vocabulary.ts";
 export {
+  BATTLE_MOVEMENT_PATH_ACTIVITIES,
+  BATTLE_MOVEMENT_PATH_DIFFICULT_TERRAIN,
+  type BattleMovementPathActivity,
+  type BattleMovementPathDifficultTerrain,
   WEAPON_ATTACK_DAMAGE_ENHANCEMENT_BONUSES,
   type BattleMagicSuppressionEmanationMembership,
   type BattleMagicSuppressionOngoingSpellEffectRef,
@@ -797,7 +806,7 @@ export type GlyphStoredSpellReleaseReplayInput = {
 };
 export type BattleAttackDamageCriticalConsequence =
   | {
-      readonly kind: "ordinaryHit";
+      readonly kind: "nonCritical";
     }
   | {
       readonly kind: "criticalHit";
@@ -829,7 +838,7 @@ export type BattleAttackDamageInterruptionContinuation =
        * first target remain on the enclosing frame and are intentionally not
        * copied here.
        */
-      readonly attack: SupportedAttackActionOption;
+      readonly attack: BoundSupportedAttackActionOption;
       readonly fills: readonly BattleFill[];
     });
 export type BattleAttackDamageInterruptionFrame = {
@@ -935,7 +944,7 @@ export type BattleInterruptedProcedure =
       readonly kind: "afterDamageSequenceWithPrimaryAttackFollowUp";
       readonly subject: BattleAttackHostSubject;
       readonly firstTargetId: CombatantId;
-      readonly attack: SupportedAttackActionOption;
+      readonly attack: BoundSupportedAttackActionOption;
       readonly fills: readonly BattleFill[];
       readonly events: readonly BattleAfterDamageEvent[];
       readonly objectDamages: readonly BattleObjectDamageOutcome[];
@@ -946,14 +955,14 @@ export type BattleInterruptedProcedure =
       readonly kind: "weaponMasteryCleave";
       readonly subject: BattleAttackHostSubject;
       readonly firstTargetId: CombatantId;
-      readonly attack: SupportedAttackActionOption;
+      readonly attack: BoundSupportedAttackActionOption;
       readonly fills: readonly BattleFill[];
     }
   | {
       readonly kind: "huntersPreyHordeBreaker";
       readonly subject: BattleAttackHostSubject;
       readonly firstTargetId: CombatantId;
-      readonly attack: SupportedAttackActionOption;
+      readonly attack: BoundSupportedAttackActionOption;
       readonly fills: readonly BattleFill[];
     }
   | {
@@ -1511,14 +1520,29 @@ export type BattleHidePrerequisite =
       readonly kind: "obscuredOnlyByCreatureOutOfEnemyLineOfSight";
       readonly obscuringCreatureId: CombatantId;
     };
+/**
+ * One part of a move's path, as the table adjudicates it. The runtime prices
+ * every foot of the move from these parts: the distance, the activity
+ * (climbing, crawling and swimming cost extra), Difficult Terrain, moving
+ * closer through a directional persistent area, and dragging Grappled
+ * creatures. A move's total distance is the sum of its parts.
+ */
+export type BattleMovementPathSegment = {
+  readonly distanceFeet: MovementFeet;
+  readonly activity: BattleMovementPathActivity;
+  readonly difficultTerrain: BattleMovementPathDifficultTerrain;
+  readonly movesCloserThroughDirectionalArea: boolean;
+  readonly draggedGrappledTargetIds: readonly CombatantId[];
+};
+export type BattleMovementPath =
+  ReadonlyNonEmptyArray<BattleMovementPathSegment>;
 export type BattleMovementFillValueCommon = {
   readonly speedKind: BattleMovementSpeedKind;
-  readonly movementCostFeet: MovementFeet;
+  readonly path: BattleMovementPath;
   readonly provokedOpportunityAttacks: readonly BattleOpportunityAttackThreat[];
   readonly acrobaticMovement?: BattleAcrobaticMovementFact;
   readonly areaDifficultTerrain?: BattleAreaDifficultTerrainMovementFact;
   readonly directionalPersistentAreaMovement?: BattleDirectionalPersistentAreaMovementFact;
-  readonly grappleDrag?: BattleGrappleDragMovementFact;
   readonly creatureSpaceTraversal?: BattleCreatureSpaceTraversalMovementFact;
 };
 export type BattleOrdinaryMovementFillValue = BattleMovementFillValueCommon & {
@@ -1595,8 +1619,6 @@ export type BattleAreaDifficultTerrainSource =
 export type BattleAreaDifficultTerrainMovementFact = {
   readonly kind: "areaDifficultTerrain";
   readonly sources: readonly BattleAreaDifficultTerrainSource[];
-  readonly totalDistanceFeet: MovementFeet;
-  readonly difficultTerrainDistanceFeet: MovementFeet;
 };
 export type BattleDirectionalPersistentAreaMovementFact = {
   readonly kind: "directionalPersistentAreaMovement";
@@ -1605,16 +1627,6 @@ export type BattleDirectionalPersistentAreaMovementFact = {
   readonly sourceProcedureRef: BattleProcedureExecutionRef;
   readonly areaId: BattleAreaId;
   readonly directionId: BattleLineDirectionId;
-  readonly totalDistanceFeet: MovementFeet;
-  readonly closerDistanceFeet: MovementFeet;
-};
-export type BattleGrappleDragMovementFact = {
-  readonly kind: "grappleDrag";
-  readonly totalDistanceFeet: MovementFeet;
-  readonly targets: ReadonlyNonEmptyArray<{
-    readonly targetId: CombatantId;
-    readonly distanceFeet: MovementFeet;
-  }>;
 };
 export type BattleCreatureSpaceTraversalMovementFact = {
   readonly kind: "occupiedCreatureSpaceTraversal";
@@ -1646,7 +1658,6 @@ export type BattleBrutalStrikeForcefulBlowMovementFact = {
 };
 export type BattleFixedCostMovementReplacementFact = {
   readonly kind: "fixedCostMovementReplacement";
-  readonly distanceFeet: MovementFeet;
   readonly landing: BattleJumpLandingFact;
 };
 export type BattleVerticalSuspensionAltitudeDirection = "up" | "down";
@@ -2318,7 +2329,6 @@ export type BattleResolvedMovement = {
   readonly spendsTurnMovement: boolean;
   readonly acrobaticMovement?: BattleAcrobaticMovementFact;
   readonly areaDifficultTerrain?: BattleAreaDifficultTerrainMovementFact;
-  readonly grappleDrag?: BattleGrappleDragMovementFact;
   readonly creatureSpaceTraversal?: BattleCreatureSpaceTraversalMovementFact;
   readonly fixedCostMovementReplacement?: BattleFixedCostMovementReplacementFact;
   readonly controlledVerticalSuspensionMovement?: BattleControlledVerticalSuspensionMovementFact;
@@ -4516,6 +4526,7 @@ export type BattleSubjectResolutionPhase =
       readonly subject: BattleSubject;
       readonly handledInterruptTrigger?: BattleInterruptTrigger;
       readonly acceptedAttackAmmunitionSpend?: BattleAcceptedAttackAmmunitionSpend;
+      readonly acceptedThrownWeaponRelease?: BattleAcceptedThrownWeaponRelease;
       readonly admittedMovement?: Extract<
         BattleInterruptedProcedure,
         { readonly kind: "movement" }
@@ -4525,6 +4536,16 @@ export type BattleSubjectResolutionPhase =
 export type BattleAcceptedAttackAmmunitionSpend = {
   readonly actorId: CombatantId;
   readonly attackSelection: BoundAttackExecutionSelection;
+};
+
+/**
+ * The thrown weapon that the pending subject's accepted attack roll put on the
+ * ground. Resuming the subject replays that roll, so the replay starts with the
+ * weapon back in its thrower's hand and the accepted roll throws it again.
+ */
+export type BattleAcceptedThrownWeaponRelease = {
+  readonly actorId: CombatantId;
+  readonly objectId: BattleObjectId;
 };
 
 export type BattleState = {
@@ -4991,6 +5012,11 @@ export type BattleSpellObjectTargetSpatialFactRequest = {
   readonly requiresExactDistance: true;
   readonly requiresEnemyProximityQualification: true;
 };
+export type BattleAttackTargetRequest = {
+  readonly actorId: CombatantId;
+  readonly selection: BattleAttackExecutionSelection;
+  readonly targetConstraint: AttackTargetConstraint;
+};
 export type BattleTargetChoiceHole = Extract<
   RuntimeHole & { readonly label: string },
   { readonly kind: "targetChoice" }
@@ -5001,10 +5027,7 @@ export type BattleTargetChoiceHole = Extract<
   readonly relationshipFactRequest?: BattleTargetChoiceRelationshipFactRequest;
   readonly spellTargetSpatialFactRequest?: BattleSpellTargetSpatialFactRequest;
   readonly spellLeapTargetSpatialFactRequest?: BattleSpellLeapTargetSpatialFactRequest;
-  readonly attack?: {
-    readonly actorId: CombatantId;
-    readonly selection: BattleAttackExecutionSelection;
-    readonly targetConstraint: AttackTargetConstraint;
+  readonly attack?: BattleAttackTargetRequest & {
     readonly acceptsObjectTarget?: true;
     /** The attack throws its weapon: the fill needs a thrownWeaponLanding fact. */
     readonly requiresThrownWeaponLanding?: true;
@@ -5228,6 +5251,19 @@ export type BattleHeldObjectFactsHole = {
   readonly kind: "heldObjectFacts";
   readonly label: string;
   readonly actorId: CombatantId;
+};
+/**
+ * Asks the table to rule on one object interaction: whether the object needs
+ * an action for its use. Battle then charges the free object interaction or
+ * the Utilize action.
+ */
+export type BattleObjectInteractionRulingHole = {
+  readonly holeInstanceKey: HoleInstanceKey;
+  readonly holeId: BattleHoleId;
+  readonly kind: "objectInteractionRuling";
+  readonly label: string;
+  readonly actorId: CombatantId;
+  readonly objectInteraction: ObjectInteractionState;
 };
 export type BattleToolPossessionFactsHole = {
   readonly holeInstanceKey: HoleInstanceKey;
@@ -6950,6 +6986,7 @@ export type BattleTargetingSaveInterdictionOutcomeHole =
     (
       | {
           readonly replacementTargetKind: "attackRoll";
+          readonly attack?: BattleAttackTargetRequest;
           readonly relationshipFactRequest?: Extract<
             BattleTargetChoiceRelationshipFactRequest,
             { readonly kind: "attackRollTargetIsEnemy" }
@@ -7015,6 +7052,7 @@ export type BattleHole =
   | BattleTeleportDestinationHole
   | BattleSpatialMeleeSpellAttackProxyPositionHole
   | BattleHeldObjectFactsHole
+  | BattleObjectInteractionRulingHole
   | BattleToolPossessionFactsHole
   | BattleCunningStrikeEndTurnCoverFactsHole
   | BattleSpawnedCompanionConnectionHole
@@ -7351,6 +7389,11 @@ export type BattleFill =
       readonly value: {
         readonly objectIds: readonly BattleObjectId[];
       };
+    }
+  | {
+      readonly kind: "objectInteractionRuling";
+      readonly holeId: BattleHoleId;
+      readonly value: ObjectInteractionRuling;
     }
   | {
       readonly kind: "toolPossessionFacts";
@@ -8228,6 +8271,8 @@ export type BattleTurnSnapshot = {
   readonly actionTakenThisTurn: boolean;
   /** The current turn's unspent Bonus Action quota, not discovered action availability. */
   readonly bonusActionQuotaAvailable: boolean;
+  /** The current turn's free object interaction. */
+  readonly objectInteraction: ObjectInteractionState;
   readonly jumpDistanceMultiplier: BattleJumpDistanceMultiplier | null;
   readonly heightenedStepOfTheWindCarriedCreatures: readonly HeightenedStepOfTheWindCarriedCreature[];
   readonly spellSlotUsesThisTurn: readonly BattleTurnSpellSlotUse[];
