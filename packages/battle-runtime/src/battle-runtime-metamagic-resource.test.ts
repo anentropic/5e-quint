@@ -47,6 +47,8 @@ import type {
   BattleTargetSpatialFact,
 } from "./battle-state-execution.ts";
 import { HEROIC_INSPIRATION_REROLL_EFFECT_KIND } from "./battle-state-execution.ts";
+import { ATTACK_ROLL_D20_TEST_REROLL_SOURCE_REPEATED_MESSAGE } from "./battle-reducer/attack-roll-d20-test-rerolls.ts";
+import { SEEKING_SPELL_REPLACEMENT_MODIFIER_MESSAGE } from "./battle-reducer/spells-resolve.ts";
 import {
   EMPOWERED_SPELL_REROLL_UNSUPPORTED_DAMAGE_ROLL_OWNER_MESSAGE,
   SEEKING_SPELL_REROLL_UNSUPPORTED_ATTACK_ROLL_OWNER_MESSAGE,
@@ -2828,10 +2830,12 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
           attackRollFill(seekingHole, {
             total: 5,
             naturalD20: 2,
-            spellAttackReroll: {
-              kind: "decline",
-              effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
-            },
+            d20TestRerolls: [
+              {
+                kind: "decline",
+                effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+              },
+            ],
           }),
         ],
       }),
@@ -2841,14 +2845,16 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
     const rerolledAttack = attackRollFill(seekingHole, {
       total: 5,
       naturalD20: 2,
-      spellAttackReroll: {
-        kind: "reroll",
-        effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
-        replacement: {
-          total: 15,
-          d20TestRoll: { tag: "single", naturalD20: DieRollResult(10) },
+      d20TestRerolls: [
+        {
+          kind: "reroll",
+          effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+          replacement: {
+            total: 15,
+            d20TestRoll: { tag: "single", naturalD20: DieRollResult(12) },
+          },
         },
-      },
+      ],
     });
     const damage = nextSpellHole(
       state,
@@ -2871,7 +2877,7 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
     expect(sorceryPointsRemaining(resolved)).toBe(resourceCount(3));
   });
 
-  test("Seeking Spell is not asked after Heroic Inspiration rerolled the spell attack", () => {
+  test("Seeking Spell is still asked after Heroic Inspiration rerolled a miss (A55)", () => {
     const session = saveMetamagicBattle({
       knownOptions: [seekingMetamagicOption()],
       heroicInspiration: HEROIC_INSPIRATION_AVAILABLE,
@@ -2899,12 +2905,38 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
         attackRollFill(attack, {
           total: 5,
           naturalD20: 2,
-          heroicInspirationReroll,
+          d20TestRerolls: [heroicInspirationReroll],
         }),
       ],
     });
+    expect(rerolledMiss).toMatchObject({
+      tag: "needsHoles",
+      frontier: {
+        holes: [
+          expect.objectContaining({
+            kind: "attackRoll",
+            spellAttackRerolls: [expect.anything()],
+          }),
+        ],
+      },
+    });
 
-    const resolved = requireResolved(rerolledMiss).state;
+    const seekingDeclined = resolveBattleSubject({
+      state,
+      subject: act.subject,
+      fills: [
+        target,
+        attackRollFill(attack, {
+          total: 5,
+          naturalD20: 2,
+          d20TestRerolls: [
+            heroicInspirationReroll,
+            { kind: "decline", effectKind: SEEKING_METAMAGIC_EFFECT_KIND },
+          ],
+        }),
+      ],
+    });
+    const resolved = requireResolved(seekingDeclined).state;
     expect(heroicInspirationOf(resolved)).toEqual(NO_HEROIC_INSPIRATION);
     expect(sorceryPointsRemaining(resolved)).toBe(resourceCount(4));
   });
@@ -2931,18 +2963,17 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
           attackRollFill(attack, {
             total: 5,
             naturalD20: 2,
-            heroicInspirationReroll: {
-              kind: "reroll",
-              effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
-              replacement: {
-                total: 6,
-                d20TestRoll: { tag: "single", naturalD20: DieRollResult(3) },
+            d20TestRerolls: [
+              {
+                kind: "reroll",
+                effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+                replacement: {
+                  total: 6,
+                  d20TestRoll: { tag: "single", naturalD20: DieRollResult(3) },
+                },
               },
-            },
-            spellAttackReroll: {
-              kind: "decline",
-              effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
-            },
+              { kind: "decline", effectKind: SEEKING_METAMAGIC_EFFECT_KIND },
+            ],
           }),
         ],
       }),
@@ -2950,6 +2981,141 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
 
     expect(heroicInspirationOf(resolved)).toEqual(NO_HEROIC_INSPIRATION);
     expect(sorceryPointsRemaining(resolved)).toBe(resourceCount(4));
+  });
+
+  test("Heroic Inspiration can reroll the roll Seeking Spell left, and a decline decides only that roll (A55)", () => {
+    const session = saveMetamagicBattle({
+      knownOptions: [seekingMetamagicOption()],
+      heroicInspiration: HEROIC_INSPIRATION_AVAILABLE,
+    });
+    const state = session.state;
+    const act = actionRayOfFrostAct(session);
+    const target = targetFill(
+      findHole(act.initialHoles, "targetChoice"),
+      skeletonId,
+    );
+    const attack = nextSpellHole(state, act.subject, [target], "attackRoll");
+    const declineHeroicInspiration = {
+      kind: "decline",
+      effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+    } as const;
+    const seekingMiss = {
+      kind: "reroll",
+      effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+      replacement: {
+        total: 7,
+        d20TestRoll: { tag: "single", naturalD20: DieRollResult(4) },
+      },
+    } as const;
+    const rerolledAttack = (
+      d20TestRerolls: NonNullable<
+        Parameters<typeof attackRollFill>[1]["d20TestRerolls"]
+      >,
+    ) => attackRollFill(attack, { total: 5, naturalD20: 2, d20TestRerolls });
+    const resolveRerolls = (
+      d20TestRerolls: Parameters<typeof rerolledAttack>[0],
+    ) =>
+      resolveBattleSubject({
+        state,
+        subject: act.subject,
+        fills: [target, rerolledAttack(d20TestRerolls)],
+      });
+
+    expect(
+      resolveRerolls([declineHeroicInspiration, seekingMiss]),
+    ).toMatchObject({
+      tag: "needsHoles",
+      frontier: {
+        holes: [
+          expect.objectContaining({
+            kind: "attackRoll",
+            heroicInspirationRerolls: [expect.anything()],
+          }),
+        ],
+      },
+    });
+    expect(
+      resolveRerolls([
+        declineHeroicInspiration,
+        { kind: "decline", effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND },
+      ]),
+    ).toMatchObject({
+      tag: "invalid",
+      message: ATTACK_ROLL_D20_TEST_REROLL_SOURCE_REPEATED_MESSAGE,
+    });
+
+    const hitRerolls = [
+      declineHeroicInspiration,
+      seekingMiss,
+      {
+        kind: "reroll",
+        effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+        replacement: {
+          total: 19,
+          d20TestRoll: { tag: "single", naturalD20: DieRollResult(16) },
+        },
+      },
+    ] as const;
+    const awaitingDamage = resolveRerolls(hitRerolls);
+    const damage = findHole(
+      awaitingDamage.tag === "needsHoles"
+        ? battleResolutionHolesForTest(awaitingDamage)
+        : [],
+      "rolledDice",
+    );
+    const resolved = requireResolved(
+      resolveBattleSubject({
+        state,
+        subject: act.subject,
+        fills: [
+          target,
+          rerolledAttack(hitRerolls),
+          damageRollFillWithGroups(damage, [[4, 3]]),
+        ],
+      }),
+    ).state;
+    expect(heroicInspirationOf(resolved)).toEqual(NO_HEROIC_INSPIRATION);
+    expect(sorceryPointsRemaining(resolved)).toBe(resourceCount(3));
+  });
+
+  test("Seeking Spell's replacement keeps the original roll's modifiers", () => {
+    const session = saveMetamagicBattle({
+      knownOptions: [seekingMetamagicOption()],
+    });
+    const state = session.state;
+    const act = actionRayOfFrostAct(session);
+    const target = targetFill(
+      findHole(act.initialHoles, "targetChoice"),
+      skeletonId,
+    );
+    const attack = nextSpellHole(state, act.subject, [target], "attackRoll");
+
+    expect(
+      resolveBattleSubject({
+        state,
+        subject: act.subject,
+        fills: [
+          target,
+          attackRollFill(attack, {
+            total: 5,
+            naturalD20: 2,
+            d20TestRerolls: [
+              {
+                kind: "reroll",
+                effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+                replacement: {
+                  total: 30,
+                  d20TestRoll: { tag: "single", naturalD20: DieRollResult(3) },
+                },
+              },
+            ],
+          }),
+        ],
+      }),
+    ).toMatchObject({
+      tag: "invalid",
+      message: SEEKING_SPELL_REPLACEMENT_MODIFIER_MESSAGE,
+    });
   });
 
   test("rejects repeated Seeking Spell and requires an actor for combined use", () => {
@@ -3012,14 +3178,16 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
     const rerolledAttack = attackRollFill(seekingHole, {
       total: 5,
       naturalD20: 2,
-      spellAttackReroll: {
-        kind: "reroll",
-        effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
-        replacement: {
-          total: 15,
-          d20TestRoll: { tag: "single", naturalD20: DieRollResult(10) },
+      d20TestRerolls: [
+        {
+          kind: "reroll",
+          effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+          replacement: {
+            total: 15,
+            d20TestRoll: { tag: "single", naturalD20: DieRollResult(12) },
+          },
         },
-      },
+      ],
     });
     const damage = nextSpellHole(
       state,
@@ -3068,14 +3236,16 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
     const maliciousSeekingFill = attackRollFill(attack, {
       total: 5,
       naturalD20: 2,
-      spellAttackReroll: {
-        kind: "reroll",
-        effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
-        replacement: {
-          total: 15,
-          d20TestRoll: { tag: "single", naturalD20: DieRollResult(10) },
+      d20TestRerolls: [
+        {
+          kind: "reroll",
+          effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+          replacement: {
+            total: 15,
+            d20TestRoll: { tag: "single", naturalD20: DieRollResult(12) },
+          },
         },
-      },
+      ],
     });
     expect(
       resolveBattleSubject({
@@ -3098,7 +3268,7 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
         d20TestRoll: { tag: "single", naturalD20: DieRollResult(2) },
       },
       {
-        total: 30,
+        total: 4,
         d20TestRoll: { tag: "single", naturalD20: DieRollResult(1) },
       },
     ] as const) {
@@ -3130,11 +3300,13 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
       const rerolledAttack = attackRollFill(seekingHole, {
         total: 5,
         naturalD20: 2,
-        spellAttackReroll: {
-          kind: "reroll",
-          effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
-          replacement,
-        },
+        d20TestRerolls: [
+          {
+            kind: "reroll",
+            effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+            replacement,
+          },
+        ],
       });
       const resolved = requireResolved(
         resolveBattleSubject({
@@ -3172,14 +3344,16 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
     const rerolledAttack = attackRollFill(seekingHole, {
       total: 5,
       naturalD20: 2,
-      spellAttackReroll: {
-        kind: "reroll",
-        effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
-        replacement: {
-          total: 20,
-          d20TestRoll: { tag: "single", naturalD20: DieRollResult(20) },
+      d20TestRerolls: [
+        {
+          kind: "reroll",
+          effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+          replacement: {
+            total: 23,
+            d20TestRoll: { tag: "single", naturalD20: DieRollResult(20) },
+          },
         },
-      },
+      ],
     });
     const damage = nextSpellHole(
       state,
@@ -3237,14 +3411,16 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
       const rerolledAttack = attackRollFill(attack, {
         total: entry.attack.total,
         naturalD20: entry.attack.naturalD20,
-        spellAttackReroll: {
-          kind: "reroll",
-          effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
-          replacement: {
-            total: 15,
-            d20TestRoll: { tag: "single", naturalD20: DieRollResult(10) },
+        d20TestRerolls: [
+          {
+            kind: "reroll",
+            effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+            replacement: {
+              total: 15,
+              d20TestRoll: { tag: "single", naturalD20: DieRollResult(10) },
+            },
           },
-        },
+        ],
       });
 
       expect(
@@ -3284,10 +3460,12 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
           attackRollFill(attack, {
             total: 5,
             naturalD20: 2,
-            spellAttackReroll: {
-              kind: "decline",
-              effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
-            },
+            d20TestRerolls: [
+              {
+                kind: "decline",
+                effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+              },
+            ],
           }),
         ],
       }),
@@ -3322,10 +3500,12 @@ describe("battle runtime: Sorcerer Metamagic cast governor and Quickened Spell",
           attackRollFill(attack, {
             total: 5,
             naturalD20: 2,
-            spellAttackReroll: {
-              kind: "decline",
-              effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
-            },
+            d20TestRerolls: [
+              {
+                kind: "decline",
+                effectKind: SEEKING_METAMAGIC_EFFECT_KIND,
+              },
+            ],
           }),
         ],
       }),
