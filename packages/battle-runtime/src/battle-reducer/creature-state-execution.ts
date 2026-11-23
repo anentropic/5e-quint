@@ -477,6 +477,7 @@ export function combatantOriginSnapshot(
         offHandAttackProcedureRef: origin.offHandAttack?.procedureRef ?? null,
       },
       resources: origin.resources.map(characterResourceSnapshot),
+      heroicInspiration: origin.heroicInspiration,
       druidWildShapeAvailableForms: (
         origin.druidWildShapeAvailableForms ?? []
       ).map((admission) => ({
