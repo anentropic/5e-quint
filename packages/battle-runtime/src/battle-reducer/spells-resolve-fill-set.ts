@@ -1,3 +1,7 @@
+import {
+  isSpellTargetFact,
+  type SpellTargetFact,
+} from "./saving-throw-cover.ts";
 import { isSpatialQualificationIssue } from "./ranged-attack-close-combat.ts";
 // UNIT-PROFILE-COVERAGE: runtime-owner spell.invocation-spell-created-held-object
 // UNIT-PROFILE-COVERAGE: runtime-owner spell.invocation-object-contact-damage
@@ -2535,4 +2539,22 @@ function spellAttackSequencePartIndexForHole(
     }
   }
   return null;
+}
+
+/**
+ * The spellTarget facts a spell's fills carry: those of its target choice, its
+ * target list and its target allocation.
+ */
+export function spellFillSetSpellTargetFacts(
+  fillSet: Pick<
+    Extract<SpellFillSet, { readonly tag: "ok" }>,
+    "targetSpatialFacts" | "targetList" | "targetAllocation"
+  >,
+): readonly SpellTargetFact[] {
+  const facts: readonly BattleTargetSpatialFact[] = [
+    ...fillSet.targetSpatialFacts,
+    ...(fillSet.targetList?.spatialFacts ?? []),
+    ...(fillSet.targetAllocation?.spatialFacts ?? []),
+  ];
+  return facts.filter(isSpellTargetFact);
 }
