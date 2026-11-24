@@ -149,6 +149,7 @@ import starryWispInput from "../../surface/content/starry_wisp.json";
 import viciousMockeryInput from "../../surface/content/vicious_mockery.json";
 import weaponLongbowInput from "../../surface/content/weapon_longbow.json";
 import weaponQuarterstaffInput from "../../surface/content/weapon_quarterstaff.json";
+import weaponSlingInput from "../../surface/content/weapon_sling.json";
 import { applyWeaponMasterySapOnHit } from "./battle-reducer/attack-roll.ts";
 import {
   battleActDruidWildShapePresentation,
@@ -4183,7 +4184,11 @@ export function characterSeed(input: {
               input.attack === undefined
                 ? parseUnitId("weapon_longsword")
                 : input.attack.weapon.weaponUnitId,
-            grip: "one_handed" as const,
+            grip: input.attack?.weapon.properties.some(
+              (property) => property.kind === "two_handed",
+            )
+              ? ("two_handed" as const)
+              : ("one_handed" as const),
           },
         });
   const attack =
@@ -4543,6 +4548,32 @@ export function testRangedCleaveLongbowAttack(): TestCharacterWeaponAttack {
         battleObjectId(`main:${unit.id}`),
         [{ weaponUnitId: unit.id }],
       ),
+    ),
+    ability: "dex",
+    abilityModifier: battleAbilityModifier(3),
+  };
+}
+
+/** The SRD Sling, a one-handed Ammunition weapon that isn't published yet. */
+export function testSlingUnitRef(): BattleUnitRef {
+  const weapon = decodeUnitRecordSync(weaponSlingInput);
+  if (weapon.kind !== "weapon") {
+    throw new Error("Expected Sling weapon Unit.");
+  }
+  return { unit: weapon, supportProfiles: [] };
+}
+
+/** An attack with the Sling of {@link testSlingUnitRef}. */
+export function testSlingAttack(): TestCharacterWeaponAttack {
+  const weapon = testSlingUnitRef().unit;
+  if (weapon.kind !== "weapon") {
+    throw new Error("Expected Sling weapon Unit.");
+  }
+  return {
+    kind: "weapon",
+    ...admitCharacterWeaponAttackExecutionWeapon(
+      weapon,
+      battleObjectId(`main:${weapon.id}`),
     ),
     ability: "dex",
     abilityModifier: battleAbilityModifier(3),
