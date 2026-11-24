@@ -106,8 +106,11 @@ import {
   type WildShapeLoadoutObjectRef,
   type WildShapeWornLoadoutObjectRef,
 } from "./wild-shape-equipment.ts";
-import { battleObjectIsOnGround } from "./battle-object-lifecycle.ts";
-import { characterEffectiveLoadoutFromOrigin } from "./character-effective-loadout.ts";
+import { battleObjectIsOnGround } from "./object-custody-queries.ts";
+import {
+  characterEffectiveLoadoutFromOrigin,
+  loadoutWeaponIsHeld,
+} from "./character-effective-loadout.ts";
 
 export function attackDamageHole(
   attack: SupportedAttackActionOption,
@@ -443,7 +446,7 @@ export function attackActionOptionsForActor(
     const options =
       actor.origin.attack == null ||
       (actor.origin.attack.kind === "weapon" &&
-        battleObjectIsOnGround(
+        !loadoutWeaponIsHeld(
           state,
           actor.combatantId,
           actor.origin.attack.weaponObjectId,
@@ -527,7 +530,7 @@ export function offHandAttackActionOptionsForActor(
   if (main === null || offHand === undefined) return [];
   // The Light extra attack needs the off-hand weapon in hand, not the main one:
   // a thrown main-hand Dagger has already made the Light attack it follows.
-  if (battleObjectIsOnGround(state, actorId, offHand.weaponObjectId)) {
+  if (!loadoutWeaponIsHeld(state, actorId, offHand.weaponObjectId)) {
     return [];
   }
   if (
