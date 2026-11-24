@@ -1,5 +1,4 @@
 import { qualifiedAttackRollMode } from "./attack-roll.ts";
-import { isSpatialQualificationIssue } from "./ranged-attack-close-combat.ts";
 import * as Result from "effect/Result";
 // Main Attack action resolution extracted from attack-resolution.ts.
 
@@ -22,11 +21,12 @@ import {
   nonEmptyArrayProperty,
   optionalProperty,
 } from "../optional-property.ts";
-import { directTargetCover } from "@dnd/shared-algebras/cover-algebra";
 import {
-  admittedArmorClassBehindCover,
-  weaponAttackArmorClass,
-} from "./attack-target-cover.ts";
+  directTargetCover,
+  armorClassBehindCover,
+  type DirectTargetCover,
+} from "@dnd/shared-algebras/cover-algebra";
+import { armorClassAgainstAttack } from "./attack-target-cover.ts";
 import { Match } from "effect";
 import { allocateBattleEffectOccurrenceForCreature } from "../effect-execution-ref.ts";
 
@@ -66,13 +66,13 @@ import {
   weaponMasteryCleaveDecisionHole,
   weaponMasteryCleaveExtraAttack,
   weaponMasteryCleaveTargetHole,
-  weaponMasteryCleaveTargetIsLegal,
+  weaponMasteryCleaveTargetAdmission,
   huntersPreyHordeBreakerAttackRollHole,
   huntersPreyHordeBreakerDamageHole,
   huntersPreyHordeBreakerDecisionHole,
   huntersPreyHordeBreakerSelection,
   huntersPreyHordeBreakerTargetHole,
-  huntersPreyHordeBreakerTargetIsLegal,
+  huntersPreyHordeBreakerTargetAdmission,
   recordHuntersPreyHordeBreakerUsed,
   applyWeaponMasteryPushOnHit,
   applyWeaponMasterySlowAfterDamage,
@@ -1220,13 +1220,19 @@ function resolveOrdinaryObjectAttack<
     fillSet.target.spatialFacts.length === 1
       ? fillSet.target.spatialFacts[0]
       : undefined;
+  const targetCover = directTargetCover(objectFact?.cover);
   const objectFactIssues = ordinaryObjectAttackTargetIssues({
+    targetCover,
     objectFact,
     attackerId,
     objectId: fillSet.target.objectId,
     attack,
   });
-  if (objectFact === undefined || objectFactIssues.length > 0) {
+  if (
+    objectFact === undefined ||
+    targetCover === null ||
+    objectFactIssues.length > 0
+  ) {
     return invalidResult(
       input.input.state,
       "invalidFill",
@@ -1248,6 +1254,7 @@ function resolveOrdinaryObjectAttack<
     fillSet,
     objectFact,
     rollPreparation,
+    targetCover,
   });
   if (rollOutcome.tag === "result") return rollOutcome.result;
   if (rollOutcome.tag === "miss") {
@@ -1288,6 +1295,7 @@ function ordinaryObjectAttackTargetIssues<
   Attack extends BoundSupportedAttackActionOption,
 >(input: {
   readonly objectFact: OrdinaryObjectAttackTableFact | undefined;
+  readonly targetCover: DirectTargetCover | null;
   readonly attackerId: CombatantId;
   readonly objectId: OrdinaryObjectAttackFillSet["target"]["objectId"];
   readonly attack: Attack;
@@ -1301,7 +1309,7 @@ function ordinaryObjectAttackTargetIssues<
         ...(input.objectFact.objectId === input.objectId
           ? []
           : ["the table fact object does not match the selected object"]),
-        ...(directTargetCover(input.objectFact.cover) === null
+        ...(input.targetCover === null
           ? ["Total Cover prevents direct targeting"]
           : []),
         ...(attackTargetConstraint(input.attack).kind ===
@@ -1381,6 +1389,7 @@ function prepareOrdinaryObjectAttackRoll<
   const attacker = input.input.state.combatants.get(input.attackerId);
   const d20TestRerolls = attackRollD20TestRerolls({
     state: input.input.state,
+    subject: input.input.subject,
     attackerId: input.attackerId,
     attackRollHoleId: ATTACK_ROLL_HOLE_ID,
     attackRoll,
@@ -1461,12 +1470,13 @@ function resolveOrdinaryObjectAttackRoll<
     OrdinaryObjectAttackRollPreparation,
     { readonly tag: "ready" }
   >;
+  readonly targetCover: DirectTargetCover;
 }): OrdinaryObjectAttackRollOutcome {
   const hit = attackRollHitsWithCriticalThreshold(
     input.rollPreparation.effectiveAttackRoll,
-    admittedArmorClassBehindCover(
+    armorClassBehindCover(
       Number(input.objectFact.armorClass),
-      input.objectFact.cover,
+      input.targetCover,
     ),
     criticalThresholdForAttack(
       input.input.state.combatants.get(input.attackerId),
@@ -1752,19 +1762,15 @@ export function resolveSelectedAttackProcedure<
     );
   }
   /* v8 ignore stop -- @preserve */
-  const targetEnemyProximity = qualifyAttackTargetFacts(
+  const targetAdmission = qualifyAttackTargetFacts(
     input.state,
     attackerId,
     target.combatantId,
     attack,
     fillSet.targetSpatialFacts,
   );
-  if (isSpatialQualificationIssue(targetEnemyProximity)) {
-    return invalidResult(
-      input.state,
-      "invalidFill",
-      targetEnemyProximity.message,
-    );
+  if ("tag" in targetAdmission) {
+    return invalidResult(input.state, "invalidFill", targetAdmission.message);
   }
   const spendAttackProcedure: SpendAttackProcedure<Attack> = (
     state,
@@ -2038,7 +2044,7 @@ export function resolveSelectedAttackProcedure<
     target,
     attack,
     fillSet.targetSpatialFacts,
-    targetEnemyProximity,
+    targetAdmission.enemyProximity,
   );
   if (typeof initialRequiredRollMode === "object")
     return invalidResult(
@@ -2203,6 +2209,7 @@ export function resolveSelectedAttackProcedure<
   }
   const d20TestRerolls = attackRollD20TestRerolls({
     state: input.state,
+    subject: input.subject,
     attackerId: attackerId,
     attackRollHoleId: ATTACK_ROLL_HOLE_ID,
     attackRoll: fillSet.attackRoll,
@@ -2227,12 +2234,10 @@ export function resolveSelectedAttackProcedure<
   const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
 
   const criticalThreshold = criticalThresholdForAttack(attacker, attack);
-  const targetArmorClass = weaponAttackArmorClass(
+  const targetArmorClass = armorClassAgainstAttack(
     input.state,
-    attackerId,
     target,
-    attack,
-    fillSet.targetSpatialFacts,
+    targetAdmission.cover,
   );
   const ordinaryHit = attackRollHitsWithCriticalThreshold(
     effectiveAttackRoll,
@@ -4394,6 +4399,7 @@ function resolveAdditionalWeaponAttackRoll(input: {
   /* v8 ignore stop -- @preserve */
   const d20TestRerolls = attackRollD20TestRerolls({
     state: input.state,
+    subject: input.subject,
     attackerId: input.subject.actorId,
     attackRollHoleId: input.attackRollHole.holeId,
     attackRoll: attackRoll.value,
@@ -4664,12 +4670,10 @@ function resolveWeaponMasteryCleaveAfterPrimaryDamage(input: {
     input.state.combatants.get(input.subject.actorId),
     cleaveAttack,
   );
-  const cleaveTargetArmorClass = weaponAttackArmorClass(
+  const cleaveTargetArmorClass = armorClassAgainstAttack(
     input.state,
-    input.subject.actorId,
     secondTarget,
-    cleaveAttack,
-    cleaveTargetFacts,
+    preparation.targetCover,
   );
   const ordinaryCleaveHit = attackRollHitsWithCriticalThreshold(
     effectiveCleaveAttackRoll,
@@ -5013,6 +5017,7 @@ type WeaponMasteryCleavePreparation =
   | { readonly tag: "result"; readonly result: BattleResolutionResult }
   | {
       readonly tag: "prepared";
+      readonly targetCover: DirectTargetCover;
       readonly decision: WeaponMasteryCleaveDecisionUse;
       readonly primaryAttack: WeaponMasteryCleaveDecisionUse["attack"];
       readonly cleaveAttack: WeaponMasteryCleaveDecisionUse["attack"];
@@ -5066,17 +5071,18 @@ function prepareWeaponMasteryCleaveAttack(input: {
   const cleaveTargetFacts =
     additionalWeaponAttackTargetSpatialFacts(targetFill);
   const secondTarget = input.state.combatants.get(secondTargetId);
+  const targetAdmission =
+    secondTarget === undefined
+      ? null
+      : weaponMasteryCleaveTargetAdmission({
+          attackerId: input.subject.actorId,
+          firstTargetId: input.firstTargetId,
+          secondTarget,
+          attack: cleaveAttack,
+          targetSpatialFacts: cleaveTargetFacts,
+        });
   /* v8 ignore start -- @preserve -- Malformed fill: the selected second target must satisfy the spatial constraints encoded by the emitted Cleave target hole. */
-  if (
-    secondTarget === undefined ||
-    !weaponMasteryCleaveTargetIsLegal({
-      attackerId: input.subject.actorId,
-      firstTargetId: input.firstTargetId,
-      secondTarget,
-      attack: cleaveAttack,
-      targetSpatialFacts: cleaveTargetFacts,
-    })
-  ) {
+  if (secondTarget === undefined || targetAdmission === null) {
     return {
       tag: "result",
       result: invalidResult(
@@ -5117,6 +5123,7 @@ function prepareWeaponMasteryCleaveAttack(input: {
   if (cleaveAttackRoll.tag === "result") return cleaveAttackRoll;
   return {
     tag: "prepared",
+    targetCover: targetAdmission.cover,
     decision,
     primaryAttack,
     cleaveAttack,
@@ -5445,12 +5452,10 @@ function resolveHuntersPreyHordeBreakerAfterPrimaryDamage(input: {
     input.state.combatants.get(input.subject.actorId),
     hordeBreakerAttack,
   );
-  const hordeBreakerTargetArmorClass = weaponAttackArmorClass(
+  const hordeBreakerTargetArmorClass = armorClassAgainstAttack(
     input.state,
-    input.subject.actorId,
     secondTarget,
-    hordeBreakerAttack,
-    targetFacts,
+    preparation.targetCover,
   );
   const hit = attackRollHitsWithCriticalThreshold(
     effectiveHordeBreakerAttackRoll,
@@ -5802,6 +5807,7 @@ type HuntersPreyHordeBreakerPreparation =
   | { readonly tag: "result"; readonly result: BattleResolutionResult }
   | {
       readonly tag: "prepared";
+      readonly targetCover: DirectTargetCover;
       readonly decision: HuntersPreyHordeBreakerDecisionUse;
       readonly hordeBreakerAttack: HuntersPreyHordeBreakerDecisionUse["attack"];
       readonly procedureRef: BattleProcedureExecutionRef;
@@ -5882,19 +5888,20 @@ function prepareHuntersPreyHordeBreakerAttack(input: {
   const secondTargetId = targetFill.value;
   const targetFacts = additionalWeaponAttackTargetSpatialFacts(targetFill);
   const secondTarget = input.state.combatants.get(secondTargetId);
+  const targetAdmission =
+    secondTarget === undefined
+      ? null
+      : huntersPreyHordeBreakerTargetAdmission({
+          state: input.state,
+          attackerId: input.subject.actorId,
+          sourceProcedureRef: procedureRef,
+          firstTargetId: input.firstTargetId,
+          secondTarget,
+          attack: hordeBreakerAttack,
+          targetSpatialFacts: targetFacts,
+        });
   /* v8 ignore start -- @preserve -- Malformed fill: the second target must satisfy the spatial constraints encoded by the emitted Horde Breaker target hole. */
-  if (
-    secondTarget === undefined ||
-    !huntersPreyHordeBreakerTargetIsLegal({
-      state: input.state,
-      attackerId: input.subject.actorId,
-      sourceProcedureRef: procedureRef,
-      firstTargetId: input.firstTargetId,
-      secondTarget,
-      attack: hordeBreakerAttack,
-      targetSpatialFacts: targetFacts,
-    })
-  ) {
+  if (secondTarget === undefined || targetAdmission === null) {
     return {
       tag: "result",
       result: invalidResult(
@@ -5941,6 +5948,7 @@ function prepareHuntersPreyHordeBreakerAttack(input: {
   }
   return {
     tag: "prepared",
+    targetCover: targetAdmission.cover,
     decision,
     hordeBreakerAttack,
     procedureRef,

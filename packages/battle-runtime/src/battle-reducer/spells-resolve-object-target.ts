@@ -1,3 +1,4 @@
+import { armorClassBehindCover } from "@dnd/shared-algebras/cover-algebra";
 import { prepareAttackRollInput } from "./attack-roll-admission.ts";
 // Shared object-target spell attack resolution for direct casts and readied releases.
 // KERNEL-COVERAGE: runtime-owner BATTLE.DAMAGE.OBJECT_DAMAGE_TRANSITION
@@ -23,6 +24,7 @@ import {
 } from "../optional-property.ts";
 import { attackRollIsCriticalHit } from "./attack-resolution.ts";
 import {
+  attackRollAfterD20TestRerolls,
   attackRollD20TestRerolls,
   attackRollHoleWithD20TestRerollOptions,
   battleStateAfterHeroicInspirationReroll,
@@ -41,7 +43,7 @@ import {
   spellCastMetamagicApplicationsInput,
 } from "./spell-cast-interrupt-frame.ts";
 import { invalidResult } from "./result-helpers.ts";
-import { admittedArmorClassBehindCover } from "./attack-target-cover.ts";
+
 import { needsHolesResult } from "./needs-holes-result.ts";
 import { resolveRemarkableAthleteCriticalHitMovement } from "./remarkable-athlete-critical-movement.ts";
 import {
@@ -332,6 +334,7 @@ function resolveObjectTargetSpellAttackCore(
   /* v8 ignore stop -- @preserve */
   const d20TestRerolls = attackRollD20TestRerolls({
     state: input.input.state,
+    subject: input.input.subject,
     attackerId: input.actorId,
     attackRollHoleId: ATTACK_ROLL_HOLE_ID,
     attackRoll: attackRoll,
@@ -369,10 +372,10 @@ function resolveObjectTargetSpellAttackCore(
   }
   /* v8 ignore stop -- @preserve */
 
-  const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
+  const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll);
   const hit = attackRollHits(
     effectiveAttackRoll,
-    admittedArmorClassBehindCover(objectFact.armorClass, objectFact.cover),
+    armorClassBehindCover(objectFact.armorClass, objectFact.cover),
   );
   const critical = attackRollIsCriticalHit(effectiveAttackRoll);
   const spentState = battleStateAfterHeroicInspirationReroll(

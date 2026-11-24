@@ -1,6 +1,5 @@
-import { requiredAttackRollMode } from "./attack-roll.ts";
-import { qualifyAttackTargetFacts } from "./attack-spatial.ts";
-import { isSpatialQualificationIssue } from "./ranged-attack-close-combat.ts";
+import { attackTargetAdmission } from "./attack-spatial.ts";
+import { qualifiedAttackRollMode } from "./attack-roll.ts";
 // Light-property off-hand attack resolution extracted from attack-resolution.ts.
 
 // RAW-COVERAGE: runtime-owner RAW-QCORE7-MOVEMENT-GRAPPLE-001 RAW-PTG-REACTIONS-002 RAW-PTG-REACTIONS-004 RAW-PTG-REACTIONS-005 RAW-PTG-REACTIONS-006 RAW-QCORE9-UNIT-FEATURE-PROFILES-001 RAW-QCORE10-SPELL-PROCEDURE-PROFILES-001
@@ -41,7 +40,7 @@ import {
 
 import { normalizeBattleGrapples } from "./creature-state-leaves.ts";
 
-import { weaponAttackArmorClass } from "./attack-target-cover.ts";
+import { armorClassAgainstAttack } from "./attack-target-cover.ts";
 import {
   attackRollD20TestRerolls,
   attackRollHoleWithD20TestRerollOptions,
@@ -83,6 +82,7 @@ import {
 import { maybeOpenInterruptWindow } from "./interrupt-execution.ts";
 import { snapshotBattle } from "./battle-snapshot.ts";
 import { stateWithThrownWeaponReleasedPendingContinuation } from "./thrown-weapon-release.ts";
+import { thrownWeaponLandingIssue } from "./thrown-weapon-attack.ts";
 
 import { attackTargetHole, revealHidden } from "./hole-helpers.ts";
 import { needsHolesResult } from "./needs-holes-result.ts";
@@ -98,7 +98,6 @@ import {
 import {
   attackHitTriggerKind,
   attackKindForDeflectRedirect,
-  attackTargetIsLegal,
 } from "./movement-speed.ts";
 
 import { attackFillSet } from "./attack-fill-set.ts";
@@ -195,9 +194,8 @@ type BonusActionAttackConfig = {
 };
 
 /**
- * A bonus action attack's roll mode once its target facts qualify it the way
- * every attack's do: a legal target, a ranged attack's enemy proximity, and a
- * thrown weapon's landing.
+ * A bonus action attack's roll mode once its target facts qualify it: a
+ * ranged attack's enemy proximity, and a thrown weapon's landing.
  */
 function bonusActionAttackRollMode(
   state: BattleState,
@@ -205,23 +203,19 @@ function bonusActionAttackRollMode(
   target: BattleCreatureState,
   attack: SupportedAttackActionOption,
   facts: readonly BattleTargetSpatialFact[],
-): ReturnType<typeof requiredAttackRollMode> {
-  const enemyProximity = qualifyAttackTargetFacts(
-    state,
-    attackerId,
-    target.combatantId,
-    attack,
-    facts,
-  );
-  if (isSpatialQualificationIssue(enemyProximity)) return enemyProximity;
-  return requiredAttackRollMode(
+): ReturnType<typeof qualifiedAttackRollMode> {
+  const rollMode = qualifiedAttackRollMode(
     state,
     attackerId,
     target,
     attack,
     facts,
-    enemyProximity,
   );
+  if (typeof rollMode === "object") return rollMode;
+  const landingIssue = thrownWeaponLandingIssue(attackerId, attack, facts);
+  return landingIssue === null
+    ? rollMode
+    : { tag: "invalid", message: landingIssue };
 }
 
 function resolveBonusActionAttack(
@@ -269,17 +263,15 @@ function resolveBonusActionAttack(
     ]);
   }
   const target = input.state.combatants.get(fillSet.targetId);
+  const targetAdmission = attackTargetAdmission(
+    input.state,
+    input.subject.actorId,
+    fillSet.targetId,
+    attack,
+    fillSet.targetSpatialFacts,
+  );
   /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
-  if (
-    target == null ||
-    !attackTargetIsLegal(
-      input.state,
-      input.subject.actorId,
-      target.combatantId,
-      attack,
-      fillSet.targetSpatialFacts,
-    )
-  ) {
+  if (target == null || targetAdmission === null) {
     return invalidResult(
       input.state,
       "invalidFill",
@@ -389,6 +381,7 @@ function resolveBonusActionAttack(
   const attacker = input.state.combatants.get(input.subject.actorId);
   const d20TestRerolls = attackRollD20TestRerolls({
     state: input.state,
+    subject: input.subject,
     attackerId: input.subject.actorId,
     attackRollHoleId: ATTACK_ROLL_HOLE_ID,
     attackRoll: fillSet.attackRoll,
@@ -423,12 +416,10 @@ function resolveBonusActionAttack(
     input.state.combatants.get(input.subject.actorId),
     attack,
   );
-  const targetArmorClass = weaponAttackArmorClass(
+  const targetArmorClass = armorClassAgainstAttack(
     input.state,
-    input.subject.actorId,
     target,
-    attack,
-    fillSet.targetSpatialFacts,
+    targetAdmission.cover,
   );
   const hit = attackRollHitsWithCriticalThreshold(
     effectiveAttackRoll,
