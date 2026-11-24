@@ -1,4 +1,4 @@
-import { battleObjectId } from "./identity.ts";
+import { battleObjectId, type CombatantId } from "./identity.ts";
 import { decodeUnitRecordSync } from "@dnd/surface/surface/schema";
 import {
   unitId as parseSharedUnitId,
@@ -37,6 +37,7 @@ import {
 } from "./battle-reducer/movement-speed.ts";
 import { GRAPPLE_TARGET_REACH_FEET } from "./battle-reducer/domain-constants.ts";
 import { battleStateWithGroundObjects } from "./battle-reducer/battle-object-lifecycle.ts";
+
 import { PRONE_MOVEMENT_PATH_MESSAGE } from "./battle-reducer/movement-path.ts";
 import type {
   BattleState,
@@ -3903,6 +3904,48 @@ describe("battle runtime: movement, Grapple, and Hide", () => {
     expect(
       requireResolved(drag("crawling")).state.combatants.get(fighterId),
     ).toMatchObject({ movementSpentFeet: movementFeet(30) });
+  });
+
+  test("a route charges drag only for the segment carrying the grappled target", () => {
+    const state = fighterGrapplesGoblin(fighterVsGoblinBattle()).state;
+    const subject: BattleSubject = {
+      tag: "runtimeCommand",
+      actorId: fighterId,
+      command: "move",
+    };
+    const hole = requireHole(
+      resolveBattleSubject({ state, subject, fills: [] }),
+      "movement",
+    );
+    const move = (draggedTarget: CombatantId) =>
+      resolveBattleSubject({
+        state,
+        subject,
+        fills: [
+          movementFill(hole, {
+            path: [
+              ...testMovementPath({ distanceFeet: 5 }),
+              ...testMovementPath({
+                distanceFeet: 10,
+                draggedGrappledTargetIds: [draggedTarget],
+              }),
+            ],
+            provokedOpportunityAttacks: [],
+          }),
+        ],
+      });
+
+    expect(
+      requireResolved(move(goblinId)).state.combatants.get(fighterId),
+    ).toMatchObject({ movementSpentFeet: movementFeet(25) });
+    expect(move(fighterId)).toMatchObject({
+      tag: "invalid",
+      message:
+        "Movement path segment can only drag a creature Grappled by the mover.",
+    });
+    expect(state.combatants.get(fighterId)).toMatchObject({
+      movementSpentFeet: movementFeet(0),
+    });
   });
 
   test("grapple drag movement enforces extra cost unless Fast Wrestler exempts the target", () => {

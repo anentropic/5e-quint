@@ -1,3 +1,4 @@
+import { acceptedAttackReplayEvidence } from "./battle-reducer/subject-continuation-phase.ts";
 import { optionalProperty } from "./optional-property.ts";
 import type {
   BattleActDiscoveryCandidate,
@@ -9,8 +10,7 @@ import type {
   BattleResolutionResult,
   BattleSnapshot,
   BattleState,
-  BattleAcceptedAttackAmmunitionSpend,
-  BattleAcceptedThrownWeaponRelease,
+  BattleAcceptedAttackReplayEvidence,
   BattleInterruptRouteOptions,
 } from "./battle-state-execution.ts";
 import type { BattleSubject } from "./battle-subjects.ts";
@@ -49,7 +49,7 @@ import {
   snapshotBattle as snapshotBattleFromState,
   currentInterruptCheckpoint,
 } from "./battle-reducer/battle-snapshot.ts";
-import { interruptedProcedureSubject } from "./battle-reducer/interrupt-execution.ts";
+import { interruptedProcedureSubject } from "./battle-reducer/subject-continuation-phase.ts";
 import type { SpawnedCompanionWithinCommunicationRangeFact } from "./companion-communication.ts";
 import { spawnedCompanionLifecycleExecutionFactsForOwner } from "./companion-reaction-feature-facts.ts";
 import type { CombatantId } from "./identity.ts";
@@ -58,7 +58,6 @@ import { withThrownWeaponDropsReported } from "./battle-reducer/thrown-weapon-re
 import { resolveMonkFocusFlurryOfBlowsStrike } from "./battle-reducer/monk-flurry-attack.ts";
 import { resolvePactOfTheChainFamiliarReactionAttack } from "./companion-reaction-attack.ts";
 import type { BattleAttackRouteResolvers } from "./battle-reducer/attack-resolvers.ts";
-import { turnResourcesWithoutHeroicInspirationAttackRollReroll } from "./battle-reducer/attack-roll-d20-test-rerolls.ts";
 
 const BATTLE_ATTACK_ROUTE_RESOLVERS = {
   ...ATTACK_RESOLVERS,
@@ -339,8 +338,12 @@ function battleResolutionWithExecutionSnapshot(
     result.tag === "resolved"
       ? completedReportedReadyResumePhase(inputState, result.state)
       : undefined;
-  const continuation = continuationMetadata(result, handledInterruptTrigger);
   const pendingSubject = pendingSubjectForResolution(result);
+  const continuation = continuationMetadata(
+    result,
+    handledInterruptTrigger,
+    pendingSubject,
+  );
   const phasedResult =
     result.tag === "invalid"
       ? result
@@ -359,14 +362,7 @@ function battleResolutionWithExecutionSnapshot(
                         "admittedMovement",
                         continuation.admittedMovement,
                       ),
-                      ...optionalProperty(
-                        "acceptedAttackAmmunitionSpend",
-                        continuation.acceptedAttackAmmunitionSpend,
-                      ),
-                      ...optionalProperty(
-                        "acceptedThrownWeaponRelease",
-                        continuation.acceptedThrownWeaponRelease,
-                      ),
+                      ...acceptedAttackReplayEvidence(continuation),
                       ...(continuation.handledInterruptTrigger !== undefined
                         ? {
                             handledInterruptTrigger:
@@ -377,10 +373,6 @@ function battleResolutionWithExecutionSnapshot(
                 : (resolvedSubjectPhase ?? {
                     kind: "subjectSelection" as const,
                   }),
-            currentTurnResources: turnResourcesAfterResolution(
-              result,
-              resolvedSubjectPhase,
-            ),
           },
         };
   const snapshotState =
@@ -390,25 +382,6 @@ function battleResolutionWithExecutionSnapshot(
     ...phasedResult,
     snapshot,
   };
-}
-
-/**
- * Turn resources after a resolution: a completed subject drops its own
- * records. A resolved result with any interrupt frame still pending, such as
- * a checkpoint below a continuation frame, still holds the interrupted
- * subject, which replays later.
- */
-export function turnResourcesAfterResolution(
-  result: Exclude<BattleResolutionResult, { readonly tag: "invalid" }>,
-  resolvedSubjectPhase: BattleState["subjectResolutionPhase"] | undefined,
-): BattleState["currentTurnResources"] {
-  return result.tag === "resolved" &&
-    resolvedSubjectPhase === undefined &&
-    result.state.interruptStack.length === 0
-    ? turnResourcesWithoutHeroicInspirationAttackRollReroll(
-        result.state.currentTurnResources,
-      )
-    : result.state.currentTurnResources;
 }
 
 function pendingSubjectForResolution(
@@ -427,38 +400,34 @@ function pendingSubjectForResolution(
 function continuationMetadata(
   result: BattleResolutionResult,
   handledInterruptTrigger: BattleInterruptTrigger | undefined,
+  pendingSubject: BattleSubject | null,
 ): {
   readonly handledInterruptTrigger: BattleInterruptTrigger | undefined;
-  readonly acceptedAttackAmmunitionSpend:
-    | BattleAcceptedAttackAmmunitionSpend
-    | undefined;
-  readonly acceptedThrownWeaponRelease:
-    | BattleAcceptedThrownWeaponRelease
-    | undefined;
   readonly admittedMovement: Extract<
     BattleState["subjectResolutionPhase"],
     { readonly kind: "subjectContinuation" }
   >["admittedMovement"];
-} {
+} & BattleAcceptedAttackReplayEvidence {
   if (
     result.tag === "invalid" ||
     result.state.subjectResolutionPhase.kind !== "subjectContinuation"
   ) {
     return {
       handledInterruptTrigger,
-      acceptedAttackAmmunitionSpend: undefined,
-      acceptedThrownWeaponRelease: undefined,
       admittedMovement: undefined,
     };
   }
   return {
+    ...(pendingSubject !== null &&
+    sameBattleSubject(
+      result.state.subjectResolutionPhase.subject,
+      pendingSubject,
+    )
+      ? acceptedAttackReplayEvidence(result.state.subjectResolutionPhase)
+      : {}),
     handledInterruptTrigger:
       result.state.subjectResolutionPhase.handledInterruptTrigger ??
       handledInterruptTrigger,
-    acceptedAttackAmmunitionSpend:
-      result.state.subjectResolutionPhase.acceptedAttackAmmunitionSpend,
-    acceptedThrownWeaponRelease:
-      result.state.subjectResolutionPhase.acceptedThrownWeaponRelease,
     admittedMovement: result.state.subjectResolutionPhase.admittedMovement,
   };
 }

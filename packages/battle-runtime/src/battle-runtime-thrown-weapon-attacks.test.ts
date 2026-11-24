@@ -1,9 +1,10 @@
+import { objectInteractionRulingHole } from "./battle-reducer/object-interaction.ts";
 // KERNEL-COVERAGE: parity-witness BATTLE.ATTACK.THROWN_WEAPON_ATTACK
 // SRD 5.2.1 "Thrown": a Melee weapon with the Thrown property can be thrown to
 // make a ranged attack with the ability modifier of its melee attack, and the
 // thrown weapon lands where the table says, out of its owner's hand.
 import { unitId as parseSharedUnitId } from "@dnd/shared/game-facts";
-import { movementFeet, type WeaponGrip } from "@dnd/shared/types";
+import { movementFeet } from "@dnd/shared/types";
 import { describe, expect, test } from "vitest";
 import {
   attackActionOptionsForActor,
@@ -11,18 +12,13 @@ import {
 } from "./battle-reducer/attack-damage-apply.ts";
 import { discoverBattleActs } from "./battle-act-composition.ts";
 import { ATTACK_TARGET_HOLE_ID } from "./battle-reducer/battle-runtime-protocol.ts";
-import { battleCreatureStateAdmissionFromInit } from "./battle-reducer/creature-state.ts";
 import { attackHitTriggerKind } from "./battle-reducer/movement-speed.ts";
-import { battleProjectedCombatantAdmissionLeafIssueMessage } from "./battle-initialization-issue.ts";
-import type { CharacterBattleCombatantInit } from "./battle-init.ts";
 import {
   type BattleAttackProcedureExecutionRef,
-  battleExecutionScopeOrdinal,
   battleObjectId,
   battleTablePositionId,
   type CombatantId,
 } from "./identity.ts";
-import { heldWeaponPickupTransition } from "./battle-reducer/battle-object-lifecycle.ts";
 import {
   type BattleFill,
   type BattleHole,
@@ -154,60 +150,31 @@ const spearId = battleObjectId("main:weapon_spear");
 /**
  * A Spear goes through Battle's own weapon admission, with no synthetic
  * mastery: of the published Thrown weapons, it is the one Battle admits today.
- * `heldDamage` picks the projected weapon: as admitted, or with the Versatile
- * swap the Character Build projection gives a Versatile weapon held two-handed
- * (its Versatile damage, with the one-handed damage kept).
  */
-function spearCharacterInit(
-  grip: WeaponGrip,
-  heldDamage: "admitted" | "versatile",
-): CharacterBattleCombatantInit {
+function battleWithSpear(): BattleState {
   const spear = unitLibrary.requireUnit("weapon_spear");
   if (spear.kind !== "weapon") {
     throw new Error("Expected Spear weapon Unit.");
   }
-  const admitted = admitCharacterWeaponAttackExecutionWeapon(spear, spearId);
-  const versatile = admitted.weapon.properties.find(
-    (property) => property.kind === "versatile",
-  );
-  if (versatile === undefined) {
-    throw new Error("Expected the Spear to be Versatile.");
-  }
-  const weapon =
-    heldDamage === "versatile"
-      ? {
-          ...admitted.weapon,
-          damage: versatile.damage,
-          oneHandedDamage: admitted.weapon.damage,
-        }
-      : admitted.weapon;
-  return characterSeed({
-    initiative: 20,
-    attack: {
-      kind: "weapon",
-      ...admitted,
-      weapon,
-      ability: "str",
-      abilityModifier: battleAbilityModifier(3),
-    },
-    selectedLoadout: {
-      weapon: {
-        itemId: spearId,
-        unitId: parseSharedUnitId("weapon_spear"),
-        grip,
-      },
-    },
-  });
-}
-
-function battleWithSpear(grip: WeaponGrip = "one_handed"): BattleState {
   return startBattleSessionRight({
     battleId: battleId("battle-thrown-spear"),
     combatants: [
-      spearCharacterInit(
-        grip,
-        grip === "two_handed" ? "versatile" : "admitted",
-      ),
+      characterSeed({
+        initiative: 20,
+        attack: {
+          kind: "weapon",
+          ...admitCharacterWeaponAttackExecutionWeapon(spear, spearId),
+          ability: "str",
+          abilityModifier: battleAbilityModifier(3),
+        },
+        selectedLoadout: {
+          weapon: {
+            itemId: spearId,
+            unitId: parseSharedUnitId("weapon_spear"),
+            grip: "one_handed",
+          },
+        },
+      }),
       statBlockCreatureInit({ initiative: 10 }),
     ],
   }).state;
@@ -222,7 +189,8 @@ function attackSubjectFor(
 > {
   const option = attackActionOptionsForActor(state, fighterId).find(
     (attack) =>
-      attack.kind === "weapon" && attack.weaponDelivery === weaponDelivery,
+      attack.kind === "weapon" &&
+      attack.weaponDelivery?.kind === weaponDelivery,
   );
   if (option === undefined || option.kind !== "weapon") {
     throw new Error("Expected the fighter's weapon attack option.");
@@ -242,7 +210,7 @@ function thrownOffHandSubject(
   state: BattleState,
 ): Extract<BattleSubject, { readonly action: "offHandAttack" }> {
   const option = offHandAttackActionOptionsForActor(state, fighterId).find(
-    (attack) => attack.weaponDelivery === "thrown",
+    (attack) => attack.weaponDelivery?.kind === "thrown",
   );
   if (option === undefined) {
     throw new Error("Expected a thrown off-hand Dagger option.");
@@ -461,7 +429,7 @@ describe("battle runtime: thrown weapon attacks", () => {
       (attack) => attack.kind === "weapon",
     );
 
-    expect(daggerOptions.map((attack) => attack.weaponDelivery)).toEqual([
+    expect(daggerOptions.map((attack) => attack.weaponDelivery?.kind)).toEqual([
       undefined,
       "thrown",
     ]);
@@ -554,17 +522,30 @@ describe("battle runtime: thrown weapon attacks", () => {
       ),
     ).toEqual(["unarmedStrike"]);
 
-    const pickedUp = heldWeaponPickupTransition(completed.state, {
-      actorId: fighterId,
-      objectId: mainDaggerId,
-    });
-    if (pickedUp.tag !== "applied") {
-      throw new Error(`Expected the pickup, got ${pickedUp.reason}.`);
-    }
+    const rulingHole = objectInteractionRulingHole(completed.state, fighterId);
+    const pickedUp = requireResolved(
+      resolveBattleSubject({
+        state: completed.state,
+        subject: {
+          tag: "runtimeCommand",
+          command: "pickUpHeldWeapon",
+          actorId: fighterId,
+          objectId: mainDaggerId,
+        },
+        fills: [
+          {
+            kind: "objectInteractionRuling",
+            holeId: rulingHole.holeId,
+            value: { requiresUtilize: false },
+          },
+        ],
+      }),
+    );
+    expect(pickedUp.state.currentTurnResources.objectInteraction).toBe("spent");
     expect(
       attackActionOptionsForActor(pickedUp.state, fighterId)
         .filter((attack) => attack.kind === "weapon")
-        .map((attack) => attack.weaponDelivery),
+        .map((attack) => attack.weaponDelivery?.kind),
     ).toEqual([undefined, "thrown"]);
   });
 
@@ -601,49 +582,6 @@ describe("battle runtime: thrown weapon attacks", () => {
         (attack) => attack.kind,
       ),
     ).not.toContain("weapon");
-  });
-
-  test("a Spear held two-handed deals its Versatile d8 in melee and its d6 when thrown", () => {
-    const options = attackActionOptionsForActor(
-      battleWithSpear("two_handed"),
-      fighterId,
-    );
-    const damageByDelivery = options.flatMap((attack) =>
-      attack.kind === "weapon"
-        ? [[attack.weaponDelivery ?? "melee", attack.weapon.damage] as const]
-        : [],
-    );
-
-    expect(damageByDelivery).toEqual([
-      ["melee", expect.objectContaining({ dice: 1, dieSize: 8 })],
-      ["thrown", expect.objectContaining({ dice: 1, dieSize: 6 })],
-    ]);
-    expect(
-      options.find(
-        (attack) =>
-          attack.kind === "weapon" && attack.weaponDelivery === "thrown",
-      ),
-    ).not.toHaveProperty("weapon.oneHandedDamage");
-  });
-
-  test("a weapon's kept one-handed damage is refused unless it is held two-handed", () => {
-    const result = battleCreatureStateAdmissionFromInit(
-      battleId("battle-thrown-spear-one-handed-damage"),
-      spearCharacterInit("one_handed", "versatile"),
-      battleExecutionScopeOrdinal(0),
-    );
-
-    expect(result.tag).toBe("invalid");
-    if (result.tag !== "invalid") return;
-    expect(
-      result.issues.map((issue) =>
-        issue.tag === "battleUnitSupportProfileIssue"
-          ? issue.message
-          : battleProjectedCombatantAdmissionLeafIssueMessage(issue),
-      ),
-    ).toEqual([
-      "Character weapon one-handed damage requires a Versatile weapon held two-handed.",
-    ]);
   });
 
   test("a thrown Dagger also leaves the hand on a miss", () => {
@@ -946,7 +884,7 @@ describe("battle runtime: thrown weapon attacks", () => {
 
     expect(
       offHandAttackActionOptionsForActor(afterThrow, fighterId).map(
-        (attack) => [attack.weaponObjectId, attack.weaponDelivery],
+        (attack) => [attack.weaponObjectId, attack.weaponDelivery?.kind],
       ),
     ).toEqual([
       [offHandDaggerId, undefined],
@@ -958,7 +896,7 @@ describe("battle runtime: thrown weapon attacks", () => {
     const state = battleWithDaggers({ mainHand: "dagger" });
     const thrown = attackActionOptionsForActor(state, fighterId).find(
       (attack) =>
-        attack.kind === "weapon" && attack.weaponDelivery === "thrown",
+        attack.kind === "weapon" && attack.weaponDelivery?.kind === "thrown",
     );
     if (thrown === undefined) {
       throw new Error("Expected the thrown Dagger option.");

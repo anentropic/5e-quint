@@ -51,7 +51,7 @@ import {
   recordAttackRollOngoingFeatures,
   requiredSpellAttackRollMode,
 } from "./attack-roll.ts";
-import { spellAttackArmorClass } from "./attack-target-cover.ts";
+import { armorClassAgainstAttack } from "./attack-target-cover.ts";
 import {
   applyMovableLightSpellEffect,
   applySpatialMeleeSpellAttackProxyEffect,
@@ -102,7 +102,8 @@ import {
   type RuntimeExecutableDamageSpellProcedure,
   selectedSpellAttackDamageProcedure,
   spellTargetHole,
-  spellTargetIsLegal,
+  spellTargetAdmission,
+  storedSpellTargetCover,
   validateSpellDamageFill,
 } from "./spells-holes-fills.ts";
 import { markSpellSlotExpendedThisTurn } from "./spell-turn-resources.ts";
@@ -191,6 +192,7 @@ type TargetedSpellSourcePenaltyDamageByType = Extract<
 >["damageByType"];
 
 type TargetedSpellReleaseAfterTargetInput = {
+  readonly targetCover: import("@dnd/shared-algebras/cover-algebra").DirectTargetCover;
   readonly input: ActionSpellBattleResolutionInput;
   readonly invocation: TargetedSpellReleaseInvocation;
   readonly fillSet: TargetedSpellReleaseFillSet;
@@ -1078,18 +1080,22 @@ function resolveTargetedSpellRelease(
   storedGlyphRetargetingMatches: boolean,
 ): BattleResolutionResult {
   const target = input.state.combatants.get(targetId);
-  /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
-  if (
-    target == null ||
-    (!storedGlyphRetargetingMatches &&
-      !spellTargetIsLegal(
+  const targetCover = storedGlyphRetargetingMatches
+    ? storedSpellTargetCover(
+        fillSet.targetSpatialFacts,
+        input.subject.actorId,
+        targetId,
+        invocation,
+      )
+    : (spellTargetAdmission(
         input.state,
         input.subject.actorId,
-        target.combatantId,
+        targetId,
         invocation,
         fillSet.targetSpatialFacts,
-      ))
-  ) {
+      )?.cover ?? null);
+  /* v8 ignore start -- @preserve -- Malformed resolution input: the target must satisfy the emitted spell targeting contract. */
+  if (target == null || targetCover === null) {
     /* v8 ignore next -- @preserve -- Malformed resolution input: this branch rejects fills that contradict the admitted subject's discovered holes or current typed runtime constraints. */
     return invalidResult(
       input.state,
@@ -1099,6 +1105,7 @@ function resolveTargetedSpellRelease(
   }
   /* v8 ignore stop -- @preserve */
   return resolveTargetedSpellReleaseAfterTarget({
+    targetCover,
     input,
     invocation,
     fillSet,
@@ -1109,12 +1116,7 @@ function resolveTargetedSpellRelease(
 function resolveTargetedSpellReleaseAfterTarget(
   input: TargetedSpellReleaseAfterTargetInput,
 ): BattleResolutionResult {
-  const attackPreparation = resolveTargetedSpellAttackPreparation({
-    input: input.input,
-    invocation: input.invocation,
-    fillSet: input.fillSet,
-    target: input.target,
-  });
+  const attackPreparation = resolveTargetedSpellAttackPreparation(input);
   if (attackPreparation.tag === "result") return attackPreparation.result;
   const {
     spellMarkedDamageRiders,
@@ -1212,6 +1214,7 @@ function prepareTargetedSpellAttackRoll(
   }
   const d20TestRerolls = attackRollD20TestRerolls({
     state: input.input.state,
+    subject: input.input.subject,
     attackerId: input.input.subject.actorId,
     attackRollHoleId: ATTACK_ROLL_HOLE_ID,
     attackRoll,
@@ -1243,13 +1246,11 @@ function prepareTargetedSpellAttackRoll(
       ),
     };
   }
-  const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
-  const targetArmorClass = spellAttackArmorClass(
+  const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll);
+  const targetArmorClass = armorClassAgainstAttack(
     input.input.state,
-    input.input.subject.actorId,
     input.target,
-    input.invocation,
-    input.fillSet.targetSpatialFacts,
+    input.targetCover,
   );
   const ordinaryHit = attackRollHits(effectiveAttackRoll, targetArmorClass);
   const missToHitReplacement = selectedAttackRollMissToHitReplacement({

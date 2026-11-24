@@ -54,7 +54,7 @@ import {
   recordAttackRollOngoingFeatures,
   requiredSpellAttackRollMode,
 } from "./attack-roll.ts";
-import { spellAttackArmorClass } from "./attack-target-cover.ts";
+import { armorClassAgainstAttack } from "./attack-target-cover.ts";
 import {
   damageLifecycleConcentrationSavingThrowHoles,
   damageLifecycleSaveGatedConditionWithRepeatDamageRepeatSaveFillCheck,
@@ -71,6 +71,7 @@ import {
   unexpectedSourceDamageRollPenaltyRoll,
 } from "./damage-helpers.ts";
 import {
+  attackRollAfterD20TestRerolls,
   attackRollD20TestRerolls,
   attackRollHoleWithD20TestRerollOptions,
   battleStateAfterHeroicInspirationReroll,
@@ -97,7 +98,8 @@ import {
   spellSavingThrowOutcomeHole,
   spellTargetHole,
   spellTargetInterdictionRequests,
-  spellTargetIsLegal,
+  spellTargetAdmission,
+  storedSpellTargetCover,
   validateSpellBurstDamageFill,
   validateSpellDamageFill,
 } from "./spells-holes-fills.ts";
@@ -180,7 +182,7 @@ function storedGlyphTargetMatches(input: {
   );
 }
 
-function attackBurstTargetIsLegal(
+function admitAttackBurstTarget(
   target: BattleCreatureState | undefined,
   input: {
     readonly state: BattleState;
@@ -195,18 +197,27 @@ function attackBurstTargetIsLegal(
       { readonly tag: "ok" }
     >["targetSpatialFacts"];
   },
-): target is BattleCreatureState {
-  return (
-    target !== undefined &&
-    (input.releaseKind === "storedGlyphRelease" ||
-      spellTargetIsLegal(
-        input.state,
-        input.actorId,
-        target.combatantId,
-        input.invocation,
-        input.spatialFacts,
-      ))
-  );
+): {
+  readonly target: BattleCreatureState;
+  readonly cover: import("@dnd/shared-algebras/cover-algebra").DirectTargetCover;
+} | null {
+  if (target === undefined) return null;
+  const cover =
+    input.releaseKind === "storedGlyphRelease"
+      ? storedSpellTargetCover(
+          input.spatialFacts,
+          input.actorId,
+          target.combatantId,
+          input.invocation,
+        )
+      : (spellTargetAdmission(
+          input.state,
+          input.actorId,
+          target.combatantId,
+          input.invocation,
+          input.spatialFacts,
+        )?.cover ?? null);
+  return cover === null ? null : { target, cover };
 }
 
 function resolveAttackBurstSaveDamageSpellAct(input: {
@@ -257,17 +268,17 @@ function resolveAttackBurstSaveDamageSpellAct(input: {
       spellTargetHole(input.input.state, input.actorId, input.invocation),
     ]);
   }
-  const target = input.input.state.combatants.get(input.fillSet.targetId);
-  /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
-  if (
-    !attackBurstTargetIsLegal(target, {
+  const targetAdmission = admitAttackBurstTarget(
+    input.input.state.combatants.get(input.fillSet.targetId),
+    {
       state: input.input.state,
       actorId: input.actorId,
       invocation: input.invocation,
       releaseKind: input.release.kind,
       spatialFacts: input.fillSet.targetSpatialFacts,
-    })
-  ) {
+    },
+  );
+  if (targetAdmission === null) {
     /* v8 ignore next -- @preserve -- Malformed resolution input: this branch rejects fills that contradict the admitted subject's discovered holes or current typed runtime constraints. */
     return invalidResult(
       input.input.state,
@@ -276,6 +287,7 @@ function resolveAttackBurstSaveDamageSpellAct(input: {
     );
   }
   /* v8 ignore stop -- @preserve */
+  const { target } = targetAdmission;
 
   if (input.release.kind === "ordinaryCast") {
     const originalTargetHole = spellTargetHole(
@@ -327,13 +339,13 @@ function resolveAttackBurstSaveDamageSpellAct(input: {
       );
       /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
       if (
-        !attackBurstTargetIsLegal(replacementTarget, {
+        admitAttackBurstTarget(replacementTarget, {
           state: input.input.state,
           actorId: input.actorId,
           invocation: input.invocation,
           releaseKind: "ordinaryCast",
           spatialFacts: interdictionCheck.spatialFacts,
-        })
+        }) === null
       ) {
         /* v8 ignore next -- @preserve -- Malformed resolution input: this branch rejects fills that contradict the admitted subject's discovered holes or current typed runtime constraints. */
         return invalidResult(
@@ -470,6 +482,7 @@ function resolveAttackBurstSaveDamageSpellAct(input: {
   /* v8 ignore stop -- @preserve */
   const d20TestRerolls = attackRollD20TestRerolls({
     state: input.input.state,
+    subject: input.input.subject,
     attackerId: input.actorId,
     attackRollHoleId: ATTACK_ROLL_HOLE_ID,
     attackRoll: attackRoll,
@@ -498,14 +511,12 @@ function resolveAttackBurstSaveDamageSpellAct(input: {
     );
   }
   /* v8 ignore stop -- @preserve */
-  const effectiveAttackRoll = d20TestRerolls.effectiveAttackRoll;
+  const effectiveAttackRoll = attackRollAfterD20TestRerolls(attackRoll);
 
-  const targetArmorClass = spellAttackArmorClass(
+  const targetArmorClass = armorClassAgainstAttack(
     input.input.state,
-    input.actorId,
     target,
-    input.invocation,
-    input.fillSet.targetSpatialFacts,
+    targetAdmission.cover,
   );
   const ordinaryHit = attackRollHits(effectiveAttackRoll, targetArmorClass);
   const missToHitReplacement = selectedAttackRollMissToHitReplacement({

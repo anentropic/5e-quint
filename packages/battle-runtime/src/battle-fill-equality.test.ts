@@ -14,7 +14,6 @@ import {
   battleResubmittedFillKeepsAcceptedFill,
   type BattleContinuationComparableFill,
 } from "./battle-reducer/battle-fill-equality.ts";
-import { ordinaryMovementPath } from "./battle-reducer/movement-path.ts";
 import { combatantId } from "./battle-runtime.test-support.ts";
 import {
   battleCharacterExecutionScopeRef,
@@ -821,7 +820,15 @@ describe("resubmitted fill continuity", () => {
       holeId: holeId("continuity-hole:movement"),
       value: {
         speedKind: "walk",
-        path: ordinaryMovementPath(movementFeet(feet)),
+        path: [
+          {
+            distanceFeet: movementFeet(feet),
+            activity: "ordinary",
+            difficultTerrain: "none",
+            movesCloserThroughDirectionalArea: false,
+            draggedGrappledTargetIds: [],
+          },
+        ],
         provokedOpportunityAttacks: [],
       },
     });

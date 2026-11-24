@@ -1,3 +1,4 @@
+import { subjectContinuationPhaseFor } from "./battle-reducer/subject-continuation-phase.ts";
 // KERNEL-COVERAGE: runtime-owner BATTLE.EQUIPMENT.AMMUNITION_LIFECYCLE
 import { type HandUse, resourceCount } from "@dnd/shared/types";
 import { Match } from "effect";
@@ -9,7 +10,7 @@ import {
   type SupportedAttackActionOption,
 } from "./battle-action-options.ts";
 import { combatantHandUses } from "./battle-reducer/creature-state-leaves.ts";
-import { characterEffectiveLoadoutFromOrigin } from "./battle-reducer/battle-object-lifecycle.ts";
+import { characterEffectiveLoadoutFromOrigin } from "./battle-reducer/character-effective-loadout.ts";
 import type { CharacterBattleLoadoutRef } from "./character-creature-execution-facts.ts";
 import type { BattleSubject } from "./battle-subjects.ts";
 import type {
@@ -194,21 +195,21 @@ export function spendAmmunitionForAcceptedAttack(input: {
   readonly actorId: CombatantId;
   readonly attack: BoundSupportedAttackActionOption;
 }): BattleState {
-  const alreadySpent =
-    input.state.subjectResolutionPhase.kind === "subjectContinuation"
-      ? input.state.subjectResolutionPhase.acceptedAttackAmmunitionSpend
-      : undefined;
-  if (
-    alreadySpent?.actorId === input.actorId &&
-    boundAttackExecutionSelectionMatchesOption(
-      alreadySpent.attackSelection,
-      input.attack,
-    )
-  ) {
-    return {
-      ...input.state,
-      subjectResolutionPhase: { kind: "subjectSelection" },
-    };
+  const phase = input.state.subjectResolutionPhase;
+  if (phase.kind === "subjectContinuation") {
+    const alreadySpent = phase.acceptedAttackAmmunitionSpend;
+    if (
+      alreadySpent !== undefined &&
+      alreadySpent.actorId === input.actorId &&
+      boundAttackExecutionSelectionMatchesOption(
+        alreadySpent.attackSelection,
+        input.attack,
+      )
+    ) {
+      const { acceptedAttackAmmunitionSpend: _consumed, ...remainingPhase } =
+        phase;
+      return { ...input.state, subjectResolutionPhase: remainingPhase };
+    }
   }
   const ammunition = ammunitionRequirementForAttack(input.attack);
   if (ammunition === null) return input.state;
@@ -245,8 +246,7 @@ export function spendAmmunitionForAcceptedAttackPendingContinuation(input: {
   return {
     ...spent,
     subjectResolutionPhase: {
-      kind: "subjectContinuation",
-      subject: input.subject,
+      ...subjectContinuationPhaseFor(spent, input.subject),
       acceptedAttackAmmunitionSpend: {
         actorId: input.actorId,
         attackSelection: attackExecutionSelectionForOption(input.attack),

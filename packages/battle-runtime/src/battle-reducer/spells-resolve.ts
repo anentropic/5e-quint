@@ -104,7 +104,7 @@ import {
   recordAttackRollOngoingFeatures,
   requiredSpellAttackRollMode,
 } from "./attack-roll.ts";
-import { spellAttackArmorClass } from "./attack-target-cover.ts";
+import { armorClassAgainstAttack } from "./attack-target-cover.ts";
 import type { SpellTargetLegalityOptions } from "./spells-targeting.ts";
 import {
   concentrationSavingThrowHole,
@@ -176,6 +176,7 @@ import {
   spellDamageTypes,
   spellTargetHole,
   spellTargetIsLegal,
+  spellTargetAdmission,
   validateSpellDamageFill,
 } from "./spells-holes-fills.ts";
 import {
@@ -496,6 +497,7 @@ function resolveInitialSpellAttackRoll(input: {
         });
   const d20TestRerolls = attackRollD20TestRerolls({
     state: input.castingState,
+    subject: input.subject,
     attackerId: input.actorId,
     attackRollHoleId: ATTACK_ROLL_HOLE_ID,
     attackRoll: attackRoll,
@@ -2309,16 +2311,15 @@ function resolveSpellActInternal(
             spatialMeleeSpellAttackProxyPosition.positionId,
         };
   /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
-  if (
-    !spellTargetIsLegal(
-      input.state,
-      subject.actorId,
-      target.combatantId,
-      invocationForResolution,
-      fillSet.targetSpatialFacts,
-      spellTargetLegalityOptions,
-    )
-  ) {
+  const targetAdmission = spellTargetAdmission(
+    input.state,
+    subject.actorId,
+    target.combatantId,
+    invocationForResolution,
+    fillSet.targetSpatialFacts,
+    spellTargetLegalityOptions,
+  );
+  if (targetAdmission === null) {
     /* v8 ignore next -- @preserve -- Malformed resolution input: this branch rejects fills that contradict the admitted subject's discovered holes or current typed runtime constraints. */
     return invalidResult(
       input.state,
@@ -2512,13 +2513,10 @@ function resolveSpellActInternal(
   const spellDamageContext = (():
     | BattleResolutionResult
     | SpellDamageResolutionContext => {
-    const targetArmorClass = spellAttackArmorClass(
+    const targetArmorClass = armorClassAgainstAttack(
       input.state,
-      subject.actorId,
       target,
-      invocationForResolution,
-      fillSet.targetSpatialFacts,
-      spellTargetLegalityOptions,
+      targetAdmission.cover,
     );
     const initialAttackRoll = resolveInitialSpellAttackRoll({
       castingState,

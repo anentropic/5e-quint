@@ -893,93 +893,98 @@ export type BattleSpatialMeleeSpellAttackProxyCommitCheckpoint = {
   readonly sourceProcedureRef: BattleProcedureExecutionRef;
   readonly operation: "createAndAttack" | "repositionAndAttack";
 };
-export type BattleInterruptedProcedure =
-  | {
-      readonly kind: "replay";
-      readonly subject: BattleSubject;
-      readonly fills: readonly BattleFill[];
-      readonly parentPosition?: never;
-      readonly glyphStoredSpellReleaseReplay?: never;
-      readonly attackDamageReductions?: ReadonlyNonEmptyArray<BattlePendingAttackDamageReduction>;
-      readonly attackDamageAdditions?: ReadonlyNonEmptyArray<AttackSpellDamageAddition>;
-      readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
-      readonly spatialMeleeSpellAttackProxyCommitCheckpoint?: BattleSpatialMeleeSpellAttackProxyCommitCheckpoint;
-    }
-  | {
-      readonly kind: "replay";
-      readonly subject: BattleSubject;
-      readonly fills: readonly BattleFill[];
-      readonly parentPosition: BattleStartTurnOccurrenceSequenceCheckpoint;
-      readonly glyphStoredSpellReleaseReplay?: never;
-      readonly attackDamageReductions?: never;
-      readonly attackDamageAdditions?: never;
-      readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
-      readonly spatialMeleeSpellAttackProxyCommitCheckpoint?: never;
-    }
-  | {
-      readonly kind: "replay";
-      readonly subject: Extract<BattleSubject, { readonly tag: "actionSpell" }>;
-      readonly fills: readonly BattleFill[];
-      readonly parentPosition?: never;
-      readonly glyphStoredSpellReleaseReplay: GlyphStoredSpellReleaseReplayContext;
-      readonly attackDamageReductions?: never;
-      readonly attackDamageAdditions?: never;
-      readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
-      readonly spatialMeleeSpellAttackProxyCommitCheckpoint?: never;
-    }
-  | {
-      readonly kind: "resolved";
-      readonly subject: BattleSubject;
-      readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
-    }
-  | {
-      readonly kind: "afterDamageSequence";
-      readonly subject: BattleSubject;
-      readonly events: readonly BattleAfterDamageEvent[];
-      readonly objectDamages: readonly BattleObjectDamageOutcome[];
-      readonly objectIgnitions: readonly BattleObjectIgnitionOutcome[];
-      readonly droppedObjects: readonly BattleDroppedObjectOutcome[];
-    }
-  | {
-      readonly kind: "afterDamageSequenceWithPrimaryAttackFollowUp";
-      readonly subject: BattleAttackHostSubject;
-      readonly firstTargetId: CombatantId;
-      readonly attack: BoundSupportedAttackActionOption;
-      readonly fills: readonly BattleFill[];
-      readonly events: readonly BattleAfterDamageEvent[];
-      readonly objectDamages: readonly BattleObjectDamageOutcome[];
-      readonly objectIgnitions: readonly BattleObjectIgnitionOutcome[];
-      readonly droppedObjects: readonly BattleDroppedObjectOutcome[];
-    }
-  | {
-      readonly kind: "weaponMasteryCleave";
-      readonly subject: BattleAttackHostSubject;
-      readonly firstTargetId: CombatantId;
-      readonly attack: BoundSupportedAttackActionOption;
-      readonly fills: readonly BattleFill[];
-    }
-  | {
-      readonly kind: "huntersPreyHordeBreaker";
-      readonly subject: BattleAttackHostSubject;
-      readonly firstTargetId: CombatantId;
-      readonly attack: BoundSupportedAttackActionOption;
-      readonly fills: readonly BattleFill[];
-    }
-  | {
-      readonly kind: "movement";
-      readonly subject: BattleSubject;
-      readonly movement: BattleResolvedMovement;
-    }
-  | {
-      readonly kind: "movementThenAfterDamageSequence";
-      readonly subject: BattleSubject;
-      readonly movement: BattleResolvedMovement;
-      readonly events: readonly BattleAfterDamageEvent[];
-      readonly objectDamages: readonly BattleObjectDamageOutcome[];
-      readonly objectIgnitions: readonly BattleObjectIgnitionOutcome[];
-      readonly droppedObjects: readonly BattleDroppedObjectOutcome[];
-    }
-  | BattleAttackDamageInterruptionFrame;
+export type BattleInterruptedProcedure = BattleAcceptedAttackReplayEvidence &
+  (
+    | {
+        readonly kind: "replay";
+        readonly subject: BattleSubject;
+        readonly fills: readonly BattleFill[];
+        readonly parentPosition?: never;
+        readonly glyphStoredSpellReleaseReplay?: never;
+        readonly attackDamageReductions?: ReadonlyNonEmptyArray<BattlePendingAttackDamageReduction>;
+        readonly attackDamageAdditions?: ReadonlyNonEmptyArray<AttackSpellDamageAddition>;
+        readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
+        readonly spatialMeleeSpellAttackProxyCommitCheckpoint?: BattleSpatialMeleeSpellAttackProxyCommitCheckpoint;
+      }
+    | {
+        readonly kind: "replay";
+        readonly subject: BattleSubject;
+        readonly fills: readonly BattleFill[];
+        readonly parentPosition: BattleStartTurnOccurrenceSequenceCheckpoint;
+        readonly glyphStoredSpellReleaseReplay?: never;
+        readonly attackDamageReductions?: never;
+        readonly attackDamageAdditions?: never;
+        readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
+        readonly spatialMeleeSpellAttackProxyCommitCheckpoint?: never;
+      }
+    | {
+        readonly kind: "replay";
+        readonly subject: Extract<
+          BattleSubject,
+          { readonly tag: "actionSpell" }
+        >;
+        readonly fills: readonly BattleFill[];
+        readonly parentPosition?: never;
+        readonly glyphStoredSpellReleaseReplay: GlyphStoredSpellReleaseReplayContext;
+        readonly attackDamageReductions?: never;
+        readonly attackDamageAdditions?: never;
+        readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
+        readonly spatialMeleeSpellAttackProxyCommitCheckpoint?: never;
+      }
+    | {
+        readonly kind: "resolved";
+        readonly subject: BattleSubject;
+        readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
+      }
+    | {
+        readonly kind: "afterDamageSequence";
+        readonly subject: BattleSubject;
+        readonly events: readonly BattleAfterDamageEvent[];
+        readonly objectDamages: readonly BattleObjectDamageOutcome[];
+        readonly objectIgnitions: readonly BattleObjectIgnitionOutcome[];
+        readonly droppedObjects: readonly BattleDroppedObjectOutcome[];
+      }
+    | {
+        readonly kind: "afterDamageSequenceWithPrimaryAttackFollowUp";
+        readonly subject: BattleAttackHostSubject;
+        readonly firstTargetId: CombatantId;
+        readonly attack: BoundSupportedAttackActionOption;
+        readonly fills: readonly BattleFill[];
+        readonly events: readonly BattleAfterDamageEvent[];
+        readonly objectDamages: readonly BattleObjectDamageOutcome[];
+        readonly objectIgnitions: readonly BattleObjectIgnitionOutcome[];
+        readonly droppedObjects: readonly BattleDroppedObjectOutcome[];
+      }
+    | {
+        readonly kind: "weaponMasteryCleave";
+        readonly subject: BattleAttackHostSubject;
+        readonly firstTargetId: CombatantId;
+        readonly attack: BoundSupportedAttackActionOption;
+        readonly fills: readonly BattleFill[];
+      }
+    | {
+        readonly kind: "huntersPreyHordeBreaker";
+        readonly subject: BattleAttackHostSubject;
+        readonly firstTargetId: CombatantId;
+        readonly attack: BoundSupportedAttackActionOption;
+        readonly fills: readonly BattleFill[];
+      }
+    | {
+        readonly kind: "movement";
+        readonly subject: BattleSubject;
+        readonly movement: BattleResolvedMovement;
+      }
+    | {
+        readonly kind: "movementThenAfterDamageSequence";
+        readonly subject: BattleSubject;
+        readonly movement: BattleResolvedMovement;
+        readonly events: readonly BattleAfterDamageEvent[];
+        readonly objectDamages: readonly BattleObjectDamageOutcome[];
+        readonly objectIgnitions: readonly BattleObjectIgnitionOutcome[];
+        readonly droppedObjects: readonly BattleDroppedObjectOutcome[];
+      }
+    | BattleAttackDamageInterruptionFrame
+  );
 export type BattleAttackHostSubject =
   | Extract<
       BattleSubject,
@@ -4208,7 +4213,7 @@ export type PendingAttackRollMissToHitReplacementContext = {
   readonly attackRoll: BattleAttackRollResult;
 };
 /** The attack roll that spent a creature's Heroic Inspiration on its reroll. */
-export type BattleHeroicInspirationAttackRollReroll = {
+export type BattleAcceptedHeroicInspirationReroll = {
   readonly actorId: CombatantId;
   readonly attackRollHoleId: HoleId;
 };
@@ -4252,12 +4257,6 @@ export type BattleTurnResources = ActionEconomyState & {
   readonly huntersPreyHordeBreakerUsedThisTurn: readonly AttackDamageRiderUsage[];
   readonly grapplerPunchAndGrabUsedThisTurn: readonly CombatantId[];
   readonly pendingAttackRollMissToHitReplacementSelection?: PendingAttackRollMissToHitReplacementSelection;
-  /**
-   * The attack roll whose reroll spent Heroic Inspiration in the subject still
-   * being resolved. A replay of that subject admits that roll's decision again;
-   * no other roll can use it. Absent when no pending subject spent it.
-   */
-  readonly heroicInspirationAttackRollReroll?: BattleHeroicInspirationAttackRollReroll;
   readonly lightWeaponAttackMade?: {
     readonly weaponItemId: BattleObjectId;
   };
@@ -4519,19 +4518,24 @@ export type LegendaryActionWindow = {
   readonly consumed: boolean;
 };
 
+/** Accepted attack outcomes owned by a subject while its resolution can replay. */
+export type BattleAcceptedAttackReplayEvidence = {
+  readonly acceptedHeroicInspirationReroll?: BattleAcceptedHeroicInspirationReroll;
+  readonly acceptedAttackAmmunitionSpend?: BattleAcceptedAttackAmmunitionSpend;
+  readonly acceptedThrownWeaponRelease?: BattleAcceptedThrownWeaponRelease;
+};
+
 export type BattleSubjectResolutionPhase =
   | { readonly kind: "subjectSelection" }
-  | {
+  | (BattleAcceptedAttackReplayEvidence & {
       readonly kind: "subjectContinuation";
       readonly subject: BattleSubject;
       readonly handledInterruptTrigger?: BattleInterruptTrigger;
-      readonly acceptedAttackAmmunitionSpend?: BattleAcceptedAttackAmmunitionSpend;
-      readonly acceptedThrownWeaponRelease?: BattleAcceptedThrownWeaponRelease;
       readonly admittedMovement?: Extract<
         BattleInterruptedProcedure,
         { readonly kind: "movement" }
       >["movement"];
-    };
+    });
 
 export type BattleAcceptedAttackAmmunitionSpend = {
   readonly actorId: CombatantId;

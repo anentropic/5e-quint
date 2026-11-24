@@ -471,7 +471,6 @@ const EXECUTION_IDENTITY_COLLISION_EXEMPTIONS = [
     "lightPropertyDamageAbilityModifier",
     "lightPropertyDamageAbilityModifierForAbilityChoice",
     "lightPropertyDamageAbilityModifierForAttack",
-    "lightPropertyOffHand",
     "lightRiders",
     "lightWeaponAttackMade",
     "movableLight",
@@ -2795,6 +2794,18 @@ for (const [spellId, relativePath, identifiers, reason] of [
 EXECUTION_IDENTITY_COLLISION_EXEMPTIONS.push(
   ...exactCollisionsAt(
     "light",
+    "packages/battle-runtime/src/battle-reducer/attack-damage-apply.ts",
+    [
+      { identifier: "lightExtraAttack", roles: ["discriminant-literal"] },
+      {
+        identifier: "lightExtraAttackWithAbilityChoices",
+        roles: ["declaration-identifier"],
+      },
+    ],
+    "light names the parsed Light weapon-property mechanic, not the spell",
+  ),
+  ...exactCollisionsAt(
+    "light",
     "packages/battle-runtime/src/spell-procedure-execution-admission.ts",
     [{ identifier: "light", roles: ["registry-key"] }],
     "light is a projected illumination fact field",
@@ -2826,9 +2837,9 @@ EXECUTION_IDENTITY_COLLISION_EXEMPTIONS.push(
 );
 
 const EXECUTION_IDENTITY_COLLISION_SITE_EVIDENCE = {
-  sha256: "d177b1367b69ff24736851122cf564ae44f1ff8c99e62d4d4d1d4b949e7302a7",
-  siteCount: 1724,
-  violationCount: 1844,
+  sha256: "59d480993351cf2ff08b28cc79d0ba9b7f28b3291f15a114c6ec337538667df7",
+  siteCount: 1727,
+  violationCount: 1847,
 };
 
 function escapeForRegExp(text) {
