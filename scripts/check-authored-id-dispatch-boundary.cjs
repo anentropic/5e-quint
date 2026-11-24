@@ -2793,6 +2793,17 @@ for (const [spellId, relativePath, identifiers, reason] of [
 }
 EXECUTION_IDENTITY_COLLISION_EXEMPTIONS.push(
   ...exactCollisionsAt(
+    "slow",
+    "packages/battle-runtime/src/battle-reducer/attack-main.ts",
+    [
+      {
+        identifier: "applyWeaponMasterySlowToPresentParticipants",
+        roles: ["declaration-identifier"],
+      },
+    ],
+    "slow names the parsed weapon-mastery effect applied to present post-damage participants, not the spell",
+  ),
+  ...exactCollisionsAt(
     "light",
     "packages/battle-runtime/src/battle-reducer/attack-damage-apply.ts",
     [
@@ -2837,9 +2848,9 @@ EXECUTION_IDENTITY_COLLISION_EXEMPTIONS.push(
 );
 
 const EXECUTION_IDENTITY_COLLISION_SITE_EVIDENCE = {
-  sha256: "2b2e577bbdfa2d0c31a9c6579d4ad61125b6a3e1f438bbbf0a68590fa7268140",
-  siteCount: 1737,
-  violationCount: 1857,
+  sha256: "2e7f45877e411f81467123e3f32593cc44535a26e2cd56c22515f0f69a8cc187",
+  siteCount: 1738,
+  violationCount: 1858,
 };
 
 function escapeForRegExp(text) {
