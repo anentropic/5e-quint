@@ -26,7 +26,13 @@ import {
   resolveSpawnedCompanionForm,
   resolvePactOfTheChainSpawnedCompanionForm,
 } from "@dnd/surface/surface/find-familiar-forms";
-import { Match, Result, Schema, SchemaIssue } from "effect";
+import {
+  Array as EffectArray,
+  Match,
+  Result,
+  Schema,
+  SchemaIssue,
+} from "effect";
 import { expect } from "vitest";
 import {
   battleStatBlockCombatantSource,
@@ -87,6 +93,7 @@ import {
   resourceCount,
   type Condition,
   type MovementFeet,
+  type ReadonlyNonEmptyArray,
 } from "@dnd/shared/types";
 import {
   statBlockId,
@@ -149,7 +156,6 @@ import starryWispInput from "../../surface/content/starry_wisp.json";
 import viciousMockeryInput from "../../surface/content/vicious_mockery.json";
 import weaponLongbowInput from "../../surface/content/weapon_longbow.json";
 import weaponQuarterstaffInput from "../../surface/content/weapon_quarterstaff.json";
-import weaponSlingInput from "../../surface/content/weapon_sling.json";
 import { applyWeaponMasterySapOnHit } from "./battle-reducer/attack-roll.ts";
 import {
   battleActDruidWildShapePresentation,
@@ -4129,10 +4135,10 @@ export function characterSeed(input: {
   >["unarmedStrike"];
   readonly offHandAttack?: TestCharacterWeaponAttack;
   /** Weapons the character carries outside its loadout, each its own object. */
-  readonly otherOwnedWeapons?: readonly {
+  readonly otherOwnedWeapons?: ReadonlyNonEmptyArray<{
     readonly itemId: BattleObjectId;
     readonly attack: TestCharacterWeaponAttack;
-  }[];
+  }>;
   readonly resources?: Extract<
     CharacterBattleCombatantInit["creatureInit"],
     { readonly kind: "character" }
@@ -4360,7 +4366,8 @@ export function characterSeed(input: {
       ...(input.otherOwnedWeapons === undefined
         ? {}
         : {
-            otherOwnedWeapons: input.otherOwnedWeapons.map(
+            otherOwnedWeapons: EffectArray.map(
+              input.otherOwnedWeapons,
               ({ itemId, attack: ownedAttack }) => ({
                 itemId,
                 attack: characterBattleCreatureInitWeaponAttack(
@@ -4575,9 +4582,9 @@ export function testRangedCleaveLongbowAttack(): TestCharacterWeaponAttack {
   };
 }
 
-/** The SRD Sling, a one-handed Ammunition weapon that isn't published yet. */
+/** The SRD Sling, a one-handed Ammunition weapon. */
 export function testSlingUnitRef(): BattleUnitRef {
-  const weapon = decodeUnitRecordSync(weaponSlingInput);
+  const weapon = unitLibrary.requireUnit("weapon_sling");
   if (weapon.kind !== "weapon") {
     throw new Error("Expected Sling weapon Unit.");
   }

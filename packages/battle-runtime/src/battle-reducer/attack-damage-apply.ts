@@ -107,10 +107,13 @@ import {
   type WildShapeWornLoadoutObjectRef,
 } from "./wild-shape-equipment.ts";
 import { battleObjectIsOnGround } from "./object-custody-queries.ts";
+import { combatantHandUses } from "./creature-state-leaves.ts";
 import {
   characterEffectiveLoadoutFromOrigin,
   loadoutWeaponIsHeld,
+  loadoutWeaponIsStowed,
 } from "./character-effective-loadout.ts";
+import { weaponAttackIsThrown } from "./thrown-weapon-attack.ts";
 
 export function attackDamageHole(
   attack: SupportedAttackActionOption,
@@ -443,30 +446,11 @@ export function attackActionOptionsForActor(
       actor,
       actor.origin.unarmedStrike,
     );
-    const options =
-      actor.origin.attack == null ||
-      (actor.origin.attack.kind === "weapon" &&
-        !loadoutWeaponIsHeld(
-          state,
-          actor.combatantId,
-          actor.origin.attack.weaponObjectId,
-        ))
-        ? [unarmedStrike]
-        : [
-            ...uniqueAttackExecutionSelectionOptions(
-              weaponAttackOptionsForActor(
-                state,
-                actor,
-                actor.origin.attack,
-                mainHandWeaponItemIdForAttack(
-                  state,
-                  actor,
-                  actor.origin.attack,
-                ),
-              ),
-            ),
-            unarmedStrike,
-          ];
+    const options = [
+      ...mainWeaponAttackOptions(state, actor),
+      ...carriedThrownWeaponAttackOptions(state, actor),
+      unarmedStrike,
+    ];
     return options.filter((attack) =>
       ammunitionForAttackIsReady(state, actor, attack),
     );
@@ -504,6 +488,81 @@ export function attackActionOptionsForActor(
   return [];
 }
 
+/** The attacks a character's main weapon can make now. */
+function mainWeaponAttackOptions(
+  state: BattleState,
+  actor: CharacterBattleCreatureState,
+): readonly BoundSupportedAttackActionOption[] {
+  const main = actor.origin.attack;
+  if (main == null) return [];
+  const deliveries = loadoutWeaponDeliveries(state, actor, main.weaponObjectId);
+  if (deliveries === null) return [];
+  return uniqueAttackExecutionSelectionOptions(
+    weaponAttackOptionsForActor(
+      state,
+      actor,
+      main,
+      mainHandWeaponItemIdForAttack(state, actor, main),
+    ).filter(deliveries),
+  );
+}
+
+/**
+ * Which attacks a loadout weapon can make where it is now: every attack while
+ * it's in hand, and only its throws while it's sheathed or stowed and a hand
+ * is free. SRD 5.2.1 equipment.md "Thrown": "you can draw that weapon as part
+ * of the attack", so the draw belongs to the throw, not to the Attack
+ * action's one weapon change, and the weapon leaves the hand as it flies. A
+ * weapon on the ground is picked up, not drawn, so it makes no attack.
+ */
+function loadoutWeaponDeliveries(
+  state: BattleState,
+  actor: CharacterBattleCreatureState,
+  weaponObjectId: BattleObjectId,
+): ((attack: BoundCharacterWeaponAttackActionOption) => boolean) | null {
+  if (loadoutWeaponIsHeld(state, actor.combatantId, weaponObjectId)) {
+    return () => true;
+  }
+  return loadoutWeaponIsStowed(state, actor.combatantId, weaponObjectId) &&
+    creatureHasFreeHand(state, actor)
+    ? weaponAttackIsThrown
+    : null;
+}
+
+function creatureHasFreeHand(
+  state: BattleState,
+  actor: CharacterBattleCreatureState,
+): boolean {
+  const hands = combatantHandUses(state, actor, state.grapples);
+  return hands.left === "free" || hands.right === "free";
+}
+
+/**
+ * The throws of the weapons a character carries outside its loadout. SRD
+ * 5.2.1 equipment.md "Thrown": "you can draw that weapon as part of the
+ * attack", so a carried Thrown weapon is drawn into a free hand and thrown
+ * without the Attack action's weapon change. One on the ground is picked
+ * up, not drawn.
+ */
+function carriedThrownWeaponAttackOptions(
+  state: BattleState,
+  actor: CharacterBattleCreatureState,
+): readonly BoundSupportedAttackActionOption[] {
+  if (!creatureHasFreeHand(state, actor)) return [];
+  return actor.origin.otherOwnedWeaponAttacks.flatMap((carried) =>
+    battleObjectIsOnGround(state, actor.combatantId, carried.weaponObjectId)
+      ? []
+      : uniqueAttackExecutionSelectionOptions(
+          weaponAttackOptionsForActor(
+            state,
+            actor,
+            carried,
+            carried.weaponObjectId,
+          ).filter(weaponAttackIsThrown),
+        ),
+  );
+}
+
 function uniqueAttackExecutionSelectionOptions(
   candidates: readonly BoundSupportedAttackActionOption[],
 ): readonly BoundSupportedAttackActionOption[] {
@@ -530,9 +589,13 @@ export function offHandAttackActionOptionsForActor(
   if (main === null || offHand === undefined) return [];
   // The Light extra attack needs the off-hand weapon in hand, not the main one:
   // a thrown main-hand Dagger has already made the Light attack it follows.
-  if (!loadoutWeaponIsHeld(state, actorId, offHand.weaponObjectId)) {
-    return [];
-  }
+  // A stowed one is drawn as part of its throw.
+  const offHandDeliveries = loadoutWeaponDeliveries(
+    state,
+    actor,
+    offHand.weaponObjectId,
+  );
+  if (offHandDeliveries === null) return [];
   if (
     activeWildShapeEffect !== null &&
     (wildShapeWornLoadoutWeaponObjectForAttack(
@@ -573,7 +636,9 @@ export function offHandAttackActionOptionsForActor(
           actor,
         ),
     },
-  ).filter((attack) => ammunitionForAttackIsReady(state, actor, attack));
+  )
+    .filter(offHandDeliveries)
+    .filter((attack) => ammunitionForAttackIsReady(state, actor, attack));
 }
 
 function wildShapeWornWeaponAttackOptions(
@@ -1300,19 +1365,33 @@ function offHandWeaponItemIdForAttack(
   attack: CharacterWeaponAttackActionOption,
 ): BattleObjectId | undefined {
   if (
-    actor.origin.kind !== "character" ||
+    !isCharacterBattleCreatureState(actor) ||
     actor.origin.offHandAttack !== attack
   ) {
     return undefined;
   }
+  return offHandLoadoutWeaponItemId(state, actor, attack.weaponObjectId);
+}
+
+/**
+ * The off-hand weapon's battle object when it is the given weapon, in hand
+ * or sheathed: a stowed off-hand weapon is drawn as part of its throw.
+ */
+function offHandLoadoutWeaponItemId(
+  state: BattleState,
+  actor: CharacterBattleCreatureState,
+  weaponObjectId: BattleObjectId,
+): BattleObjectId | undefined {
   const offHandWeapon = characterEffectiveLoadoutFromOrigin(
     state,
     actor.combatantId,
     actor.origin,
   ).offHandWeapon;
-  return offHandWeapon !== undefined &&
-    offHandWeapon.itemId === attack.weaponObjectId
-    ? offHandWeapon.itemId
+  if (offHandWeapon?.itemId === weaponObjectId) return offHandWeapon.itemId;
+  return actor.origin.selectedLoadout.offHandWeapon?.itemId ===
+    weaponObjectId &&
+    loadoutWeaponIsStowed(state, actor.combatantId, weaponObjectId)
+    ? weaponObjectId
     : undefined;
 }
 
@@ -1545,16 +1624,8 @@ export function offHandWeaponItemIdForActor(
   offHand: CharacterWeaponAttackActionOption,
 ): BattleObjectId | undefined {
   const actor = state.combatants.get(actorId);
-  if (actor?.origin.kind !== "character") return undefined;
-  const offHandWeapon = characterEffectiveLoadoutFromOrigin(
-    state,
-    actor.combatantId,
-    actor.origin,
-  ).offHandWeapon;
-  return offHandWeapon !== undefined &&
-    offHandWeapon.itemId === offHand.weaponObjectId
-    ? offHandWeapon.itemId
-    : undefined;
+  if (!isCharacterBattleCreatureState(actor)) return undefined;
+  return offHandLoadoutWeaponItemId(state, actor, offHand.weaponObjectId);
 }
 
 export function isLightMeleeWeapon(
