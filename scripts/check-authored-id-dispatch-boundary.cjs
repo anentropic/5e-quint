@@ -780,7 +780,6 @@ const EXECUTION_IDENTITY_COLLISION_EXEMPTIONS = [
     "battleRuntimeCommandBoundExecutionReferences",
     "runtimeCommandEffectOccurrenceKey",
     "runtimeCommandAreaMembershipTrigger",
-    "runtimeCommandReferenceKey",
   ].flatMap((identifier) =>
     exactCollision(
       "command",
@@ -1182,6 +1181,7 @@ const EXECUTION_IDENTITY_COLLISION_EXEMPTIONS = [
   ...[
     "applyStepOfTheWindJumpDistanceMultiplier",
     "jumpDistanceMultiplier",
+    "jumpMovementValidation",
     "maxJumpDistanceFeet",
     "withJumpDistanceMultiplier",
   ].flatMap((identifier) =>
@@ -2826,9 +2826,9 @@ EXECUTION_IDENTITY_COLLISION_EXEMPTIONS.push(
 );
 
 const EXECUTION_IDENTITY_COLLISION_SITE_EVIDENCE = {
-  sha256: "00033fd6ac8cbf48e7c36cec6e2f039f1f539acc1c831e427a98e5d57a2b398b",
-  siteCount: 1724,
-  violationCount: 1844,
+  sha256: "3ff390808a434bcae95ee8e383c4dfef81de232d639a42c36c1fd8f0b9ce7a32",
+  siteCount: 1714,
+  violationCount: 1832,
 };
 
 function escapeForRegExp(text) {

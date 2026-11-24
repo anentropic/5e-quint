@@ -127,6 +127,109 @@ function fixture(includeSyntheticFlatWeapon = false) {
   };
 }
 
+function unavailableMasteryFixture() {
+  const setup = fixture();
+  const sheet = setup.root.sessionStore.characters.get(setup.characterId);
+  assert(sheet?.tag === "available");
+  assert(!("spellSlotExpenditures" in sheet));
+  const sources = [
+    unitId("synthetic:missing-mastery-source"),
+    unitId("synthetic:another-missing-mastery-source"),
+  ];
+  const build = {
+    ...sheet.build,
+    features: [
+      ...sheet.build.features,
+      ...sources.map((selectedFromUnitId) => ({
+        kind: "selectedClassChoice" as const,
+        selectedFromUnitId,
+        unitId: unitId("weapon_dagger"),
+      })),
+    ],
+  };
+  setup.root.sessionStore.characters.set({ ...sheet, build });
+  return { ...setup, build, sources };
+}
+
+test("sheet inspection reports unavailable mastery evidence instead of empty weapon advice", () => {
+  const { root, characterId, sources } = unavailableMasteryFixture();
+  const result = handleToolCall(root, "inspect_character_session", {
+    characterId,
+  });
+  expect(result).toHaveProperty("isError", true);
+  expect(jsonContentPayload(result)).toMatchObject({
+    details: {
+      code: "CHARACTER_SESSION_DETAIL_INVALID",
+      issue: {
+        tag: "equippedWeaponBattleBlockersUnavailable",
+        issue: {
+          tag: "battleCreatureInitIssues",
+          issues: sources.map((source) =>
+            expect.objectContaining({
+              message: expect.stringContaining(source),
+            }),
+          ),
+        },
+      },
+    },
+  });
+  expect(jsonContentPayload(result)).not.toHaveProperty(
+    "detail.sheetProjection",
+  );
+});
+
+test("finalization guidance preserves every unavailable mastery source", () => {
+  const { root, draft, build, sources } = unavailableMasteryFixture();
+  const guidance = characterFinalizationInput({
+    root,
+    draftId: draft.draftId,
+    finalization: { tag: "ready", build },
+  });
+  assert(Result.isFailure(guidance));
+  expect(jsonContentPayload(guidance.failure)).toMatchObject({
+    details: {
+      code: "CHARACTER_INITIALIZATION_DISCOVERY_FAILED",
+      issue: {
+        tag: "battleCreatureInitIssues",
+        issues: sources.map((source) =>
+          expect.objectContaining({ message: expect.stringContaining(source) }),
+        ),
+      },
+    },
+  });
+});
+
+test("character listing retains the unavailable weapon assessment issue", () => {
+  const { root, characterId } = unavailableMasteryFixture();
+  const result = handleToolCall(root, "list_characters", {});
+  expect(result).toHaveProperty("isError", true);
+  expect(jsonContentPayload(result)).toMatchObject({
+    details: {
+      code: "CHARACTER_LIST_INVALID",
+      issues: [
+        {
+          characterId,
+          issue: { tag: "equippedWeaponBattleBlockersUnavailable" },
+        },
+      ],
+    },
+  });
+});
+
+test("equipment mutation keeps the stored sheet when mastery diagnostics are unavailable", () => {
+  const { root, characterId, equip } = unavailableMasteryFixture();
+  const before = root.sessionStore.characters.get(characterId);
+  const result = equip({ offHandWeapon: null });
+  expect(result).toHaveProperty("isError", true);
+  expect(jsonContentPayload(result)).toMatchObject({
+    details: {
+      code: "CHARACTER_SESSION_OPERATION_INVALID",
+      issue: { tag: "equippedWeaponBattleBlockersUnavailable" },
+    },
+  });
+  expect(root.sessionStore.characters.get(characterId)).toBe(before);
+});
+
 test("equipping an owned unsupported weapon discloses its canonical Battle blocker before starting Battle", () => {
   const { root, characterId, unresolved, dagger, spear, quarterstaff, equip } =
     fixture();
@@ -343,8 +446,7 @@ test("synthetic off-hand flat-damage weapons disclose the same slot-specific rej
 });
 
 test("a Versatile weapon can be equipped with the two-handed grip, which leaves no hand for an off-hand weapon", () => {
-  const { root, characterId, quarterstaff, offFlatWeapon, equip } =
-    fixture(true);
+  const { root, characterId, quarterstaff, offUnresolved, equip } = fixture();
   const twoHanded = equip({
     weapon: { itemId: quarterstaff, grip: "two_handed" },
   });
@@ -359,7 +461,7 @@ test("a Versatile weapon can be equipped with the two-handed grip, which leaves 
     grip: "two_handed",
   });
 
-  const conflict = equip({ offHandWeapon: { itemId: offFlatWeapon } });
+  const conflict = equip({ offHandWeapon: { itemId: offUnresolved } });
   expect(conflict).toHaveProperty("isError", true);
   expect(JSON.stringify(jsonContentPayload(conflict))).toContain(
     `Weapon ${quarterstaff} is held two-handed, which leaves no hand for a shield or an off-hand weapon.`,

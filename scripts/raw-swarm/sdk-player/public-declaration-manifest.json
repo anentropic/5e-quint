@@ -6,9 +6,9 @@
     "pathLedgerSha256": "fd48241ce438eb0f780a8fc8bfaf0035af6f4d0c686f2590dbe965420794083e"
   },
   "measure": {
-    "files": 388,
-    "bytes": 9747389
+    "files": 387,
+    "bytes": 9711527
   },
-  "pathLedgerSha256": "69b80e52c97e1740d9fce480308d823e591da09c010bfd9e0b5447fda0922644",
-  "contentLedgerSha256": "2510e670b4c96643cdc75bac2f0472e3e972aa3a1e97ecb2248210e0cd283445"
+  "pathLedgerSha256": "d655642e38330d01db42397ae02c04fb80cc96cb2168f27a8331bb422ce161d7",
+  "contentLedgerSha256": "2a5c7aea0657fce41f8a8a5dc8b4f6de31499b26154cbbd304b586edcc74ed80"
 }
