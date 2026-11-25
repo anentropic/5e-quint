@@ -27,7 +27,7 @@ import {
   changeWeaponAfterAttackActs,
   weaponChangeInitialHoles,
 } from "./attack-weapon-change.ts";
-import { loadoutWeaponChanges } from "./loadout-weapon-custody.ts";
+import { ownedWeaponChanges } from "./owned-weapon-custody.ts";
 import type { AttackWeaponChange } from "../battle-subjects.ts";
 import { optionalProperty } from "../optional-property.ts";
 import type { ActionEconomyState } from "@dnd/shared-algebras/action-economy-algebra";
@@ -475,7 +475,7 @@ function weaponChangeAttackActs(
 ): BattleActDiscoveryCandidate[] {
   const actor = state.combatants.get(actorId);
   if (actor === undefined) return [];
-  return loadoutWeaponChanges(state, actor).flatMap((change) => {
+  return ownedWeaponChanges(state, actor).flatMap((change) => {
     const dropHoles = weaponChangeInitialHoles(actorId, change);
     return (
       attackActionOptionsAfterWeaponChange(state, actorId, change)

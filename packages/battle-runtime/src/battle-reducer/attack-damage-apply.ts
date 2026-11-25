@@ -29,7 +29,10 @@ import {
   type CombatantId,
 } from "../identity.ts";
 import type { AttackWeaponChange, BattleSubject } from "../battle-subjects.ts";
-import { loadoutWeaponChangeAttackQuery } from "./loadout-weapon-custody.ts";
+import {
+  offeredOtherOwnedWeaponAttacks,
+  ownedWeaponChangeAttackQuery,
+} from "./owned-weapon-custody.ts";
 import type {
   BattleEquipmentQuery,
   BattleObjectCustodyQuery,
@@ -488,7 +491,7 @@ export function attackActionOptionsAfterWeaponChange(
   actorId: CombatantId,
   change: AttackWeaponChange,
 ): readonly BoundSupportedAttackActionOption[] {
-  const query = loadoutWeaponChangeAttackQuery(state, actorId, change);
+  const query = ownedWeaponChangeAttackQuery(state, actorId, change);
   return query.tag === "invalid"
     ? []
     : characterAttackActionOptions(state, query.actor, query.equipment);
@@ -505,6 +508,7 @@ function characterAttackActionOptions(
   );
   return [
     ...mainWeaponAttackOptions(state, actor, equipment),
+    ...carriedThrownWeaponAttackOptions(state, actor, equipment),
     unarmedStrike,
   ].filter((attack) => ammunitionForAttackIsReady(equipment, actor, attack));
 }
@@ -567,6 +571,35 @@ function creatureHasFreeHand(
 ): boolean {
   const hands = combatantHandUses(state, actor, state.grapples);
   return hands.left === "free" || hands.right === "free";
+}
+
+/**
+ * The throws of the weapons a character carries outside its loadout. SRD
+ * 5.2.1 equipment.md "Thrown": "you can draw that weapon as part of the
+ * attack", so a carried Thrown weapon is drawn into a free hand and thrown
+ * without the Attack action's weapon change. One on the ground is picked
+ * up, not drawn.
+ */
+function carriedThrownWeaponAttackOptions(
+  state: BattleState,
+  actor: CharacterBattleCreatureState,
+  equipment: BattleEquipmentQuery,
+): readonly BoundSupportedAttackActionOption[] {
+  if (!creatureHasFreeHand(equipment, actor)) return [];
+  return offeredOtherOwnedWeaponAttacks(equipment, actor).flatMap((carried) =>
+    battleObjectIsOnGround(equipment, actor.combatantId, carried.weaponObjectId)
+      ? []
+      : uniqueAttackExecutionSelectionOptions(
+          weaponAttackOptionsForActor(
+            state,
+            actor,
+            carried,
+            carried.weaponObjectId,
+            { kind: "ordinary" },
+            equipment,
+          ).filter(weaponAttackIsThrown),
+        ),
+  );
 }
 
 function uniqueAttackExecutionSelectionOptions(
