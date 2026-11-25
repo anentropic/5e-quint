@@ -446,7 +446,11 @@ export function attackActionOptionsForActor(
       actor,
       actor.origin.unarmedStrike,
     );
-    const options = [...mainWeaponAttackOptions(state, actor), unarmedStrike];
+    const options = [
+      ...mainWeaponAttackOptions(state, actor),
+      ...carriedThrownWeaponAttackOptions(state, actor),
+      unarmedStrike,
+    ];
     return options.filter((attack) =>
       ammunitionForAttackIsReady(state, actor, attack),
     );
@@ -531,6 +535,32 @@ function creatureHasFreeHand(
 ): boolean {
   const hands = combatantHandUses(state, actor, state.grapples);
   return hands.left === "free" || hands.right === "free";
+}
+
+/**
+ * The throws of the weapons a character carries outside its loadout. SRD
+ * 5.2.1 equipment.md "Thrown": "you can draw that weapon as part of the
+ * attack", so a carried Thrown weapon is drawn into a free hand and thrown
+ * without the Attack action's weapon change. One on the ground is picked
+ * up, not drawn.
+ */
+function carriedThrownWeaponAttackOptions(
+  state: BattleState,
+  actor: CharacterBattleCreatureState,
+): readonly BoundSupportedAttackActionOption[] {
+  if (!creatureHasFreeHand(state, actor)) return [];
+  return actor.origin.otherOwnedWeaponAttacks.flatMap((carried) =>
+    battleObjectIsOnGround(state, actor.combatantId, carried.weaponObjectId)
+      ? []
+      : uniqueAttackExecutionSelectionOptions(
+          weaponAttackOptionsForActor(
+            state,
+            actor,
+            carried,
+            carried.weaponObjectId,
+          ).filter(weaponAttackIsThrown),
+        ),
+  );
 }
 
 function uniqueAttackExecutionSelectionOptions(
