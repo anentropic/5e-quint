@@ -2451,6 +2451,7 @@ const EXECUTION_IDENTITY_COLLISION_EXEMPTIONS = [
     "persistent-area-obscurement.ts",
     "self-transformation-mode.ts",
     "spell-created-held-object.ts",
+    "spell-mechanics-admission.ts",
   ].flatMap((fileName) =>
     exactCollisionsAt(
       "magic_circle",
@@ -2848,9 +2849,9 @@ EXECUTION_IDENTITY_COLLISION_EXEMPTIONS.push(
 );
 
 const EXECUTION_IDENTITY_COLLISION_SITE_EVIDENCE = {
-  sha256: "fa5621d1f68069e1eb2f1bc21806a570ad1a3944ce96c45df238f2c29a12b3fa",
-  siteCount: 1734,
-  violationCount: 1854,
+  sha256: "8a83ee18e9456b24ee5bf1369504a0f078ca3b52bd0e13f8c3a3f6c9d137afff",
+  siteCount: 1739,
+  violationCount: 1859,
 };
 
 function escapeForRegExp(text) {
