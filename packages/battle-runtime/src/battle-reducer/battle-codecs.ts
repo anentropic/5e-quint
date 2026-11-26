@@ -424,13 +424,16 @@ const BattlePendingStartTurnOccurrenceSchema = Schema.Struct({
   occurrenceId: BattleStartTurnOccurrenceId,
   kind: Schema.Literals(BATTLE_START_TURN_OCCURRENCE_KINDS),
 });
-const BattlePendingTurnBoundaryRequestSchema = Schema.Union([
-  Schema.Struct({ kind: Schema.Literal("outgoingEndTurn") }),
+const BattlePendingTurnStartRequestMemberSchemas = [
   Schema.Struct({ kind: Schema.Literal("startTurnOccurrenceOrder") }),
   Schema.Struct({
     kind: Schema.Literal("startTurnOccurrence"),
     occurrence: BattlePendingStartTurnOccurrenceSchema,
   }),
+] as const;
+const BattlePendingTurnBoundaryRequestSchema = Schema.Union([
+  Schema.Struct({ kind: Schema.Literal("outgoingEndTurn") }),
+  ...BattlePendingTurnStartRequestMemberSchemas,
 ]);
 export const BattlePendingProcedureSchema = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("subjectResolution") }),
@@ -439,6 +442,11 @@ export const BattlePendingProcedureSchema = Schema.Union([
     endingActorId: CombatantId,
     sourceTurn: BattleStartTurnSourceTurnSchema,
     request: BattlePendingTurnBoundaryRequestSchema,
+  }),
+  Schema.Struct({
+    kind: Schema.Literal("turnStart"),
+    sourceTurn: BattleStartTurnSourceTurnSchema,
+    request: Schema.Union(BattlePendingTurnStartRequestMemberSchemas),
   }),
 ]).annotate({ identifier: "BattlePendingProcedure" }) satisfies Schema.Codec<
   BattlePendingProcedure,
@@ -9220,6 +9228,7 @@ function serializedRuntimeCommandReferencePolicy(
       endConcentration: actorOwned,
       startSpellCasting: actorOwned,
       continueSpellCasting: actorOwned,
+      startTurn: actorOwned,
       endTurn: actorOwned,
       persistentAreaSaveConditionSave: actorOwned,
       directionalPersistentAreaDirectionChange: actorOwned,
@@ -9829,6 +9838,10 @@ function serializedPendingProcedureMatchesCheckpoint(input: {
           liveCombatantIds.has(sourceTurn.actorId)
         );
       },
+      turnStart: ({ sourceTurn }) =>
+        input.checkpoint.combatants.some(
+          (combatant) => combatant.combatantId === sourceTurn.actorId,
+        ),
     }),
   );
 }
