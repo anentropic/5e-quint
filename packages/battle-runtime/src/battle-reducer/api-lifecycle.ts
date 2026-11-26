@@ -81,6 +81,7 @@ import {
 } from "./domain-helpers.ts";
 
 import { removeBattleCombatants } from "./combatant-removal.ts";
+import { admitInitialGrapples } from "./initial-grapples.ts";
 export { removeBattleCombatants } from "./combatant-removal.ts";
 
 import type {
@@ -421,6 +422,10 @@ export function battleInitializationIssueFactFields(
         combatantId,
         condition,
       }),
+      initialGrappledWithoutGrapple: ({ kind, combatantId }) => ({
+        reason: kind,
+        combatantId,
+      }),
       statBlockSourceInvalid: ({ kind, statBlockId, constraint }) => ({
         reason: kind,
         statBlockId,
@@ -529,6 +534,19 @@ export function battleInitializationIssueFactFields(
       hidePrerequisiteSelfReference: ({ kind, combatantId }) => ({
         reason: kind,
         combatantId,
+      }),
+      initialGrappleInvalid: ({
+        kind,
+        grappleIndex,
+        grapplerId,
+        targetId,
+        rejection,
+      }) => ({
+        reason: kind,
+        grappleIndex,
+        grapplerId,
+        targetId,
+        rejection,
       }),
       initialCombatantOrderMissing: ({ kind, combatantId }) => ({
         reason: kind,
@@ -1267,6 +1285,19 @@ export const startBattle: StartBattle = (input) => {
     characterContexts: admission.characterContexts,
     initializationIssues: admission.initializationIssues,
   });
+  const initialGrapples = admitInitialGrapples(
+    { ...state.success, combatants: combatantsWithSpellExecutions },
+    input.initialGrapples,
+  );
+  admission.initializationIssues.push(
+    ...initialGrapples.rejections.map(({ message, ...facts }) =>
+      battleInitializationIssue(
+        { kind: "initialGrappleInvalid", ...facts },
+        message,
+        ["battleInitialization", "initialGrapples", facts.grappleIndex],
+      ),
+    ),
+  );
   if (isNonEmptyReadonlyArray(admission.initializationIssues)) {
     return battleInitializationIssueFromLeafIssues(
       admission.initializationIssues,
@@ -1277,6 +1308,7 @@ export const startBattle: StartBattle = (input) => {
       {
         ...state.success,
         combatants: combatantsWithSpellExecutions,
+        grapples: initialGrapples.grapples,
       },
       battleRuntimeContextFromCharacterAdmission(
         admission.characterContexts,
