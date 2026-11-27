@@ -606,7 +606,12 @@ Advantage and Disadvantage, which cancel as usual, and its roller may use any
 source the first roll left unspent, while a source the first roll spent stays
 spent. The new roll stands. A save is rerolled this way at most once, so the
 save-failed window doesn't reopen on the new roll, and a second responder
-can't take the Reaction on the same save.
+can't take the Reaction on the same save. A save a creature repeats to end the
+condition (at the end of each of its turns) is a save against the effect that
+applies it, so a failed repeat save offers the Reaction as the first save
+does. When one turn's end holds several failed repeat saves, the first that a
+responder can answer opens the window, and no other save-failed window opens
+at that turn's end.
 
 **Rules basis / gap:** `.references/srd-5.2.1/classes.md`, "Countercharm": "If
 you or a creature within 30 feet of you fails a saving throw against an effect
@@ -617,10 +622,12 @@ circumstances cause a roll to have both Advantage and Disadvantage, the roll
 has neither of them." The SRD doesn't say when the save has failed if its
 roller can still reroll it, which creature the Reaction rerolls when several
 fail, whether the new roll keeps the first roll's spent or unspent sources,
-or whether a failed new roll triggers the Reaction again. The model reads the
-failure from the result that stands, as A69 does, lets the responder choose,
-treats the new roll as a fresh D20 Test, and reads "the save" as the one save
-the trigger names, so the new roll can't trigger it again.
+whether a failed new roll triggers the Reaction again, or whether a repeat
+save to end the condition counts. The model reads the failure from the result
+that stands, as A69 does, lets the responder choose, treats the new roll as a
+fresh D20 Test, reads "the save" as the one save the trigger names, so the new
+roll can't trigger it again, and counts a repeat save, which is still "a
+saving throw against an effect that applies" the condition.
 
 ## A71: Heroic Inspiration rerolls one die of a roll its roller sees whole
 

@@ -5,23 +5,30 @@
 // or a creature within 30 feet of you fails a saving throw against an effect
 // that applies the Charmed or Frightened condition, you can take a Reaction
 // to cause the save to be rerolled, and the new roll has Advantage."
-import { DieRollResult } from "@dnd/shared/types";
+import { applyCondition } from "@dnd/shared-algebras/conditions-algebra";
+import { elapsedTimeTicks } from "@dnd/shared-algebras/elapsed-time-algebra";
+import { difficultyClass, DieRollResult } from "@dnd/shared/types";
 import { Result, Schema } from "effect";
 import { describe, expect, test } from "vitest";
 
 import {
   battleFrontierInterruptDecisionForState,
+  battleResolutionHolesForTest,
   characterBattleFeatureInitForTest,
   interruptDecisionFill,
   resolveBattleInterrupt,
   resolveBattleSubject,
+  testBattleCreatureStateWithConditions,
   type BattleState,
+  type BattleSubject,
 } from "./battle-runtime.test-support.ts";
 import {
   HEROIC_INSPIRATION_AVAILABLE,
   NO_HEROIC_INSPIRATION,
+  type Condition,
   type HeroicInspiration,
 } from "@dnd/shared/game-facts";
+import { battleStateWithLowLevelSourceOwnedEffectOccurrenceForTest } from "./low-level-effect-occurrence.test-support.ts";
 import { optionalProperty } from "./optional-property.ts";
 import {
   FAILED_SAVE_REACTION_REROLL_EFFECT_KIND,
@@ -31,6 +38,7 @@ import {
   type BattleRolledOutcomeD20TestRerollDecisions,
   type BattleFailedSaveReactionReroll,
   type BattleInterruptProcedureChoice,
+  type BattleHole,
 } from "./battle-state-execution.ts";
 import {
   failedSaveReactionRerollRollMode,
@@ -649,4 +657,211 @@ describe("Countercharm's Advantage meets the save's own roll mode", () => {
       );
     },
   );
+});
+
+// A creature that repeats a save to end a condition, and fails it, fails a
+// save against the effect that applies that condition (ASSUMPTIONS.md A70).
+type SavingThrowOutcomeHole = Extract<
+  BattleHole,
+  { readonly kind: "savingThrowOutcome" }
+>;
+
+/**
+ * The Bard, on its own turn, under a condition it repeats a save against at
+ * the end of each of its turns. Each condition is a synthetic low-level
+ * repeat-save effect with a fixed DC, sourced from the other creature.
+ */
+function repeatSaveBattle(conditions: readonly Condition[]) {
+  const session = countercharmBattle({
+    bard: "caster",
+    spellId: viciousMockeryUnitId,
+  });
+  let state = session.state;
+  for (const condition of conditions) {
+    state = battleStateWithLowLevelSourceOwnedEffectOccurrenceForTest({
+      state,
+      sourceCombatantId: spellTargetId,
+      ownerId: spellCasterId,
+      effect: {
+        kind: "spellConditionEndTurnSave",
+        condition,
+        conditionHadNonSpellSource: false,
+        heightenedSpellTargetDisadvantage: null,
+        save: {
+          ability: "wis",
+          dc: { kind: "fixed", dc: difficultyClass(13) },
+        },
+        expiresAt: {
+          kind: "duration",
+          durationTicks: elapsedTimeTicks(10),
+        },
+      },
+    }).state;
+    const bard = state.combatants.get(spellCasterId);
+    if (bard === undefined) throw new Error("Expected the Bard.");
+    state = {
+      ...state,
+      combatants: new Map(state.combatants).set(
+        spellCasterId,
+        testBattleCreatureStateWithConditions(
+          bard,
+          applyCondition(bard.conditions, condition),
+        ),
+      ),
+    };
+  }
+  const subject: BattleSubject = {
+    tag: "runtimeCommand",
+    actorId: spellCasterId,
+    command: "endTurn",
+  };
+  const saveHoles = battleResolutionHolesForTest(
+    requireNeedsHoles(resolveBattleSubject({ state, subject, fills: [] })),
+  ).filter(
+    (hole): hole is SavingThrowOutcomeHole =>
+      hole.kind === "savingThrowOutcome",
+  );
+  const endTurn = (
+    current: BattleState,
+    outcomes: readonly CharmPersonOutcome[],
+  ): BattleResolutionResult =>
+    resolveBattleSubject({
+      state: current,
+      subject,
+      fills: saveHoles.map((hole, index) => {
+        const outcome = outcomes[index];
+        if (outcome === undefined) throw new Error("Expected an outcome.");
+        return savingThrowOutcomeFill(hole, [
+          { targetId: spellCasterId, ...outcome },
+        ]);
+      }),
+    });
+  return { state, saveHoles, endTurn };
+}
+
+const failedRepeatSave = {
+  succeeded: false,
+  d20TestRoll: single(4),
+} as const;
+
+function conditionsOf(state: BattleState) {
+  return state.combatants.get(spellCasterId)?.conditions;
+}
+
+describe("Countercharm on a repeat save at the end of a turn", () => {
+  test("a failed repeat save against Frightened offers the Reaction on that save", () => {
+    const battle = repeatSaveBattle(["frightened"]);
+    const [saveHole] = battle.saveHoles;
+    if (saveHole === undefined) throw new Error("Expected the repeat save.");
+    const interrupted = battle.endTurn(battle.state, [failedRepeatSave]);
+
+    expect(
+      currentInterruptCheckpoint(requireNeedsHoles(interrupted).state),
+    ).toMatchObject({
+      trigger: "saveFailed",
+      appliedConditions: ["frightened"],
+      failedSaveHoleIds: [saveHole.holeId],
+    });
+    expect(countercharmChoice(interrupted)).toMatchObject({
+      responderId: spellCasterId,
+      reroll: { rollerId: spellCasterId },
+    });
+  });
+
+  test("a new roll that succeeds ends Frightened", () => {
+    const battle = repeatSaveBattle(["frightened"]);
+    const asked = requireNeedsHoles(
+      takeCountercharm(battle.endTurn(battle.state, [failedRepeatSave])),
+    );
+
+    expect(requireResultHole(asked, "savingThrowOutcome")).toMatchObject({
+      failedSaveReactionRerolls: [
+        { rollerId: spellCasterId, rollMode: "advantage" },
+      ],
+    });
+    const resolved = battle.endTurn(asked.state, [
+      {
+        ...failedRepeatSave,
+        failedSaveReactionReroll: newRoll({
+          responderId: spellCasterId,
+          succeeded: true,
+          d20TestRoll: multiple(3, 16, "advantage"),
+        }),
+      },
+    ]);
+
+    expect(resolved).toMatchObject({ tag: "resolved" });
+    if (resolved.tag !== "resolved") throw new Error("Expected resolution.");
+    expect(conditionsOf(resolved.state)).not.toEqual(
+      expect.objectContaining({ frightened: true }),
+    );
+    expect(currentInterruptCheckpoint(resolved.state)).toBeNull();
+  });
+
+  test("a new roll that fails keeps Frightened, and the window doesn't reopen", () => {
+    const battle = repeatSaveBattle(["frightened"]);
+    const asked = requireNeedsHoles(
+      takeCountercharm(battle.endTurn(battle.state, [failedRepeatSave])),
+    );
+    const resolved = battle.endTurn(asked.state, [
+      {
+        ...failedRepeatSave,
+        failedSaveReactionReroll: newRoll({
+          responderId: spellCasterId,
+          succeeded: false,
+          d20TestRoll: multiple(3, 5, "advantage"),
+        }),
+      },
+    ]);
+
+    expect(resolved).toMatchObject({ tag: "resolved" });
+    if (resolved.tag !== "resolved") throw new Error("Expected resolution.");
+    expect(conditionsOf(resolved.state)).toEqual(
+      expect.objectContaining({ frightened: true }),
+    );
+  });
+
+  test("a repeat save that succeeds, or one against another condition, offers nothing", () => {
+    const frightened = repeatSaveBattle(["frightened"]);
+    const poisoned = repeatSaveBattle(["poisoned"]);
+
+    expect(
+      frightened.endTurn(frightened.state, [
+        { succeeded: true, d20TestRoll: single(15) },
+      ]),
+    ).toMatchObject({ tag: "resolved" });
+    expect(poisoned.endTurn(poisoned.state, [failedRepeatSave])).toMatchObject({
+      tag: "resolved",
+    });
+  });
+
+  test("beside a failed repeat save against another condition, the window names the Frightened save", () => {
+    const battle = repeatSaveBattle(["poisoned", "frightened"]);
+    expect(battle.saveHoles).toHaveLength(2);
+    const interrupted = battle.endTurn(battle.state, [
+      failedRepeatSave,
+      failedRepeatSave,
+    ]);
+    const checkpoint = currentInterruptCheckpoint(
+      requireNeedsHoles(interrupted).state,
+    );
+
+    expect(checkpoint).toMatchObject({
+      trigger: "saveFailed",
+      appliedConditions: ["frightened"],
+    });
+    const asked = requireNeedsHoles(takeCountercharm(interrupted));
+    const rerolledHoles = battleResolutionHolesForTest(asked).filter(
+      (hole) =>
+        hole.kind === "savingThrowOutcome" &&
+        "failedSaveReactionRerolls" in hole &&
+        hole.failedSaveReactionRerolls !== undefined,
+    );
+    expect(rerolledHoles).toHaveLength(1);
+    expect(
+      checkpoint !== null && "failedSaveHoleIds" in checkpoint
+        ? checkpoint.failedSaveHoleIds
+        : undefined,
+    ).toEqual([rerolledHoles[0]?.holeId]);
+  });
 });

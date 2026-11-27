@@ -210,7 +210,8 @@ function failedSaveReactionRerollChoicesForFeature(input: {
   )
     return [];
   return input.frame.failedTargetIds.flatMap((rollerId) =>
-    rerollableFailedSaveHoleId(input.continuation, rollerId) === undefined
+    rerollableFailedSaveHoleId(input.frame, input.continuation, rollerId) ===
+    undefined
       ? []
       : [
           {
@@ -240,16 +241,19 @@ type SavingThrowOutcomeFill = Extract<
 
 /**
  * The hole of the one saving throw the replay holds for this creature that
- * was rolled and stands failed, with no Reaction reroll granted on it yet.
- * Undefined when there is none, or more than one, so a Reaction never
- * guesses which save it rerolls.
+ * was rolled and stands failed, with no Reaction reroll granted on it yet,
+ * among the holes the window names when it names them. Undefined when there
+ * is none, or more than one, so a Reaction never guesses which save it
+ * rerolls.
  */
 export function rerollableFailedSaveHoleId(
+  frame: Pick<SaveFailedFrame, "failedSaveHoleIds">,
   continuation: ReplayContinuation,
   rollerId: CombatantId,
 ): SavingThrowOutcomeFill["holeId"] | undefined {
   const holeIds = continuation.fills.flatMap((fill) =>
     fill.kind === "savingThrowOutcome" &&
+    (frame.failedSaveHoleIds?.includes(fill.holeId) ?? true) &&
     fill.value.outcomes.some(
       (outcome) =>
         outcome.targetId === rollerId &&
@@ -337,6 +341,7 @@ export function checkpointAfterFailedSaveReactionReroll(input: {
       sameFailedSaveReactionRerollChoice(choice.reroll, input.selection),
   );
   const holeId = rerollableFailedSaveHoleId(
+    frame,
     frame.continuation,
     input.selection.rollerId,
   );

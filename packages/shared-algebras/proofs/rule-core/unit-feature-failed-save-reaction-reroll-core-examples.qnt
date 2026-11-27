@@ -50,6 +50,27 @@ module unitFeatureFailedSaveReactionRerollCoreExamples {
     }
   }
 
+  // A save repeated at the end of a turn to end Frightened is a save against
+  // the effect that applies it: a failure offers the reroll as the first save
+  // does, and a new roll that succeeds ends the condition.
+  run test_failed_repeat_save_against_frightened_offers_the_reroll = {
+    val repeatSave = {
+      ...responderFailsCharm,
+      appliedConditions: Set(SaveEffectFrightenedCondition),
+    }
+    val offered = resolveFailedSaveReactionReroll(repeatSave)
+    val rerolled = resolveFailedSaveReactionReroll({
+      ...repeatSave,
+      decision: taken(AdvantageD20TestRoll, true),
+    })
+    all {
+      assert(offered.offered),
+      assert(offered.newRollMode == AdvantageD20TestRoll),
+      assert(rerolled.admitted),
+      assert(not(rerolled.save.standsFailed)),
+    }
+  }
+
   run test_successful_new_roll_stands_and_spends_the_reaction = {
     val result = resolveFailedSaveReactionReroll({
       ...responderFailsCharm,

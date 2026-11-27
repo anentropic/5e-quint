@@ -1488,6 +1488,13 @@ export type BattleSaveFailedOccurrence = {
    * the effect's own shape. Empty when the failure applies no condition.
    */
   readonly appliedConditions: readonly Condition[];
+  /**
+   * The saving throw holes this failure is, when the interrupted subject also
+   * holds a failed target's saves against other effects (the repeat saves at
+   * the end of a turn). Absent when every failed save the subject holds for
+   * a failed target is against this effect.
+   */
+  readonly failedSaveHoleIds?: ReadonlyNonEmptyArray<BattleHoleId>;
   readonly sourceProcedureRef?: BattleProcedureExecutionRef;
   readonly effectRef?: BattleEffectExecutionRef;
 };
