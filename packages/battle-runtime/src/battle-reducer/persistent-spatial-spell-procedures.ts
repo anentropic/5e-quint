@@ -102,7 +102,7 @@ import { concentrationSavingThrowFillFor } from "./spells-resolve-fill-helpers.t
 import { saveGatedConditionDamageOccurrenceKeyForHoleTarget } from "./staged-condition-repeat-save.ts";
 import { applyPreparedSlotSpellDamage } from "./spells-damage-fills.ts";
 import {
-  applyPersistentAreaSaveConditionProneToTarget,
+  applyPersistentAreaSaveConditionToTarget,
   applyPersistentAreaSaveCompositeFailedSaveEffect,
   applyPersistentAreaSaveConditionEscapeRestrainedCondition,
   markPersistentAreaSaveCompositeSavedThisTurn,
@@ -586,7 +586,7 @@ function resolvePersistentAreaSaveConditionEntrySaveCommand(
   }
   const nextState = outcome.succeeded
     ? input.state
-    : applyPersistentAreaSaveConditionProneToTarget(
+    : applyPersistentAreaSaveConditionToTarget(
         input.state,
         input.subject.actorId,
       );
@@ -3352,7 +3352,7 @@ function resolvePersistentAreaSaveConditionEndTurnSaveCommand(
   }
   const nextState = outcome.succeeded
     ? input.state
-    : applyPersistentAreaSaveConditionProneToTarget(
+    : applyPersistentAreaSaveConditionToTarget(
         input.state,
         input.subject.actorId,
       );

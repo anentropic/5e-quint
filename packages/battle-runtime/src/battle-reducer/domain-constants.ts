@@ -629,3 +629,5 @@ export const SAVE_GATED_CONDITION_WITH_REPEAT_FAILED_SAVE_CONDITIONS = [
   SAVE_GATED_CONDITION_WITH_REPEAT_AUTHORED_FACTS.phase.failureEffects
     .incapacitated.condition,
 ] as const satisfies readonly Condition[];
+/** The condition the compelled Grovel behaviour applies to the creature that failed the save. */
+export const COMPELLED_GROVEL_CONDITION = "prone" as const satisfies Condition;

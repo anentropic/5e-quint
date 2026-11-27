@@ -26,7 +26,7 @@ import {
   type ReadonlyNonEmptyArray,
 } from "@dnd/shared/types";
 import type { DamageType } from "@dnd/surface/surface/types";
-import { Result } from "effect";
+import { Match, Result } from "effect";
 import type { BattleInterruptTrigger } from "../battle-interrupt-triggers.ts";
 import type { BattleSubject } from "../battle-subjects.ts";
 import type { BattleProcedureExecutionRef, CombatantId } from "../identity.ts";
@@ -153,10 +153,12 @@ import {
   type BonusActionSpellBattleResolutionInput,
   type SaveDamageResult,
   type SpellSelectedFailedSaveConditionEffect,
+  type BattleCompelledBehaviorOption,
 } from "../battle-state-execution.ts";
 import { isReadonlyArrayNonEmpty } from "effect/Array";
 import type { Condition } from "@dnd/shared/game-facts";
 import {
+  COMPELLED_GROVEL_CONDITION,
   PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION,
   SAVE_GATED_CONDITION_WITH_REPEAT_FAILED_SAVE_CONDITIONS,
   STAGED_SAVE_CONDITION_FAILED_SAVE_CONDITIONS,
@@ -2269,6 +2271,20 @@ function applySaveGatedDamageFailedSaveConditionEffects(
   );
 }
 
+/** The conditions the chosen compelled behaviour applies to a creature that fails the save. */
+function compelledBehaviorOptionAppliedConditions(
+  option: BattleCompelledBehaviorOption,
+): readonly Condition[] {
+  return Match.value(option).pipe(
+    Match.when("grovel", () => [COMPELLED_GROVEL_CONDITION]),
+    Match.when("approach", () => []),
+    Match.when("drop", () => []),
+    Match.when("flee", () => []),
+    Match.when("halt", () => []),
+    Match.exhaustive,
+  );
+}
+
 /** The condition effects a failed save against save-gated damage applies: only those with no condition choice left open. */
 function saveGatedDamageFailedSaveConditionEffects(
   invocation: Extract<
@@ -3150,8 +3166,9 @@ export function resolveCompelledNextTurnBehaviorSpellAct(input: {
     input.input,
     input.invocation.sourceProcedureRef,
     failedTargets,
-    // The failed save compels the target's next turn; it applies no condition.
-    [],
+    compelledBehaviorOptionAppliedConditions(
+      input.fillSet.compelledBehaviorOptionChoice,
+    ),
   );
   if (saveFailedReactionWindow !== null) {
     return saveFailedReactionWindow;

@@ -774,13 +774,17 @@ const SAVE_GATED_AREA_CONTROL_FAILED_SAVE_CONDITIONS = [
 type SaveGatedAreaControlFailedSaveCondition =
   (typeof SAVE_GATED_AREA_CONTROL_FAILED_SAVE_CONDITIONS)[number];
 
-function isApplyConditionEffect(
+function isSaveGatedAreaControlFailedSaveConditionEffect(
   effect: EffectAtom,
-  condition: SaveGatedAreaControlFailedSaveCondition,
 ): effect is Extract<EffectAtom, { readonly kind: "apply_condition" }> & {
-  readonly condition: typeof condition;
+  readonly condition: SaveGatedAreaControlFailedSaveCondition;
 } {
-  return effect.kind === "apply_condition" && effect.condition === condition;
+  return (
+    effect.kind === "apply_condition" &&
+    SAVE_GATED_AREA_CONTROL_FAILED_SAVE_CONDITIONS.some(
+      (condition) => condition === effect.condition,
+    )
+  );
 }
 
 const SAVE_GATED_AREA_CONTROL_FAILED_EFFECT_ROLES = [
@@ -804,10 +808,7 @@ type SaveGatedAreaControlFailedRoleEffect =
 function saveGatedAreaControlFailedRoleEffect(
   effect: EffectAtom,
 ): SaveGatedAreaControlFailedRoleEffect | undefined {
-  if (
-    isApplyConditionEffect(effect, "charmed") ||
-    isApplyConditionEffect(effect, "incapacitated")
-  ) {
+  if (isSaveGatedAreaControlFailedSaveConditionEffect(effect)) {
     return effect;
   }
   if (isSaveGatedAreaControlSpeedZeroEffect(effect)) {
