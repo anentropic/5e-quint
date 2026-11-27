@@ -1454,6 +1454,7 @@ function resolveTargetedSpellAttackHitDamageOutcome(
     tag: "result",
     result: needsHolesResult(input.input.state, input.input.subject, [
       spellDamageHole(
+        input.input.subject.actorId,
         input.invocation,
         input.critical,
         input.spellMarkedDamageRiders,
@@ -1572,7 +1573,7 @@ function prepareTargetedSpellDamage(
     return {
       tag: "result",
       result: needsHolesResult(input.input.state, input.input.subject, [
-        spellDamageHole(input.invocation),
+        spellDamageHole(input.input.subject.actorId, input.invocation),
       ]),
     };
   }

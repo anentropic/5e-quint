@@ -1266,6 +1266,7 @@ function resolveReactionAttackMissingDamage(
   }
   return needsHolesResult(attackRolledState, resolutionInput.subject, [
     attackDamageHole(
+      context.input.subject.reactorId,
       input.attack,
       input.critical,
       input.effectiveAttackRoll,

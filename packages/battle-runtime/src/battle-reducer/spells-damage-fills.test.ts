@@ -76,7 +76,7 @@ describe("spell damage fill projections", () => {
     if (invocation.procedure !== "repeatedDamageAllocation") {
       throw new Error("Expected a repeated-damage spell invocation.");
     }
-    const damageHole = spellDamageHole(invocation);
+    const damageHole = spellDamageHole(spellCasterId, invocation);
     const damageRoll = damageRollFillWithGroups(damageHole, [[1, 2, 3]]);
     const damageByType = spellDamageByTypeForTarget(
       requireCombatant(session.state, spellTargetId),
@@ -96,7 +96,7 @@ describe("spell damage fill projections", () => {
     if (invocation.procedure !== "saveGatedDamage") {
       throw new Error("Expected a save-gated damage spell invocation.");
     }
-    const damageHole = spellDamageHole(invocation);
+    const damageHole = spellDamageHole(spellCasterId, invocation);
     const damageRoll = damageRollFillWithGroups(damageHole, [
       [1, 1, 1, 1, 1],
       [2, 2, 2, 2, 2],
@@ -146,9 +146,10 @@ describe("spell damage fill projections", () => {
     if (!isPreparedSpellAttackDamageInvocation(invocation)) {
       throw new Error("Expected a spell attack damage invocation.");
     }
-    const damageRoll = damageRollFillWithGroups(spellDamageHole(invocation), [
-      [4, 4],
-    ]);
+    const damageRoll = damageRollFillWithGroups(
+      spellDamageHole(spellCasterId, invocation),
+      [[4, 4]],
+    );
     const state = applySpellDamage(
       session.state,
       spellTargetId,
@@ -176,9 +177,10 @@ describe("spell damage fill projections", () => {
     if (!isPreparedSpellAttackDamageInvocation(invocation)) {
       throw new Error("Expected a spell attack damage invocation.");
     }
-    const damageRoll = damageRollFillWithGroups(spellDamageHole(invocation), [
-      [4, 4],
-    ]);
+    const damageRoll = damageRollFillWithGroups(
+      spellDamageHole(spellCasterId, invocation),
+      [[4, 4]],
+    );
     const state = applySpellDamage(
       session.state,
       spellTargetId,
@@ -229,9 +231,10 @@ describe("spell damage fill projections", () => {
         },
       },
     });
-    const damageRoll = damageRollFillWithGroups(spellDamageHole(invocation), [
-      [4, 4],
-    ]);
+    const damageRoll = damageRollFillWithGroups(
+      spellDamageHole(spellCasterId, invocation),
+      [[4, 4]],
+    );
     const state = applySpellDamage(
       stateWithPenalty,
       spellTargetId,
@@ -264,9 +267,10 @@ describe("spell damage fill projections", () => {
       "cold",
       false,
     );
-    const damageRoll = damageRollFillWithGroups(spellDamageHole(invocation), [
-      [4, 4],
-    ]);
+    const damageRoll = damageRollFillWithGroups(
+      spellDamageHole(spellCasterId, invocation),
+      [[4, 4]],
+    );
     const state = applySpellDamage(
       stateWithResistance,
       spellTargetId,

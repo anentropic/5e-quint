@@ -590,6 +590,7 @@ function resolveBonusActionAttack(
     /* v8 ignore stop -- @preserve */
     return needsHolesResult(attackRolledState, input.subject, [
       attackDamageHole(
+        input.subject.actorId,
         attack,
         critical,
         effectiveAttackRoll,

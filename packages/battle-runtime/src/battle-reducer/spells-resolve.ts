@@ -1792,7 +1792,12 @@ function spellDamageHoleWithEmpoweredOption(
   castApplications: readonly SpellMetamagicApplicationFact[],
   spellMarkedDamageRiders: readonly SpellMarkedDamageRider[] = [],
 ): ReturnType<typeof spellDamageHole> {
-  const hole = spellDamageHole(invocation, critical, spellMarkedDamageRiders);
+  const hole = spellDamageHole(
+    attackerId,
+    invocation,
+    critical,
+    spellMarkedDamageRiders,
+  );
   if (
     invocation.procedure !== "spellAttackDamage" ||
     spellMarkedDamageRiders.length > 0

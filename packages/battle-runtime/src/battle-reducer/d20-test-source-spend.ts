@@ -1,6 +1,7 @@
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_SAVING_THROW_REROLL
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE
+// KERNEL-COVERAGE: runtime-owner BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 // What a D20 Test source that costs something (Heroic Inspiration, a use of a
 // failed saving throw reroll, a Bardic Inspiration die, a use of a failed
 // ability check boost) shares: where its cost stands for one roll, and the

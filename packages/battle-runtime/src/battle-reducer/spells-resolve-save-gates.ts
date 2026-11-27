@@ -1665,7 +1665,7 @@ export function resolveSaveGateDamageSpellAct(input: {
     }
     /* v8 ignore stop -- @preserve */
     return needsHolesResult(input.input.state, input.input.subject, [
-      spellDamageHole(damageInvocation),
+      spellDamageHole(input.actorId, damageInvocation),
     ]);
   }
   const damageRoll = input.fillSet.damageRoll;

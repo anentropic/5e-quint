@@ -123,6 +123,7 @@ import {
 } from "./protection-charm-procedures.ts";
 import { resolveCastAttackHitBonusActionSpellCommand } from "./attack-hit-bonus-action-spell-procedures.ts";
 import { resolveD20TestRerollFills } from "./d20-test-reroll-fills.ts";
+import { resolveRolledDiceHeroicInspirationRerollFills } from "./rolled-dice-heroic-inspiration-reroll.ts";
 import { invalidResult } from "./result-helpers.ts";
 import { battleReducerRouteForInterrupt } from "./interrupt-route-projection.ts";
 import { battleReducerRouteForResolution } from "./reducer-route.ts";
@@ -417,21 +418,60 @@ function resolveBattleSubjectInternal(
     /* v8 ignore stop -- @preserve */
     return resolveBattleSubjectInternal(replayAdmission.input, options);
   }
+  return resolveBattleSubjectThroughRerollFills(input, options);
+}
+
+/**
+ * Checks the subject's reroll decisions, its D20 Tests first and then the
+ * dice it rolls, and resolves it from the state after what they spend.
+ */
+function resolveBattleSubjectThroughRerollFills(
+  input: AdmittedBattleResolutionInput,
+  options: ResolveBattleSubjectInternalOptions,
+): BattleResolutionResult {
+  const resolvePrefix = (prefixInput: AdmittedBattleResolutionInput) =>
+    resolveBattleSubjectAfterD20TestRerolls(prefixInput, options);
   const d20TestRerolls = resolveD20TestRerollFills({
     resolutionInput: input,
-    resolvePrefix: (prefixInput) =>
-      resolveBattleSubjectAfterD20TestRerolls(prefixInput, options),
+    resolvePrefix,
   });
   if (d20TestRerolls.tag === "settled") {
     return d20TestRerolls.result;
   }
-  if (d20TestRerolls.state === input.state) {
-    return resolveBattleSubjectAfterD20TestRerolls(input, options);
-  }
-  const rerolledAdmission = admitBattleResolutionInput({
-    ...input,
-    state: d20TestRerolls.state,
+  const afterD20TestRerolls = admittedInputAfterRerollSpends(
+    input,
+    d20TestRerolls.state,
+  );
+  if (afterD20TestRerolls.tag === "invalid") return afterD20TestRerolls;
+  // The dice a subject rolls (damage, healing) are checked after its D20
+  // Tests, so their Heroic Inspiration reads what the D20 Tests spent.
+  const rolledDiceRerolls = resolveRolledDiceHeroicInspirationRerollFills({
+    resolutionInput: afterD20TestRerolls.input,
+    resolvePrefix,
   });
+  if (rolledDiceRerolls.tag === "settled") {
+    return rolledDiceRerolls.result;
+  }
+  const afterRolledDiceRerolls = admittedInputAfterRerollSpends(
+    afterD20TestRerolls.input,
+    rolledDiceRerolls.state,
+  );
+  if (afterRolledDiceRerolls.tag === "invalid") return afterRolledDiceRerolls;
+  return resolveBattleSubjectAfterD20TestRerolls(
+    afterRolledDiceRerolls.input,
+    options,
+  );
+}
+
+/** The input admitted again for the state after its rolls' reroll costs. */
+function admittedInputAfterRerollSpends(
+  input: AdmittedBattleResolutionInput,
+  state: BattleState,
+):
+  | { readonly tag: "admitted"; readonly input: AdmittedBattleResolutionInput }
+  | Extract<BattleResolutionResult, { readonly tag: "invalid" }> {
+  if (state === input.state) return { tag: "admitted", input };
+  const rerolledAdmission = admitBattleResolutionInput({ ...input, state });
   /* v8 ignore start -- @preserve -- Spending a reroll's cost changes only the roller's Heroic Inspiration or resource uses and the subject's accepted rolls; procedure bindings come from the roller's execution, which the spend preserves. */
   if (rerolledAdmission.tag === "staleCharacterProcedure") {
     return invalidResult(
@@ -441,10 +481,7 @@ function resolveBattleSubjectInternal(
     );
   }
   /* v8 ignore stop -- @preserve */
-  return resolveBattleSubjectAfterD20TestRerolls(
-    rerolledAdmission.input,
-    options,
-  );
+  return { tag: "admitted", input: rerolledAdmission.input };
 }
 
 const INTERRUPT_COMMAND_REQUIRES_CHECKPOINT = {

@@ -330,7 +330,10 @@ export function resolvePreparedSlotSpellAct(input: {
     }
     /* v8 ignore stop -- @preserve */
     return needsHolesResult(input.input.state, input.input.subject, [
-      { ...spellDamageHole(input.invocation), allocatedDamageDice },
+      {
+        ...spellDamageHole(input.actorId, input.invocation),
+        allocatedDamageDice,
+      },
     ]);
   }
   const damageRoll = input.fillSet.damageRoll;

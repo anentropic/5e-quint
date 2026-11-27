@@ -159,7 +159,7 @@ describe("attack-roll reducer boundaries", () => {
     } as const;
 
     expect(
-      weaponMasteryCleaveDamageHole(attack, false, attackRoll, [
+      weaponMasteryCleaveDamageHole(fighterId, attack, false, attackRoll, [
         damageDieFloorProcedureRef,
       ]),
     ).toMatchObject({
@@ -168,6 +168,7 @@ describe("attack-roll reducer boundaries", () => {
     });
     expect(
       huntersPreyHordeBreakerDamageHole(
+        fighterId,
         attack,
         false,
         attackRoll,

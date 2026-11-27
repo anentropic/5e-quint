@@ -128,6 +128,7 @@ import {
 import { weaponAttackIsThrown } from "./thrown-weapon-attack.ts";
 
 export function attackDamageHole(
+  rollerId: CombatantId,
   attack: SupportedAttackActionOption,
   critical = false,
   attackRoll?: AttackRollResult,
@@ -166,6 +167,7 @@ export function attackDamageHole(
       `battle:attack:damage-result:${expression}`,
     ),
     label: `${name} damage (${expression})`,
+    rollerId,
     attack: unboundAttackActionOption(attack),
     critical,
     damageDice: attackDamageDiceRequest({

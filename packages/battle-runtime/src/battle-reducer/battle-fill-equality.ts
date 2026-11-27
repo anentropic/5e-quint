@@ -91,7 +91,9 @@ export function battleContinuationFillEquals(
         spellDamageRerollDecisionsEqual(
           left.spellDamageReroll,
           b.spellDamageReroll,
-        ),
+        ) &&
+        canonicalStructuralKey(left.heroicInspirationReroll) ===
+          canonicalStructuralKey(b.heroicInspirationReroll),
       attackDamageDisposition: (left) =>
         b.kind === "attackDamageDisposition" &&
         left.holeId === b.holeId &&

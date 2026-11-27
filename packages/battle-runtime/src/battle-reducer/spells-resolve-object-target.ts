@@ -443,7 +443,7 @@ function resolveObjectTargetSpellAttackCore(
     return needsHolesResult(
       postRemarkableAthleteMovementState,
       input.input.subject,
-      [spellDamageHole(damageInvocation, critical)],
+      [spellDamageHole(input.actorId, damageInvocation, critical)],
     );
   }
   const damageValidation = validateSpellDamageFill(

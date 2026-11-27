@@ -507,15 +507,27 @@ function projectMechanicalRolledDiceHole(
           attack: projectMechanicalAttackActionOption(withoutLabel.attack),
         }
       : withoutLabel;
+  const withHeroicInspiration =
+    "heroicInspirationRerolls" in mechanical &&
+    mechanical.heroicInspirationRerolls !== undefined
+      ? {
+          ...mechanical,
+          heroicInspirationRerolls: [
+            projectNestedPresentationLabel(
+              mechanical.heroicInspirationRerolls[0],
+            ),
+          ] as const,
+        }
+      : mechanical;
   if ("spellDamageRerolls" in hole && hole.spellDamageRerolls !== undefined) {
     return {
-      ...mechanical,
+      ...withHeroicInspiration,
       spellDamageRerolls: hole.spellDamageRerolls.map(
         projectNestedPresentationLabel,
       ),
     };
   }
-  return mechanical;
+  return withHeroicInspiration;
 }
 
 function projectMechanicalSavingThrowHole(

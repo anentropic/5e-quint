@@ -1,4 +1,5 @@
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL
+// KERNEL-COVERAGE: runtime-owner BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 // Heroic Inspiration (Rules Glossary): "If you (a player character) have Heroic
 // Inspiration, you can expend it to reroll any die immediately after rolling
 // it, and you must use the new roll." This owner offers it after any D20 Test

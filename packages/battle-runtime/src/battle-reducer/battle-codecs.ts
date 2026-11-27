@@ -1800,6 +1800,33 @@ const D20TestNaturalOneRerollHoleOptionsFields = (() => {
   };
 })();
 
+/** A roller's Heroic Inspiration decision on a rolled-dice fill. */
+const BattleRolledDiceHeroicInspirationRerollDecisionSchema = Schema.Union([
+  Schema.Struct({
+    kind: Schema.Literal("decline"),
+    effectKind: Schema.Literal(HEROIC_INSPIRATION_REROLL_EFFECT_KIND),
+  }),
+  Schema.Struct({
+    kind: Schema.Literal("rerollRolledDie"),
+    effectKind: Schema.Literal(HEROIC_INSPIRATION_REROLL_EFFECT_KIND),
+    rolledDie: Schema.Union([
+      Schema.Struct({
+        source: Schema.Literal("rolledDiceGroup"),
+        groupIndex: Schema.Number.pipe(
+          Schema.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0)),
+        ),
+      }),
+      Schema.Struct({
+        source: Schema.Literal("weaponDamageDiceRollCandidate"),
+        candidate: Schema.Literals(D20_TEST_ROLLED_DIE_KEYS),
+      }),
+      Schema.Struct({ source: Schema.Literal("spellDamageReroll") }),
+    ]),
+    original: DieRollResultSchema,
+    replacement: DieRollResultSchema,
+  }),
+]);
+
 const HeroicInspirationRerollHoleOptionsFields = (() => {
   const member = pairedBattleHoleNestedMember({
     effectKind: Schema.Literal(HEROIC_INSPIRATION_REROLL_EFFECT_KIND),
@@ -3004,6 +3031,7 @@ const BattleHolePayloadMembers = [
     {
       ...BattleHoleBaseFieldsSchema,
       kind: Schema.Literal("rolledDice"),
+      rollerId: CombatantId,
       attack: SupportedAttackActionOptionSchema,
       critical: Schema.Boolean,
       damageDice: Schema.Union([
@@ -3065,13 +3093,17 @@ const BattleHolePayloadMembers = [
         labeled: {},
         mechanical: { attack: MechanicalSupportedAttackActionOptionSchema },
       },
-      AttackDamageAbilityModifierChoiceHoleFields,
+      mergeBattleHoleFieldPairs(
+        AttackDamageAbilityModifierChoiceHoleFields,
+        HeroicInspirationRerollHoleOptionsFields,
+      ),
     ),
   ),
   pairedBattleHoleMemberWithFields(
     {
       ...BattleHoleBaseFieldsSchema,
       kind: Schema.Literal("rolledDice"),
+      rollerId: CombatantId,
       critical: Schema.Boolean,
       sourceProcedureRef: BattleProcedureExecutionRef,
       allocatedDamageDice: Schema.optionalKey(Schema.Never),
@@ -3079,23 +3111,42 @@ const BattleHolePayloadMembers = [
         Schema.Array(SpellMarkedDamageRiderSchema),
       ),
     },
-    SpellDamageRerollHoleOptionsFields,
+    mergeBattleHoleFieldPairs(
+      SpellDamageRerollHoleOptionsFields,
+      HeroicInspirationRerollHoleOptionsFields,
+    ),
   ),
-  pairedBattleHoleMember({
-    ...BattleHoleBaseFieldsSchema,
-    kind: Schema.Literal("rolledDice"),
-    critical: Schema.Boolean,
-    sourceProcedureRef: BattleProcedureExecutionRef,
-    allocatedDamageDice: Schema.Struct({
-      groups: Schema.Array(
-        Schema.Struct({
-          targetId: CombatantId,
-          dice: PositiveIntegerSchema,
-          dieSize: PositiveIntegerSchema,
-        }),
-      ),
-    }),
-  }),
+  pairedBattleHoleMemberWithFields(
+    {
+      ...BattleHoleBaseFieldsSchema,
+      kind: Schema.Literal("rolledDice"),
+      rollerId: CombatantId,
+      critical: Schema.Boolean,
+      sourceProcedureRef: BattleProcedureExecutionRef,
+      allocatedDamageDice: Schema.Struct({
+        groups: Schema.Array(
+          Schema.Struct({
+            targetId: CombatantId,
+            dice: PositiveIntegerSchema,
+            dieSize: PositiveIntegerSchema,
+          }),
+        ),
+      }),
+    },
+    HeroicInspirationRerollHoleOptionsFields,
+  ),
+  // Spell healing and Temporary Hit Points rolls: no critical, so after the
+  // spell damage members.
+  pairedBattleHoleMemberWithFields(
+    {
+      ...BattleHoleBaseFieldsSchema,
+      kind: Schema.Literal("rolledDice"),
+      rollerId: CombatantId,
+      sourceProcedureRef: BattleProcedureExecutionRef,
+      critical: Schema.optionalKey(Schema.Never),
+    },
+    HeroicInspirationRerollHoleOptionsFields,
+  ),
   pairedBattleHoleMember({
     ...BattleHoleBaseFieldsSchema,
     kind: Schema.Literal("rolledDice"),
@@ -6534,6 +6585,9 @@ export const BattleFillSchema: Schema.Codec<
             }),
           ),
         }),
+      ),
+      heroicInspirationReroll: Schema.optionalKey(
+        BattleRolledDiceHeroicInspirationRerollDecisionSchema,
       ),
       value: Schema.NonEmptyArray(BattleRolledDiceGroupSchema),
     }),

@@ -621,3 +621,34 @@ or whether a failed new roll triggers the Reaction again. The model reads the
 failure from the result that stands, as A69 does, lets the responder choose,
 treats the new roll as a fresh D20 Test, and reads "the save" as the one save
 the trigger names, so the new roll can't trigger it again.
+
+## A71: Heroic Inspiration rerolls one die of a roll its roller sees whole
+
+**Assumption:** A player character with Heroic Inspiration may reroll one die
+of a damage, healing or Temporary Hit Points roll that is theirs: the dice of
+their own attack or spell, which they roll. Dice rolled together (8d6 for one
+spell) are seen together, so the roller picks the die after seeing them all;
+one use rerolls one die, and the new face stands. A die floor (Great Weapon
+Fighting) applies to the face that stands after the reroll. Under Savage
+Attacker the two rolls of the weapon's damage dice stay two rolls: the roller
+may reroll one die of either roll before picking the roll to use, never the
+best dice of both. With Empowered Spell the roller may reroll a die before
+Empowered Spell rerolls its dice, or one of the dice Empowered Spell rerolled.
+
+**Rules basis / gap:** `.references/srd-5.2.1/rules-glossary.md`, "Heroic
+Inspiration": "you can expend it to reroll any die immediately after rolling
+it, and you must use the new roll." `.references/srd-5.2.1/feats.md`, "Savage
+Attacker": "you can roll the weapon's damage dice twice and use either roll
+against the target"; "Great Weapon Fighting": "you can treat any 1 or 2 on a
+damage die as a 3". `.references/srd-5.2.1/classes.md`, "Empowered Spell":
+"you can spend 1 Sorcery Point to reroll a number of the damage dice up to
+your Charisma modifier (minimum of one), and you must use the new rolls." The
+SRD doesn't say who rolls an effect's dice, whether "any die" means one die
+of a roll or the roll, when "immediately after rolling it" falls for dice
+rolled together, or how the reroll orders with a die floor, Savage Attacker
+or Empowered Spell. The model has the creature whose attack or spell it is
+roll its dice, reads "any die" as one die, treats dice rolled together as
+rolled at once, applies the floor to the die that stands, as a d20 minimum
+applies to the d20 that stands, keeps Savage Attacker a choice between two
+rolls, and lets the roller order Heroic Inspiration and Empowered Spell, as
+A55 does for d20 rerolls.

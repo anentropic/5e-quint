@@ -710,6 +710,7 @@ function resolveSpellAttackSequenceCreaturePart(input: {
       input.input.subject,
       [
         spellAttackSequencePartDamageHole(
+          input.actorId,
           input.invocation,
           input.partIndex,
           critical,
@@ -1249,6 +1250,7 @@ function resolveSpellAttackSequenceObjectPart(input: {
       input.input.subject,
       [
         spellAttackSequencePartDamageHole(
+          input.actorId,
           input.invocation,
           input.partIndex,
           critical,

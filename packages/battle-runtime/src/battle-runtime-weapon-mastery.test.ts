@@ -2310,7 +2310,15 @@ describe("battle runtime: Weapon Mastery", () => {
           attackExecutionSelectionForSubjectForTest(subject),
         ),
         attackRollFill(primaryRoll, primaryRollValue),
-        damageRollFill(primaryDamage, 1),
+        spendsHeroicInspiration
+          ? {
+              ...damageRollFillWithGroups(primaryDamage, [[1]]),
+              heroicInspirationReroll: {
+                kind: "decline",
+                effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+              } as const,
+            }
+          : damageRollFill(primaryDamage, 1),
       ];
       const decision = requireHole(
         resolveBattleSubject({

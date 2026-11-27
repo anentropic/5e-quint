@@ -1,18 +1,18 @@
 {
   "summary": {
-    "total": 192,
-    "covered": 181,
+    "total": 193,
+    "covered": 182,
     "open": 5,
     "nonSemantic": 6,
     "byRuntime": {
       "shared-algebras": 1,
-      "battle": 152,
+      "battle": 153,
       "character-creation": 20,
       "character-sheet": 15,
       "character-battle": 4
     },
     "byStatus": {
-      "covered": 181,
+      "covered": 182,
       "needs-qnt-owner": 5,
       "needs-parity-witness": 0,
       "needs-surface-evidence": 0,
@@ -6526,6 +6526,40 @@
         "ASSUMPTIONS.md#A55-Different-reroll-sources-may-apply-sequentially-to-the-same-die"
       ],
       "title": "A player character who has Heroic Inspiration can expend it to reroll any D20 Test and must use the new roll, in turn with the other reroll sources"
+    },
+    {
+      "id": "BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL",
+      "kind": "boundary-protocol",
+      "parityWitnesses": [
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/rolled-dice-heroic-inspiration-reroll.test.ts"
+        },
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-metamagic-resource.test.ts"
+        }
+      ],
+      "profiles": [],
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/rolled-dice-heroic-inspiration-reroll-core.qnt"
+      ],
+      "reason": "The QNT owner admits a Heroic Inspiration reroll of one die of a pool only for a player character who has it, with a face the die can show; the new roll is used and Heroic Inspiration is spent, while a decline keeps both. Great Weapon Fighting's floor reads the die that stands; under Savage Attacker either pool may take the one reroll before the roller picks a pool; with Empowered Spell the reroll comes before it or, if not taken, after it. rolled-dice-heroic-inspiration-reroll offers it on every rolled-dice hole that names its roller (weapon attack damage, spell damage, healing and Temporary Hit Points), checks where the decision names its die, checks the roll as it was before the reroll through the roll's own owner, and spends through the Heroic Inspiration record shared with D20 Tests. The executable parity witnesses cover the offer, decline, reroll and spend on weapon damage, the refusals, Heroic Inspiration already spent on the attack roll, Savage Attacker, Great Weapon Fighting, Cure Wounds healing, Empowered Spell before and after, and the codec.",
+      "runtime": "battle",
+      "runtimeOwners": [
+        "packages/battle-runtime/src/battle-reducer/rolled-dice-heroic-inspiration-reroll.ts",
+        "packages/battle-runtime/src/battle-reducer/heroic-inspiration-reroll.ts",
+        "packages/battle-runtime/src/battle-reducer/d20-test-source-spend.ts"
+      ],
+      "status": "covered",
+      "surfaceEvidence": [
+        ".references/srd-5.2.1/rules-glossary.md#Heroic-Inspiration",
+        ".references/srd-5.2.1/feats.md#Savage-Attacker",
+        ".references/srd-5.2.1/feats.md#Great-Weapon-Fighting",
+        ".references/srd-5.2.1/classes.md#Empowered Spell",
+        "ASSUMPTIONS.md#A71-Heroic-Inspiration-rerolls-one-die-of-a-roll-its-roller-sees-whole"
+      ],
+      "title": "A player character who has Heroic Inspiration can expend it to reroll one die of a damage or healing roll they see whole, and must use the new roll, in turn with Savage Attacker, Great Weapon Fighting and Empowered Spell"
     },
     {
       "id": "BATTLE.D20_TEST.FAILED_SAVING_THROW_REROLL",
@@ -14000,6 +14034,18 @@
       "role": "proof-only"
     },
     {
+      "evidence": "Owns Heroic Inspiration reroll admission for one die of a pool, the pool after the reroll and the spend, Great Weapon Fighting's floor on the die that stands, the one reroll across Savage Attacker's two pools and its order with Empowered Spell, independently of battle or authored identity.",
+      "obligationIds": ["BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL"],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/rolled-dice-heroic-inspiration-reroll-core.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "evidence": "Executable closed examples cover reroll, forced lower roll, decline, the die and face checks, availability, Great Weapon Fighting after the reroll, Savage Attacker on either pool but once, and Empowered Spell before and after for the rolled-dice Heroic Inspiration reroll core.",
+      "obligationIds": [],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/rolled-dice-heroic-inspiration-reroll-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
       "evidence": "Owns the failed saving throw reroll offer on a saving throw that stands failed, its class-level bonus, the whole-roll or chosen-die replacement, the new roll standing whether it succeeds or fails, the use spend, and the rolled Death Saving Throw reroll with its bonus toward 10 after the face rules and kept through a later d20 reroll, independently of battle or authored identity.",
       "obligationIds": ["BATTLE.D20_TEST.FAILED_SAVING_THROW_REROLL"],
       "ownerPath": "packages/shared-algebras/proofs/rule-core/unit-feature-failed-saving-throw-reroll-core.qnt",
@@ -15834,6 +15880,16 @@
     {
       "classification": "qnt-owner-role",
       "ownerPath": "packages/shared-algebras/proofs/rule-core/reactions-continuations-concentration.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/rolled-dice-heroic-inspiration-reroll-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/rolled-dice-heroic-inspiration-reroll-core.qnt",
       "role": "semantic-core"
     },
     {
@@ -21713,6 +21769,35 @@
       ],
       "semanticCore": [
         "packages/shared-algebras/proofs/rule-core/heroic-inspiration-reroll-core.qnt"
+      ],
+      "status": "generation-subset-clean"
+    },
+    {
+      "blockedBy": [],
+      "generatorSubset": [
+        "import",
+        "variant",
+        "record",
+        "pure-def",
+        "int",
+        "bool",
+        "if-expression",
+        "comparison",
+        "boolean-connective",
+        "pattern-match",
+        "all-block",
+        "let-binding",
+        "list",
+        "fold",
+        "arithmetic",
+        "constant-val"
+      ],
+      "obligationId": "BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL",
+      "proofOnly": [
+        "packages/shared-algebras/proofs/rule-core/rolled-dice-heroic-inspiration-reroll-core-examples.qnt"
+      ],
+      "semanticCore": [
+        "packages/shared-algebras/proofs/rule-core/rolled-dice-heroic-inspiration-reroll-core.qnt"
       ],
       "status": "generation-subset-clean"
     },
