@@ -114,7 +114,7 @@ describe("battle action option codecs", () => {
       const hole =
         kind === "attackRoll"
           ? attackRollHole(actor, thrown)
-          : attackDamageHole(thrown);
+          : attackDamageHole(fighterId, thrown);
       const decoded = Schema.decodeUnknownSync(BattleHoleSchema)(
         Schema.encodeSync(BattleHoleSchema)(hole),
       );

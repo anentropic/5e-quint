@@ -56,7 +56,12 @@ import type {
   CombatantId,
 } from "./unit-profile-admission.test-support.ts";
 import { battleCreatureStateWithKnockOutPreservedConditions } from "./battle-reducer/creature-state.ts";
-import { spellBattle } from "./unit-profile-admission-spell-battle.test-support.ts";
+import {
+  declineTargetReadiedSpellAfterFailedSave,
+  spellBattle,
+  spellBattleWithTargetReadiedRay,
+} from "./unit-profile-admission-spell-battle.test-support.ts";
+import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
 import { spellRecord } from "./unit-profile-admission-spell-record.test-support.ts";
 import {
   battleStateWithAllocatedEffectForTest,
@@ -471,6 +476,58 @@ describe("QMBT14 deterministic Hypnotic Pattern control admission", () => {
       sourceProcedureRef: act.subject.procedureRef,
       effectKind: "spellEffect",
     });
+  });
+
+  test("Hypnotic Pattern's failed-save Reaction window names every failed creature and the conditions the pattern applies", () => {
+    const extraTargetId = combatantId("hypnotic-pattern-second-target");
+    const readied = spellBattleWithTargetReadiedRay({
+      preparedSpells: [saveGatedAreaControlSpellRecord()],
+      spellSlots: [{ spellLevel: 3, count: 1 }],
+      extraTargetIds: [extraTargetId],
+    });
+    const casterTurn = endTurn({
+      state: readied.state,
+      actorId: extraTargetId,
+    });
+    if (casterTurn.tag !== "resolved") {
+      throw new Error("Expected the second target's End Turn.");
+    }
+    const session = battleRuntimeSessionForTest({
+      ...readied,
+      state: casterTurn.state,
+    });
+    const act = spellAct({
+      session,
+      spellId: saveGatedAreaControlUnitId,
+      slotLevel: 3,
+    });
+    const savingThrow = requireSpellSavingThrowOutcomeHole(act.initialHoles);
+    const interrupted = resolveBattleSubject({
+      state: session.state,
+      subject: act.subject,
+      fills: [
+        saveGatedAreaControlSavingThrowOutcomeFill(savingThrow, [
+          { targetId: spellTargetId, succeeded: false, withoutRoll: true },
+          { targetId: extraTargetId, succeeded: false, withoutRoll: true },
+        ]),
+      ],
+    });
+    if (interrupted.tag !== "needsHoles") {
+      throw new Error("Expected the failed-save Reaction window.");
+    }
+    expect(currentInterruptCheckpoint(interrupted.state)).toMatchObject({
+      trigger: "saveFailed",
+      failedTargetIds: [spellTargetId, extraTargetId],
+      appliedConditions: ["charmed", "incapacitated"],
+      sourceProcedureRef: act.subject.procedureRef,
+    });
+
+    const declined = declineTargetReadiedSpellAfterFailedSave(interrupted);
+    for (const targetId of [spellTargetId, extraTargetId]) {
+      const target = requireCombatant(declined.state, targetId);
+      expect(hasCondition(target.conditions, "charmed")).toBe(true);
+      expect(hasCondition(target.conditions, "incapacitated")).toBe(true);
+    }
   });
 
   test("Hypnotic Pattern rejects generic area save fills without Cube and sight witnesses", () => {

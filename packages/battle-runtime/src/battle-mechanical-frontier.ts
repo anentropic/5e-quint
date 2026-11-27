@@ -14,6 +14,7 @@ import type {
   BattleAbilityCheckAddedDieHoleOptions,
   BattleD20TestAddedDieHoleOptions,
   BattleSavingThrowRerollHoleOptions,
+  BattleFailedSaveReactionRerollHoleOptions,
   BattleHole,
   BattleInputFrontier,
   BattleInterruptProcedureChoice,
@@ -390,6 +391,19 @@ function mechanicalFailedAbilityCheckResourceBoostOptions(
       };
 }
 
+/** A saving throw outcome hole's failed save reaction reroll option, without its label. */
+function mechanicalFailedSaveReactionRerollOptions(
+  options: BattleFailedSaveReactionRerollHoleOptions,
+) {
+  return options.failedSaveReactionRerolls === undefined
+    ? {}
+    : {
+        failedSaveReactionRerolls: [
+          projectNestedPresentationLabel(options.failedSaveReactionRerolls[0]),
+        ] as const,
+      };
+}
+
 /** A saving throw hole's failed saving throw reroll option, without its label. */
 function mechanicalFailedSavingThrowRerollOptions(
   options: BattleSavingThrowRerollHoleOptions,
@@ -411,27 +425,41 @@ function projectMechanicalAttackRollHole(
       label,
       d20TestNaturalOneRerolls,
       heroicInspirationRerolls,
+      bardicInspirationDice,
       attack,
       ...mechanical
     } = hole;
-    void [label, d20TestNaturalOneRerolls, heroicInspirationRerolls];
+    void [
+      label,
+      d20TestNaturalOneRerolls,
+      heroicInspirationRerolls,
+      bardicInspirationDice,
+    ];
     return {
       ...mechanical,
       attack: projectMechanicalAttackActionOption(attack),
       ...mechanicalD20TestRerollOptions(hole),
+      ...mechanicalBardicInspirationDieOptions(hole),
     };
   }
   const {
     label,
     d20TestNaturalOneRerolls,
     heroicInspirationRerolls,
+    bardicInspirationDice,
     spellAttackRerolls,
     ...mechanical
   } = hole;
-  void [label, d20TestNaturalOneRerolls, heroicInspirationRerolls];
+  void [
+    label,
+    d20TestNaturalOneRerolls,
+    heroicInspirationRerolls,
+    bardicInspirationDice,
+  ];
   return {
     ...mechanical,
     ...mechanicalD20TestRerollOptions(hole),
+    ...mechanicalBardicInspirationDieOptions(hole),
     ...(spellAttackRerolls === undefined
       ? {}
       : {
@@ -479,15 +507,27 @@ function projectMechanicalRolledDiceHole(
           attack: projectMechanicalAttackActionOption(withoutLabel.attack),
         }
       : withoutLabel;
+  const withHeroicInspiration =
+    "heroicInspirationRerolls" in mechanical &&
+    mechanical.heroicInspirationRerolls !== undefined
+      ? {
+          ...mechanical,
+          heroicInspirationRerolls: [
+            projectNestedPresentationLabel(
+              mechanical.heroicInspirationRerolls[0],
+            ),
+          ] as const,
+        }
+      : mechanical;
   if ("spellDamageRerolls" in hole && hole.spellDamageRerolls !== undefined) {
     return {
-      ...mechanical,
+      ...withHeroicInspiration,
       spellDamageRerolls: hole.spellDamageRerolls.map(
         projectNestedPresentationLabel,
       ),
     };
   }
-  return mechanical;
+  return withHeroicInspiration;
 }
 
 function projectMechanicalSavingThrowHole(
@@ -502,6 +542,9 @@ function projectMechanicalSavingThrowHole(
     ...withoutLabel,
     ...mechanicalFailedSavingThrowRerollOptions(hole),
     ...mechanicalBardicInspirationDieOptions(hole),
+    ...("failedSaveReactionRerolls" in hole
+      ? mechanicalFailedSaveReactionRerollOptions(hole)
+      : {}),
   };
   if (
     "d20TestNaturalOneRerolls" in hole &&
@@ -524,6 +567,8 @@ function projectMechanicalInterruptChoice(
     Match.discriminatorsExhaustive("kind")({
       nestedProcedure: (value) => projectChoiceWithMechanicalHoles(value),
       reactionModifier: (value) => projectChoiceWithMechanicalHoles(value),
+      // No initial holes to project.
+      failedSaveReactionReroll: (value) => value,
     }),
   );
 }

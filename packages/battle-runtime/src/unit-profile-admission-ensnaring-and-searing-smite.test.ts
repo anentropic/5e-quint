@@ -1,3 +1,4 @@
+import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
 import { battleResolutionHolesForTest } from "./battle-runtime.test-support.ts";
 import { battleRuntimeSessionForTest } from "./battle-runtime-session.test-support.ts";
 import {
@@ -915,6 +916,13 @@ describe("SRDINV31 deterministic Ensnaring Strike and Searing Smite admission", 
     if (awaitingSaveFailedReaction.tag !== "needsHoles") {
       throw new Error("Expected Ensnaring Strike save-failed reaction.");
     }
+    expect(
+      currentInterruptCheckpoint(awaitingSaveFailedReaction.state),
+    ).toMatchObject({
+      trigger: "saveFailed",
+      failedTargetIds: [spellTargetId],
+      appliedConditions: ["restrained"],
+    });
 
     const afterDecline = resolveBattleInterrupt({
       state: awaitingSaveFailedReaction.state,

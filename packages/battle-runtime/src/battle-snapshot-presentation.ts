@@ -35,6 +35,7 @@ import {
   BattleInterruptDecisionFrontierSchema,
   BattleInterruptProcedureChoiceWithSubjectSchema,
   BattleInterruptProcedureModifierChoiceSchema,
+  BattleInterruptProcedureFailedSaveReactionRerollChoiceSchema,
   BattlePresentedSnapshotSchema,
   portableCodec,
 } from "./battle-reducer/battle-codecs.ts";
@@ -59,7 +60,12 @@ const BattleAvailableActSchema: BattleAvailableActCodec = Schema.Struct({
 });
 
 type BattlePresentedInterruptModifierChoiceCodec = Schema.Struct<{
-  readonly choice: typeof BattleInterruptProcedureModifierChoiceSchema;
+  readonly choice: Schema.Union<
+    readonly [
+      typeof BattleInterruptProcedureModifierChoiceSchema,
+      typeof BattleInterruptProcedureFailedSaveReactionRerollChoiceSchema,
+    ]
+  >;
 }>;
 type BattlePresentedInterruptProcedureChoiceCodec = Schema.Struct<{
   readonly choice: typeof BattleInterruptProcedureChoiceWithSubjectSchema;
@@ -74,7 +80,12 @@ type BattlePresentedInterruptChoiceCodec = Schema.Union<
 
 const BattlePresentedInterruptChoiceSchema: BattlePresentedInterruptChoiceCodec =
   Schema.Union([
-    Schema.Struct({ choice: BattleInterruptProcedureModifierChoiceSchema }),
+    Schema.Struct({
+      choice: Schema.Union([
+        BattleInterruptProcedureModifierChoiceSchema,
+        BattleInterruptProcedureFailedSaveReactionRerollChoiceSchema,
+      ]),
+    }),
     Schema.Struct({
       choice: BattleInterruptProcedureChoiceWithSubjectSchema,
       presentation: BattleActPresentationSchema,
@@ -134,18 +145,25 @@ export const BattlePresentedCheckpointFrontierEnvelopeSchema: Schema.Codec<
 
 export type BattlePresentedInterruptChoice =
   | {
-      readonly choice: Extract<
-        BattleInterruptProcedureChoice,
-        { readonly kind: "reactionModifier" }
-      >;
+      readonly choice: BattleMechanicsOwnedInterruptChoice;
     }
   | {
       readonly choice: Exclude<
         BattleInterruptProcedureChoice,
-        { readonly kind: "reactionModifier" }
+        BattleMechanicsOwnedInterruptChoice
       >;
       readonly presentation: BattleActPresentation;
     };
+
+/**
+ * The interrupt choices the mechanics own, which change the interrupted
+ * procedure rather than run an authored act, so they have no act
+ * presentation to join.
+ */
+type BattleMechanicsOwnedInterruptChoice = Extract<
+  BattleInterruptProcedureChoice,
+  { readonly kind: "reactionModifier" | "failedSaveReactionReroll" }
+>;
 
 export type BattlePresentedCheckpointFrontierEnvelope = {
   readonly checkpoint: BattlePresentedSnapshot;
@@ -261,9 +279,12 @@ function presentBattleInterruptChoice(
   BattlePresentedInterruptChoice,
   BattleInterruptChoicePresentationIssue
 > {
-  if (choice.kind === "reactionModifier") {
-    // Modifier-only choices are mechanics-owned and have no authored act
-    // presentation to join. They must remain visible in the frontier.
+  if (
+    choice.kind === "reactionModifier" ||
+    choice.kind === "failedSaveReactionReroll"
+  ) {
+    // Mechanics-owned choices have no authored act presentation to join.
+    // They must remain visible in the frontier.
     return Result.succeed({ choice });
   }
   const presentation = battleSubjectPresentation(session, choice.subject);

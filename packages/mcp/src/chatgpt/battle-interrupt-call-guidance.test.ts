@@ -351,4 +351,75 @@ describe("Interrupt-decision call projection input contracts", () => {
       readyBattleInterruptCalls(state, frontier).map((call) => call.tool),
     ).toEqual(["decline_reaction"]);
   });
+
+  it("projects a failed-save Reaction reroll to the advertised reroll tool with no fills", () => {
+    const state = readiedActionState();
+    const procedureRef = battleProcedureExecutionRefForTest(
+      "synthetic-reroll-reaction",
+    );
+    const frontier = Schema.decodeUnknownSync(
+      BattleInterruptDecisionFrontierSchema,
+    )({
+      kind: "interruptDecision",
+      trigger: "reportedReadyTrigger",
+      stackDepth: 1,
+      decisionHole: {
+        kind: "interruptDecision",
+        trigger: "reportedReadyTrigger",
+        holeId: "synthetic-decision",
+        holeInstanceKey: "synthetic-instance",
+        label: "Synthetic reroll fixture",
+        eligibleResponders: [fighterId],
+      },
+      choices: [
+        {
+          kind: "failedSaveReactionReroll",
+          responderId: fighterId,
+          reroll: {
+            procedureRef,
+            rollerId: goblinId,
+            rollerPosition: { kind: "withinRange", rangeFeet: 30 },
+          },
+          initialHoles: [],
+        },
+      ],
+    });
+    const call = readyBattleInterruptCalls(state, frontier).find(
+      (entry) => entry.tool !== "decline_reaction",
+    );
+    if (call === undefined) throw new Error("Expected the reroll route.");
+    expect(call.tool).toBe("reroll_failed_save");
+    expect(call.arguments.fill.value).toEqual({
+      kind: "resolve",
+      responderId: fighterId,
+      choice: {
+        kind: "failedSaveReactionReroll",
+        procedureRef,
+        rollerId: goblinId,
+        rollerPosition: { kind: "withinRange", rangeFeet: 30 },
+        fills: [],
+      },
+    });
+    const validate = createDraft2020JsonSchemaValidator().getValidator(
+      requireJsonSchema(
+        CHATGPT_EXECUTION_TOOLS[call.tool].definition.inputSchema,
+        "reroll interrupt tool",
+      ),
+    );
+    expect(validate(call.arguments).valid).toBe(true);
+    expect(
+      Result.isSuccess(
+        Schema.decodeUnknownResult(ChatGptBattleExecutionArgsSchema)(
+          call.arguments,
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      Result.isSuccess(
+        Schema.decodeUnknownResult(BattleFillSchema, {
+          onExcessProperty: "error",
+        })(call.arguments.fill),
+      ),
+    ).toBe(true);
+  });
 });

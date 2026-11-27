@@ -1,3 +1,4 @@
+import type { Condition } from "@dnd/shared/game-facts";
 import { leveledSpellInvocationOptions } from "./profile.ts";
 import { spellAdmissionActionCost } from "./profile.ts";
 
@@ -140,11 +141,15 @@ type AfterHitSaveGatedConditionFillSet = Extract<
 >;
 type AfterHitSaveGatedConditionResolveInput =
   SpellProcedureProfileResolveInput<AfterHitSaveGatedConditionInvocation>;
+/** The condition a failed save against the after-hit profile applies. */
+const AFTER_HIT_SAVE_GATED_CONDITION_FAILED_SAVE_CONDITION =
+  "restrained" as const satisfies Condition;
+
 type AfterHitSaveGatedConditionMechanicsFacts =
   SpellMechanicsAdmissionSource["spellDefinitionRuleFacts"] & {
     readonly ability: "str";
     readonly dc: { readonly kind: "caster_spell_save_dc" };
-    readonly condition: "restrained";
+    readonly condition: typeof AFTER_HIT_SAVE_GATED_CONDITION_FAILED_SAVE_CONDITION;
     readonly turnStartDamageAmount: SurfaceDiceAmount;
     readonly turnStartDamageType: Extract<DamageType, "piercing">;
   };
@@ -363,7 +368,8 @@ function admitAfterHitSaveGatedConditionMechanics(
       : [initialPhase.onFail];
   const restrainedEffect = failedEffects.find(
     (effect) =>
-      effect.kind === "apply_condition" && effect.condition === "restrained",
+      effect.kind === "apply_condition" &&
+      effect.condition === AFTER_HIT_SAVE_GATED_CONDITION_FAILED_SAVE_CONDITION,
   );
   const escapeAction = failedEffects.find(
     (effect) => effect.kind === "target_effect_escape_action",
@@ -435,7 +441,7 @@ function admitAfterHitSaveGatedConditionMechanics(
     level: 1,
     ability: "str",
     dc: { kind: "caster_spell_save_dc" },
-    condition: "restrained",
+    condition: AFTER_HIT_SAVE_GATED_CONDITION_FAILED_SAVE_CONDITION,
     turnStartDamageAmount: operationEffectProjection.amount,
     turnStartDamageType: "piercing",
   };
@@ -468,7 +474,8 @@ function afterHitSaveFailedReactionWindow(
     input.input.state,
     {
       trigger: "saveFailed",
-      targetId: input.input.target.combatantId,
+      failedTargetIds: [input.input.target.combatantId],
+      appliedConditions: [AFTER_HIT_SAVE_GATED_CONDITION_FAILED_SAVE_CONDITION],
       sourceProcedureRef: input.invocation.sourceProcedureRef,
       continuation: spellReplayContinuation(input.input),
     },

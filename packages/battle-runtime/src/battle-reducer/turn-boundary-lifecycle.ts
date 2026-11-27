@@ -4,8 +4,16 @@
 // RAW-COVERAGE: runtime-owner RAW-STAT-BLOCK-SPELLCASTING-CONCENTRATION-001
 // UNIT-PROFILE-COVERAGE: runtime-owner stat-block.spell-invocation.unrestricted
 // KERNEL-COVERAGE: runtime-owner BATTLE.STAT_BLOCK.SPELLCASTING_CONCENTRATION
+// KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_SAVING_THROW_REROLL
+// UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.failed-saving-throw-reroll
+// KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE
+// UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.bardic-inspiration-failed-d20-test
 import { savingThrowTargetModifiersWhenStateKnown } from "./saving-throw-modifier-collector.ts";
 import { longCastingMustFailAtTurnEnd } from "./long-casting-progress.ts";
+import {
+  endTurnRepeatSaveFailedInterruptWindow,
+  type EndTurnConditionRepeatSave,
+} from "./end-turn-repeat-save-failed-window.ts";
 // UNIT-PROFILE-COVERAGE: runtime-owner spell.invocation-object-contact-damage
 // RAW-COVERAGE: runtime-owner RAW-STAT-BLOCK-LEGENDARY-ACTION-LIFECYCLE-001 RAW-STAT-BLOCK-LIMITED-USAGE-001
 // UNIT-PROFILE-COVERAGE: runtime-owner stat-block.legendary-action-lifecycle stat-block.resource-lifecycle
@@ -127,10 +135,10 @@ import {
 import { applyCompelledHaltAtTurnStart } from "./compelled-behavior-halt.ts";
 import { currentActorId } from "./creature-state-leaves.ts";
 import {
-  battleStateAfterD20TestRerollUses,
-  d20TestDeathSavingThrowRerolls,
-  d20TestHoleWithRerollOptions,
-} from "./d20-test-outcome-rerolls.ts";
+  battleStateAfterSavingThrowAfterRollUses,
+  deathSavingThrowAfterRollDecisions,
+  savingThrowHoleAskedAfterRoll,
+} from "./d20-test-after-roll-decisions.ts";
 import { savingThrowOutcomeFillThatStands } from "./d20-test-rolls-that-stand.ts";
 import {
   applyHitPointMaximumIncreaseExpiration,
@@ -226,6 +234,7 @@ import {
   collectTurnBoundaryHoleFills,
   firstMissingEndTurnSaveHoleFrontier,
   firstMissingTurnBoundaryDamageHoleFrontier,
+  type BattleTurnBoundaryHoleRequest,
   type BattleTurnBoundaryStartTurnOccurrence,
   turnBoundaryNeedsHolesResult,
 } from "./turn-boundary-hole-frontier.ts";
@@ -3875,14 +3884,14 @@ function resolveOrderedDeathSavingThrowOccurrence(input: {
   }
   const fill = fills[0]!;
   // The start-turn occurrence resolves in one step with the turn boundary, so
-  // a Heroic Inspiration spend needs no replay record.
-  const rerolls = d20TestDeathSavingThrowRerolls({
+  // a reroll's or an added die's spend needs no replay record.
+  const afterRoll = deathSavingThrowAfterRollDecisions({
     state: input.state,
     scope: { kind: "oneStep" },
     roll: { rollerId: input.input.sourceTurn.actorId, holeId: hole.holeId },
     fill,
   });
-  if (rerolls.tag === "decisionsRequired") {
+  if (afterRoll.tag === "decisionsRequired") {
     return {
       tag: "result",
       result: turnBoundaryNeedsHolesResult({
@@ -3892,24 +3901,26 @@ function resolveOrderedDeathSavingThrowOccurrence(input: {
         entry: input.input.entry,
         sourceTurn: input.input.sourceTurn,
         occurrence: input.occurrence,
-        holes: [d20TestHoleWithRerollOptions(hole, rerolls.options)],
+        holes: [savingThrowHoleAskedAfterRoll(hole, afterRoll.ask)],
       }),
     };
   }
-  if (rerolls.tag === "invalid") {
+  if (afterRoll.tag === "invalid") {
     return {
       tag: "result",
-      result: invalidResult(input.resultState, "invalidFill", rerolls.issue),
+      result: invalidResult(input.resultState, "invalidFill", afterRoll.issue),
     };
   }
-  const spent = battleStateAfterD20TestRerollUses(input.state, [rerolls.uses]);
+  const spent = battleStateAfterSavingThrowAfterRollUses(input.state, [
+    afterRoll.uses,
+  ]);
   return ordinaryStartTurnOccurrenceAdvance(
     {
       ...spent,
       combatants: applyStartTurnDeathSavingThrow(
         spent.combatants,
         input.input.sourceTurn.actorId,
-        rerolls.roll,
+        afterRoll.roll,
       ),
     },
     new Set([hole.holeId]),
@@ -5162,6 +5173,43 @@ function orderedStartTurnOccurrenceCohort(
   };
 }
 
+/**
+ * What holds the end of a turn at its saves: the saves still to ask, or else
+ * the save-failed Reaction window of a condition repeat save that failed;
+ * null when neither does.
+ */
+function endTurnSaveHoldResult(input: {
+  readonly resolution: EndTurnResolutionInput;
+  readonly parent: ReplayParentContinuation;
+  readonly actorId: CombatantId;
+  readonly sourceTurn: Extract<
+    BattleTurnBoundaryHoleRequest,
+    { readonly kind: "outgoingEndTurn" }
+  >["sourceTurn"];
+  readonly missingSaveHoles: ReturnType<
+    typeof firstMissingEndTurnSaveHoleFrontier
+  >;
+  readonly repeatSaves: readonly EndTurnConditionRepeatSave[];
+}): Extract<BattleResolutionResult, { readonly tag: "needsHoles" }> | null {
+  if (isReadonlyArrayNonEmpty(input.missingSaveHoles)) {
+    return turnBoundaryNeedsHolesResult({
+      kind: "outgoingEndTurn",
+      state: input.resolution.state,
+      subject: input.resolution.subject,
+      endingActorId: input.actorId,
+      sourceTurn: input.sourceTurn,
+      holes: input.missingSaveHoles,
+    });
+  }
+  return endTurnRepeatSaveFailedInterruptWindow({
+    resolution: input.resolution,
+    parentObjectOutcomes: input.parent.objectOutcomes,
+    actorId: input.actorId,
+    repeatSaves: input.repeatSaves,
+    handledInterruptTrigger: input.resolution.handledInterruptTrigger,
+  });
+}
+
 function resolveEndTurnCommandForParent(
   input: EndTurnResolutionInput,
   parent: ReplayParentContinuation,
@@ -5473,16 +5521,24 @@ function resolveEndTurnCommandForParent(
       saveGatedTurnConstraintBundleEndTurnSaveCollection.missingHoles,
     abilityD20TestRollMode: abilityD20TestEndTurnSaveCollection.missingHoles,
   });
-  if (isReadonlyArrayNonEmpty(missingEndTurnSaveHoles)) {
-    return turnBoundaryNeedsHolesResult({
-      kind: "outgoingEndTurn",
-      state: input.state,
-      subject: input.subject,
-      endingActorId: actorId,
-      sourceTurn: nextSourceTurn,
-      holes: missingEndTurnSaveHoles,
-    });
-  }
+  const endTurnSaveHold = endTurnSaveHoldResult({
+    resolution: input,
+    parent,
+    actorId,
+    sourceTurn: nextSourceTurn,
+    missingSaveHoles: missingEndTurnSaveHoles,
+    repeatSaves: [
+      ...spellConditionEndTurnSaveCollection.resolved,
+      ...spellConditionCountedEndTurnSaveCollection.resolved,
+      ...unitFeatureConditionEndTurnSaveCollection.resolved,
+    ].map(({ request, fill }) => ({
+      holeId: request.hole.holeId,
+      save: fill,
+      condition: request.effect.condition,
+      sourceProcedureRef: request.effect.sourceProcedureRef,
+    })),
+  });
+  if (endTurnSaveHold !== null) return endTurnSaveHold;
   const endTurnDamageRollCollection = collectTurnBoundaryHoleFills(
     endTurnDamageRequests,
     (hole) => spellTurnEndDamageRollFor(input.fills, hole),

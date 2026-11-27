@@ -7,6 +7,7 @@ import {
 import { Match, Result, Schema } from "effect";
 import type { battleMechanicsEnvelopeForSession } from "../battle-tool-payloads.ts";
 import { chatGptInterruptDecisionExposure } from "./battle-operation-routing.ts";
+import { CHATGPT_OPERATION_EXPOSURE } from "./operation-tool-plan.ts";
 import {
   CHATGPT_TOOL_NAMES,
   isChatGptInterruptResolutionToolName,
@@ -14,7 +15,7 @@ import {
 const fillSchema = battleInterruptDecisionFillSchema();
 const [declineSchema, resolutionSchema] = fillSchema.fields.value.members;
 type ChoiceSchema = (typeof resolutionSchema.fields.choice.members)[number];
-function isNestedChoiceSchema(member: ChoiceSchema): member is Exclude<
+function isReadyChoiceSchema(member: ChoiceSchema): member is Exclude<
   ChoiceSchema,
   {
     readonly fields: {
@@ -25,17 +26,20 @@ function isNestedChoiceSchema(member: ChoiceSchema): member is Exclude<
   return member.fields.kind.literal !== "reactionRollOrDamageReduction";
 }
 type ResolutionChoice = typeof resolutionSchema.fields.choice;
-/** Each nested procedure choice, with its fills left for later. */
+/**
+ * Each choice a ready call can select as it stands: every choice but a
+ * Reaction modifier (whose requested roll rides in its fills), with no fills.
+ */
 type WithoutFills<Choice> = Choice extends { readonly kind: string }
   ? Omit<Choice, "fills"> & { readonly fills: readonly [] }
   : never;
-type NestedChoice = WithoutFills<
+type ReadyChoice = WithoutFills<
   Exclude<
     ResolutionChoice["Type"],
     { readonly kind: "reactionRollOrDamageReduction" }
   >
 >;
-type NestedChoiceEncoded = WithoutFills<
+type ReadyChoiceEncoded = WithoutFills<
   Exclude<
     ResolutionChoice["Encoded"],
     { readonly kind: "reactionRollOrDamageReduction" }
@@ -44,17 +48,17 @@ type NestedChoiceEncoded = WithoutFills<
 // Mapping the union's members one at a time gives TypeScript one struct per
 // member only in name: it types the result as a struct over the union of their
 // fields, which loses a member's optional keys. The declared type keeps them.
-const nestedChoiceSchema: Schema.Codec<NestedChoice, NestedChoiceEncoded> =
+const readyChoiceSchema: Schema.Codec<ReadyChoice, ReadyChoiceEncoded> =
   resolutionSchema.fields.choice.mapMembers((members) =>
     members
-      .filter(isNestedChoiceSchema)
+      .filter(isReadyChoiceSchema)
       .map((member) =>
         member.mapFields((fields) => ({ ...fields, fills: Schema.Tuple([]) })),
       ),
   );
 const readyResolutionSchema = resolutionSchema.mapFields((fields) => ({
   ...fields,
-  choice: nestedChoiceSchema,
+  choice: readyChoiceSchema,
 }));
 export const ReadyBattleInterruptCallSchema = Schema.Union([
   Schema.Struct({
@@ -82,7 +86,7 @@ type ReadyBattleInterruptCall = typeof ReadyBattleInterruptCallSchema.Type;
 
 function readyNestedSelection(
   subject: BattleInterruptSubject,
-): typeof nestedChoiceSchema.Type {
+): typeof readyChoiceSchema.Type {
   return Match.value(subject).pipe(
     Match.discriminatorsExhaustive("command")({
       releaseReadiedSpell: ({ command, procedureRef }) => ({
@@ -142,6 +146,33 @@ function readyNestedSelection(
   );
 }
 
+/** The ready call that takes a Reaction rerolling a failed save; the table then supplies the new roll. */
+function readyFailedSaveReactionRerollCalls(
+  frontier: InterruptFrontier,
+  choice: Extract<
+    InterruptFrontier["choices"][number],
+    { readonly kind: "failedSaveReactionReroll" }
+  >,
+): readonly ReadyBattleInterruptCall[] {
+  const decision = {
+    kind: "resolve",
+    responderId: choice.responderId,
+    choice: { kind: choice.kind, ...choice.reroll, fills: [] as const },
+  } as const;
+  return CHATGPT_OPERATION_EXPOSURE.interruptSelections.failedSaveReactionReroll.tools.map(
+    (tool) => ({
+      tool,
+      arguments: {
+        fill: {
+          kind: "interruptDecision",
+          holeId: frontier.decisionHole.holeId,
+          value: decision,
+        },
+      },
+    }),
+  );
+}
+
 type InterruptFrontier = Extract<
   ReturnType<typeof battleMechanicsEnvelopeForSession>["frontier"],
   { readonly kind: "interruptDecision" }
@@ -163,6 +194,10 @@ export function readyBattleInterruptCalls(
       },
     }));
   for (const choice of frontier.choices) {
+    if (choice.kind === "failedSaveReactionReroll") {
+      calls.push(...readyFailedSaveReactionRerollCalls(frontier, choice));
+      continue;
+    }
     if (choice.kind !== "nestedProcedure") continue;
     const decision = {
       kind: "resolve",

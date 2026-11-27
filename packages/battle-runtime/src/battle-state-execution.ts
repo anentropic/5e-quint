@@ -932,6 +932,8 @@ export type BattleInterruptedProcedure = BattleAcceptedSubjectReplayEvidence &
         readonly fills: readonly BattleFill[];
         readonly parentPosition?: never;
         readonly glyphStoredSpellReleaseReplay?: never;
+        /** What Reactions (attackRollReduction) took off the recorded attack roll: a roll the replay asks again is lowered by exactly this. */
+        readonly attackRollReduction?: number;
         readonly attackDamageReductions?: ReadonlyNonEmptyArray<BattlePendingAttackDamageReduction>;
         readonly attackDamageAdditions?: ReadonlyNonEmptyArray<AttackSpellDamageAddition>;
         readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
@@ -943,6 +945,8 @@ export type BattleInterruptedProcedure = BattleAcceptedSubjectReplayEvidence &
         readonly fills: readonly BattleFill[];
         readonly parentPosition: BattleStartTurnOccurrenceSequenceCheckpoint;
         readonly glyphStoredSpellReleaseReplay?: never;
+        /** What Reactions (attackRollReduction) took off the recorded attack roll: a roll the replay asks again is lowered by exactly this. */
+        readonly attackRollReduction?: number;
         readonly attackDamageReductions?: never;
         readonly attackDamageAdditions?: never;
         readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
@@ -957,6 +961,8 @@ export type BattleInterruptedProcedure = BattleAcceptedSubjectReplayEvidence &
         readonly fills: readonly BattleFill[];
         readonly parentPosition?: never;
         readonly glyphStoredSpellReleaseReplay: GlyphStoredSpellReleaseReplayContext;
+        /** What Reactions (attackRollReduction) took off the recorded attack roll: a roll the replay asks again is lowered by exactly this. */
+        readonly attackRollReduction?: number;
         readonly attackDamageReductions?: never;
         readonly attackDamageAdditions?: never;
         readonly objectOutcomes?: BattleObjectOutcomeAccumulation;
@@ -1225,7 +1231,34 @@ export type BattleInterruptProcedureChoice =
       readonly responderId: CombatantId;
       readonly modifier: BattleReactionModifierChoice;
       readonly initialHoles: readonly BattleHole[];
+    }
+  | {
+      readonly kind: "failedSaveReactionReroll";
+      readonly responderId: CombatantId;
+      readonly reroll: BattleFailedSaveReactionRerollChoice;
+      /** None: the new roll is asked on the save's own hole when the save replays. */
+      readonly initialHoles: readonly [];
     };
+
+/**
+ * A Reaction that causes a creature's failed saving throw to be rerolled
+ * (Countercharm): the creature, and where it has to be.
+ */
+export type BattleFailedSaveReactionRerollChoice = {
+  readonly procedureRef: BattleProcedureExecutionRef;
+  /** The creature whose failed saving throw is rerolled. */
+  readonly rollerId: CombatantId;
+  readonly rollerPosition: BattleFailedSaveReactionRerollRollerPosition;
+};
+
+/**
+ * Where the creature whose save is rerolled is: the responder itself, or
+ * another creature within the range, which the table rules on the board.
+ * Selecting a choice that names a range states the table's ruling.
+ */
+export type BattleFailedSaveReactionRerollRollerPosition =
+  | { readonly kind: "responder" }
+  | { readonly kind: "withinRange"; readonly rangeFeet: MovementFeet };
 
 type BattleInterruptChoiceResponderInput =
   | {
@@ -1234,6 +1267,10 @@ type BattleInterruptChoiceResponderInput =
     }
   | {
       readonly kind: "reactionModifier";
+      readonly responderId: CombatantId;
+    }
+  | {
+      readonly kind: "failedSaveReactionReroll";
       readonly responderId: CombatantId;
     };
 
@@ -1256,6 +1293,7 @@ export function interruptChoiceResponderId(
           }),
         ),
       reactionModifier: ({ responderId }) => responderId,
+      failedSaveReactionReroll: ({ responderId }) => responderId,
     }),
   );
 }
@@ -1305,6 +1343,11 @@ export type BattleInterruptProcedureSelection = {
       readonly procedureRef: BattleProcedureExecutionRef;
       readonly modifierKind: BattleReactionModifierChoice["kind"];
     }
+  | ({
+      readonly kind: "failedSaveReactionReroll";
+      /** None: the new roll is asked on the save's own hole when it replays. */
+      readonly fills: readonly [];
+    } & BattleFailedSaveReactionRerollChoice)
 );
 type BattleActiveInterruptProcedure = {
   readonly responderId: CombatantId;
@@ -1353,12 +1396,7 @@ export type BattleInterruptCheckpoint =
       readonly targetIds: readonly CombatantId[];
       readonly reactionSpellTargetFacts: readonly BattleSpellCastReactionFact[];
     })
-  | (BattleInterruptCheckpointWithContinuationBase & {
-      readonly trigger: "saveFailed";
-      readonly targetId: CombatantId;
-      readonly sourceProcedureRef?: BattleProcedureExecutionRef;
-      readonly effectRef?: BattleEffectExecutionRef;
-    })
+  | (BattleInterruptCheckpointWithContinuationBase & BattleSaveFailedOccurrence)
   | (BattleInterruptCheckpointWithContinuationBase & {
       readonly trigger: "afterDamage";
       readonly damageSourceId: CombatantId;
@@ -1456,13 +1494,30 @@ export type BattleSpellCastMetamagicCommitment =
 export type BattleSpellCastConcentrationCommitment =
   | { readonly kind: "none" }
   | { readonly kind: "breakExisting" };
+/**
+ * The saving throws one effect's resolution leaves failed. Each failed creature
+ * is a trigger for a Reaction that answers a failed save.
+ */
+export type BattleSaveFailedOccurrence = {
+  readonly trigger: "saveFailed";
+  readonly failedTargetIds: ReadonlyNonEmptyArray<CombatantId>;
+  /**
+   * The conditions the effect applies to a creature that fails this save, from
+   * the effect's own shape. Empty when the failure applies no condition.
+   */
+  readonly appliedConditions: readonly Condition[];
+  /**
+   * The saving throw holes this failure is, when the interrupted subject also
+   * holds a failed target's saves against other effects (the repeat saves at
+   * the end of a turn). Absent when every failed save the subject holds for
+   * a failed target is against this effect.
+   */
+  readonly failedSaveHoleIds?: ReadonlyNonEmptyArray<BattleHoleId>;
+  readonly sourceProcedureRef?: BattleProcedureExecutionRef;
+  readonly effectRef?: BattleEffectExecutionRef;
+};
 export type BattleHandledInterruptOccurrence =
-  | {
-      readonly trigger: "saveFailed";
-      readonly targetId: CombatantId;
-      readonly sourceProcedureRef?: BattleProcedureExecutionRef;
-      readonly effectRef?: BattleEffectExecutionRef;
-    }
+  | BattleSaveFailedOccurrence
   | {
       readonly trigger: "attackHit";
       readonly spatialMeleeSpellAttackProxyCommitCheckpoint?: BattleSpatialMeleeSpellAttackProxyCommitCheckpoint;
@@ -4275,6 +4330,12 @@ export type PendingAttackRollMissToHitReplacementContext = {
 export type BattleD20TestRollKey = {
   readonly rollerId: CombatantId;
   readonly holeId: HoleId;
+  /**
+   * Present on the new roll a failed save reaction reroll gave the roller
+   * (`BattleFailedSaveReactionReroll`), which is a roll of its own; absent on
+   * the roll the hole asked for.
+   */
+  readonly attempt?: typeof FAILED_SAVE_REACTION_REROLL_EFFECT_KIND;
 };
 
 type PendingAttackRollMissToHitReplacementSelection = {
@@ -4627,6 +4688,11 @@ export type BattleAcceptedSubjectReplayEvidence = {
    * replay finds the boost decided on it.
    */
   readonly acceptedFailedAbilityCheckResourceBoosts?: ReadonlyNonEmptyArray<BattleTakenFailedAbilityCheckResourceBoost>;
+  /**
+   * The failed saving throws of this subject that a Reaction caused to be
+   * rerolled: the replay asks each one's new roll.
+   */
+  readonly grantedFailedSaveReactionRerolls?: ReadonlyNonEmptyArray<BattleGrantedFailedSaveReactionReroll>;
   readonly acceptedAttackAmmunitionSpend?: BattleAcceptedAttackAmmunitionSpend;
   readonly acceptedThrownWeaponRelease?: BattleAcceptedThrownWeaponRelease;
 };
@@ -4690,18 +4756,6 @@ export type BattleState = {
   readonly legendaryActionWindow: LegendaryActionWindow | null;
 };
 
-/**
- * An attack roll that missed, which a Bardic Inspiration die may turn into a
- * hit. Ability checks and saving throws take the die in battle, through the
- * D20 Test's added-die step.
- */
-export type BattleBardicInspirationFailedAttackRollFacts = {
-  readonly actorId: CombatantId;
-  readonly attackRoll: BattleAttackRollResult;
-  readonly armorClass: ArmorClass;
-  readonly criticalThreshold?: CriticalHitThreshold;
-};
-
 export type BattleSuccessfulAbilityCheckFacts = {
   readonly actorId: CombatantId;
   readonly ability: Ability;
@@ -4711,12 +4765,6 @@ export type BattleSuccessfulAbilityCheckFacts = {
   readonly targetSpatialFacts: readonly BattleTargetSpatialFact[];
 };
 
-export type BardicInspirationFailedAttackRollResolutionInput = {
-  readonly state: BattleState;
-  readonly failedAttackRoll: BattleBardicInspirationFailedAttackRollFacts;
-  readonly bardicInspirationRoll: number;
-};
-
 export type SuccessfulAbilityCheckReactionReductionResolutionInput = {
   readonly state: BattleState;
   readonly reactorId: CombatantId;
@@ -4724,15 +4772,6 @@ export type SuccessfulAbilityCheckReactionReductionResolutionInput = {
   readonly abilityCheck: BattleSuccessfulAbilityCheckFacts;
   readonly reductionRoll: number;
 };
-
-export type BardicInspirationFailedAttackRollResolutionResult =
-  | (Extract<BattleResolutionResult, { readonly tag: "resolved" }> & {
-      readonly bardicInspirationAttackRoll: {
-        readonly boostedTotal: number;
-        readonly boostedSucceeded: boolean;
-      };
-    })
-  | Extract<BattleResolutionResult, { readonly tag: "invalid" }>;
 
 export type SuccessfulAbilityCheckReactionReductionResolutionResult =
   | (Extract<BattleResolutionResult, { readonly tag: "resolved" }> & {
@@ -5224,6 +5263,17 @@ export type BattleSavingThrowRerollHoleOptions =
     ];
   };
 /**
+ * The new roll a saving throw outcome hole asks, on a replay, of a failed
+ * save that a Reaction caused to be rerolled. While it is present, the hole's
+ * other after-roll options are offered on the new roll: answer them in the
+ * outcome's `failedSaveReactionReroll.newRoll`.
+ */
+export type BattleFailedSaveReactionRerollHoleOptions = {
+  readonly failedSaveReactionRerolls?: readonly [
+    BattleFailedSaveReactionRerollOption,
+  ];
+};
+/**
  * The dice a D20 Test hole offers to add to a test that stands failed, once
  * its rerolls are decided (ASSUMPTIONS.md A68).
  */
@@ -5692,7 +5742,7 @@ export type BattleAttackRollHole = Extract<
     BattleHeroicInspirationRerollOption,
   ];
   readonly relationshipFactRequest?: BattleAttackRollRelationshipFactRequest;
-};
+} & BattleD20TestAddedDieHoleOptions;
 export type AttackRollFeatureActivation = {
   readonly procedureRef: BattleProcedureExecutionRef;
   readonly rollMode: AttackRollMode;
@@ -5893,6 +5943,52 @@ export type BattleBardicInspirationDieOption = {
   readonly rollerId: CombatantId;
   readonly dieSize: DamageDieSize;
 };
+export const FAILED_SAVE_REACTION_REROLL_EFFECT_KIND =
+  "failed_save_reaction_reroll";
+/**
+ * A failed saving throw that a creature's Reaction caused to be rerolled
+ * (Countercharm), kept on the interrupted subject so that its replay asks the
+ * new roll.
+ */
+export type BattleGrantedFailedSaveReactionReroll = Pick<
+  BattleD20TestRollKey,
+  "rollerId" | "holeId"
+> & {
+  /** The creature that took the Reaction. */
+  readonly responderId: CombatantId;
+  readonly procedureRef: BattleProcedureExecutionRef;
+  /** The roll mode the Reaction gives the new roll. */
+  readonly rollMode: Extract<AttackRollMode, "advantage">;
+};
+/**
+ * The new roll a Reaction caused a failed saving throw to take, offered on
+ * the replay's saving throw hole once the save stands failed after its
+ * roller's own decisions.
+ */
+export type BattleFailedSaveReactionRerollOption = {
+  readonly effectKind: typeof FAILED_SAVE_REACTION_REROLL_EFFECT_KIND;
+  readonly label: string;
+  /** The creature whose failed saving throw is rerolled. */
+  readonly rollerId: CombatantId;
+  /** The creature that took the Reaction. */
+  readonly responderId: CombatantId;
+  /**
+   * The new roll's mode: the Reaction's Advantage with the save's own
+   * Advantage and Disadvantage, which cancel as usual.
+   */
+  readonly rollMode: AttackRollMode;
+};
+/**
+ * The new roll of a failed saving throw that a Reaction caused to be
+ * rerolled: a roll of its own, with its own after-roll decisions, that stands
+ * in place of the failed one.
+ */
+export type BattleFailedSaveReactionReroll = {
+  readonly effectKind: typeof FAILED_SAVE_REACTION_REROLL_EFFECT_KIND;
+  /** The creature that took the Reaction. */
+  readonly responderId: CombatantId;
+  readonly newRoll: BattleD20TestRolledOutcome;
+};
 export const FAILED_ABILITY_CHECK_RESOURCE_BOOST_EFFECT_KIND =
   "failed_ability_check_resource_boost";
 /**
@@ -5994,14 +6090,45 @@ export type BattleD20TestNaturalOneRerollDieDecision =
   >;
 export type BattleHeroicInspirationDieRerollDecision =
   BattleD20TestDieRerollDecision<typeof HEROIC_INSPIRATION_REROLL_EFFECT_KIND>;
+/**
+ * A failed saving throw reroll's decision on a Death Saving Throw's d20: the
+ * engine adds the reroll's bonus to the new d20 and judges the result.
+ */
+export type BattleFailedSavingThrowDieRerollDecision =
+  BattleD20TestDieRerollDecision<typeof FAILED_SAVING_THROW_REROLL_EFFECT_KIND>;
 /** One reroll source's decision on a Death Saving Throw's d20. */
 export type BattleDeathSavingThrowD20TestRerollDecision =
   | BattleD20TestNaturalOneRerollDieDecision
-  | BattleHeroicInspirationDieRerollDecision;
+  | BattleHeroicInspirationDieRerollDecision
+  | BattleFailedSavingThrowDieRerollDecision;
 /** A Death Saving Throw's D20 Test reroll decisions in the order the roller made them. */
 export type BattleDeathSavingThrowD20TestRerollDecisions = readonly [
   BattleDeathSavingThrowD20TestRerollDecision,
   ...BattleDeathSavingThrowD20TestRerollDecision[],
+];
+/**
+ * A source's decision on a die added to a Death Saving Throw: the engine adds
+ * the number rolled to the d20 and judges the result (ASSUMPTIONS.md A68).
+ */
+export type BattleDeathSavingThrowAddedDieDecision =
+  BattleD20TestAddedDieDecision<typeof BARDIC_INSPIRATION_DIE_EFFECT_KIND>;
+/** A Death Saving Throw's added-die decisions in the order the roller made them. */
+export type BattleDeathSavingThrowAddedDieDecisions = readonly [
+  BattleDeathSavingThrowAddedDieDecision,
+  ...BattleDeathSavingThrowAddedDieDecision[],
+];
+/**
+ * A source's decision on a die added to an attack roll that misses: the
+ * engine adds the number rolled to the total and judges the hit. The d20
+ * stays, so a die can't turn a 1 into a hit or make a Critical Hit.
+ */
+export type BattleAttackRollAddedDieDecision = BattleD20TestAddedDieDecision<
+  typeof BARDIC_INSPIRATION_DIE_EFFECT_KIND
+>;
+/** An attack roll's added-die decisions in the order the roller made them. */
+export type BattleAttackRollAddedDieDecisions = readonly [
+  BattleAttackRollAddedDieDecision,
+  ...BattleAttackRollAddedDieDecision[],
 ];
 export type BattleSpellDamageRerollOption = {
   readonly effectKind: "damage_dice_reroll";
@@ -6034,7 +6161,7 @@ export type BattleSpellAttackRollHole = Extract<
   readonly heroicInspirationRerolls?: readonly [
     BattleHeroicInspirationRerollOption,
   ];
-};
+} & BattleD20TestAddedDieHoleOptions;
 export type BattleCunningStrikeOptionSelection = {
   readonly procedureRef: BattleProcedureExecutionRef;
   readonly optionId: CunningStrikeOptionSelectionId;
@@ -6046,33 +6173,48 @@ export type BattleCunningStrikeOption = BattleCunningStrikeOptionSelection & {
     readonly dieSize: 6;
   };
 };
+/**
+ * What a rolled-dice hole states about whose dice it asks for: the roller,
+ * any creature, and, once the dice are rolled and the roller is a player
+ * character who has Heroic Inspiration, the option to reroll one (A71). A
+ * hole without these fields asks for dice nobody may reroll this way yet.
+ */
+export type BattleRolledDiceHeroicInspirationHoleFields = {
+  /** The creature that rolls the dice: the attacker, the caster or the healer. */
+  readonly rollerId: CombatantId;
+  readonly heroicInspirationRerolls?: readonly [
+    BattleHeroicInspirationRerollOption,
+  ];
+};
 export type BattleDamageRollHole = Extract<
   RuntimeHole & { readonly label: string },
   { readonly kind: "rolledDice" }
-> & {
-  readonly attack: SupportedAttackActionOption;
-  readonly critical: boolean;
-  readonly damageDice:
-    | {
-        readonly kind: "fixed";
-        readonly groups: readonly Pick<DiceExpr, "dice" | "dieSize">[];
-      }
-    | { readonly kind: "selectionDependent" };
-  readonly attackDamageRiders?: readonly AttackDamageRider[];
-  readonly spellWeaponDamageRiders?: readonly SpellAttackDamageComponent[];
-  readonly spellMarkedDamageRiders?: readonly SpellMarkedDamageRider[];
-  readonly cunningStrikeOptions?: readonly BattleCunningStrikeOption[];
-  readonly weaponDamageDiceRollChoiceProcedureRefs?: readonly BattleProcedureExecutionRef[];
-  readonly attackDamageDieFloorChoiceProcedureRefs?: AttackDamageDieFloorChoiceProcedureRefs;
-  readonly attackDamageAbilityModifierChoice?: AttackDamageAbilityModifierChoice;
-};
+> &
+  BattleRolledDiceHeroicInspirationHoleFields & {
+    readonly attack: SupportedAttackActionOption;
+    readonly critical: boolean;
+    readonly damageDice:
+      | {
+          readonly kind: "fixed";
+          readonly groups: readonly Pick<DiceExpr, "dice" | "dieSize">[];
+        }
+      | { readonly kind: "selectionDependent" };
+    readonly attackDamageRiders?: readonly AttackDamageRider[];
+    readonly spellWeaponDamageRiders?: readonly SpellAttackDamageComponent[];
+    readonly spellMarkedDamageRiders?: readonly SpellMarkedDamageRider[];
+    readonly cunningStrikeOptions?: readonly BattleCunningStrikeOption[];
+    readonly weaponDamageDiceRollChoiceProcedureRefs?: readonly BattleProcedureExecutionRef[];
+    readonly attackDamageDieFloorChoiceProcedureRefs?: AttackDamageDieFloorChoiceProcedureRefs;
+    readonly attackDamageAbilityModifierChoice?: AttackDamageAbilityModifierChoice;
+  };
 type BattleSpellDamageRollContext = Extract<
   RuntimeHole & { readonly label: string },
   { readonly kind: "rolledDice" }
-> & {
-  readonly sourceProcedureRef: BattleProcedureExecutionRef;
-  readonly critical: boolean;
-};
+> &
+  BattleRolledDiceHeroicInspirationHoleFields & {
+    readonly sourceProcedureRef: BattleProcedureExecutionRef;
+    readonly critical: boolean;
+  };
 export type BattleSpellDamageRollHole = BattleSpellDamageRollContext & {
   readonly spellMarkedDamageRiders?: readonly SpellMarkedDamageRider[];
   readonly spellDamageRerolls?: readonly BattleSpellDamageRerollOption[];
@@ -6718,7 +6860,10 @@ export type BattleProtectionRelevantEffectSavingThrowOutcomeHole = {
 export type BattleSpellHealingRollHole = Extract<
   RuntimeHole & { readonly label: string },
   { readonly kind: "rolledDice" }
-> & { readonly sourceProcedureRef: BattleProcedureExecutionRef };
+> &
+  BattleRolledDiceHeroicInspirationHoleFields & {
+    readonly sourceProcedureRef: BattleProcedureExecutionRef;
+  };
 export type BattleSpellSkillChoiceHole = {
   readonly sourceProcedureRef: BattleProcedureExecutionRef;
   readonly holeInstanceKey: HoleInstanceKey;
@@ -6858,11 +7003,17 @@ export type BattleRolledSavingThrowOutcome = BattleD20TestRolledOutcome & {
    * and the runtime checks the degree against the hole.
    */
   readonly cover?: BonusCoverType;
+  /**
+   * The new roll a Reaction caused this failed save to take. Its outcome
+   * stands in place of this one's.
+   */
+  readonly failedSaveReactionReroll?: BattleFailedSaveReactionReroll;
 };
 export type BattleSavingThrowWithoutRollOutcome =
   BattleD20TestWithoutRollOutcome & {
     readonly targetId: CombatantId;
     readonly cover?: never;
+    readonly failedSaveReactionReroll?: never;
   };
 export type BattleSavingThrowOutcome =
   | BattleRolledSavingThrowOutcome
@@ -7031,6 +7182,9 @@ export type BattleSpellSavingThrowOutcomeHole = {
     BattleFailedSavingThrowRerollOption,
   ];
   readonly bardicInspirationDice?: readonly [BattleBardicInspirationDieOption];
+  readonly failedSaveReactionRerolls?: readonly [
+    BattleFailedSaveReactionRerollOption,
+  ];
   readonly relationshipFactRequest?: BattleSavingThrowRelationshipFactRequest;
 } & (
   | {
@@ -7070,6 +7224,9 @@ export type BattleGrantedAreaSaveDamageActionSavingThrowOutcomeHole = {
     BattleFailedSavingThrowRerollOption,
   ];
   readonly bardicInspirationDice?: readonly [BattleBardicInspirationDieOption];
+  readonly failedSaveReactionRerolls?: readonly [
+    BattleFailedSaveReactionRerollOption,
+  ];
   readonly relationshipFactRequest?: BattleSavingThrowRelationshipFactRequest;
 };
 export type BattleGlyphExplosiveRuneSavingThrowOutcomeHole = {
@@ -7097,6 +7254,9 @@ export type BattleGlyphExplosiveRuneSavingThrowOutcomeHole = {
     BattleFailedSavingThrowRerollOption,
   ];
   readonly bardicInspirationDice?: readonly [BattleBardicInspirationDieOption];
+  readonly failedSaveReactionRerolls?: readonly [
+    BattleFailedSaveReactionRerollOption,
+  ];
 };
 export type BattleUnitFeatureSavingThrowOutcomeHole = {
   readonly holeInstanceKey: HoleInstanceKey;
@@ -7117,6 +7277,9 @@ export type BattleUnitFeatureSavingThrowOutcomeHole = {
     BattleFailedSavingThrowRerollOption,
   ];
   readonly bardicInspirationDice?: readonly [BattleBardicInspirationDieOption];
+  readonly failedSaveReactionRerolls?: readonly [
+    BattleFailedSaveReactionRerollOption,
+  ];
   readonly relationshipFactRequest?: BattleSavingThrowRelationshipFactRequest;
 } & (
   | {
@@ -7201,6 +7364,10 @@ export type BattleDeathSavingThrowHole = {
   readonly heroicInspirationRerolls?: readonly [
     BattleHeroicInspirationRerollOption,
   ];
+  readonly failedSavingThrowRerolls?: readonly [
+    BattleFailedSavingThrowRerollOption,
+  ];
+  readonly bardicInspirationDice?: readonly [BattleBardicInspirationDieOption];
 };
 export type BattleStatBlockRechargeRollHole = {
   readonly holeInstanceKey: HoleInstanceKey;
@@ -7681,6 +7848,8 @@ export type BattleAttackRollResult = AttackRollResult & {
   readonly activatedOngoingFeatureProcedureRef?: BattleProcedureExecutionRef;
   readonly missToHitReplacementProcedureRef?: BattleProcedureExecutionRef;
   readonly d20TestRerolls?: BattleAttackRollD20TestRerollDecisions;
+  /** The dice added to the roll its rerolls leave, while it misses. */
+  readonly d20TestAddedDice?: BattleAttackRollAddedDieDecisions;
 };
 export type BattleRolledDiceFill = {
   readonly kind: "rolledDice";
@@ -7692,7 +7861,38 @@ export type BattleRolledDiceFill = {
   readonly attackDamageDieFloorChoice?: AttackDamageDieFloorChoiceFill;
   readonly attackDamageAbilityModifierChoice?: AttackDamageAbilityModifierChoiceFill;
   readonly spellDamageReroll?: BattleSpellDamageRerollDecision;
+  readonly heroicInspirationReroll?: BattleRolledDiceHeroicInspirationRerollDecision;
 };
+/**
+ * Where a die Heroic Inspiration rerolled stands in a rolled-dice fill: in
+ * one of the fill's groups, in one of Savage Attacker's two rolls, or among
+ * the dice Empowered Spell rerolled.
+ */
+export type BattleRolledDieRef =
+  | { readonly source: "rolledDiceGroup"; readonly groupIndex: number }
+  | {
+      readonly source: "weaponDamageDiceRollCandidate";
+      readonly candidate: WeaponDamageDiceRollChoiceFill["selection"];
+    }
+  | { readonly source: "spellDamageReroll" };
+/**
+ * A roller's Heroic Inspiration decision on a rolled-dice fill. The fill
+ * reports each die as it stands, so a reroll names the die, the face it
+ * showed and the face that replaced it, which the fill reports there
+ * (ASSUMPTIONS.md A71).
+ */
+export type BattleRolledDiceHeroicInspirationRerollDecision =
+  | {
+      readonly kind: "decline";
+      readonly effectKind: typeof HEROIC_INSPIRATION_REROLL_EFFECT_KIND;
+    }
+  | {
+      readonly kind: "rerollRolledDie";
+      readonly effectKind: typeof HEROIC_INSPIRATION_REROLL_EFFECT_KIND;
+      readonly rolledDie: BattleRolledDieRef;
+      readonly original: DieRollResult;
+      readonly replacement: DieRollResult;
+    };
 export const ATTACK_DAMAGE_DIE_FLOOR_CHOICE_UNSUPPORTED_DAMAGE_ROLL_OWNER_MESSAGE =
   "Attack damage die floor choices are not available for this damage-roll owner.";
 export function attackDamageDieFloorChoiceUnsupportedIssue(
@@ -8109,6 +8309,7 @@ export type BattleFill =
       readonly holeId: BattleHoleId;
       readonly value: D20Roll;
       readonly d20TestRerolls?: BattleDeathSavingThrowD20TestRerollDecisions;
+      readonly d20TestAddedDice?: BattleDeathSavingThrowAddedDieDecisions;
     }
   | {
       readonly kind: "statBlockRechargeRoll";
@@ -8511,7 +8712,9 @@ export type BonusActionDashSpellBattleResolutionInput =
   };
 export type UnitFeatureBattleResolutionInput = BattleResolutionInputForSubject<
   Extract<BattleSubject, { readonly tag: "unitFeature" }>
->;
+> & {
+  readonly handledInterruptTrigger?: BattleInterruptTrigger;
+};
 export type UnitFeatureHeldWeaponActivationBattleResolutionInput =
   BattleResolutionInputForSubject<
     Extract<BattleSubject, { readonly tag: "unitFeatureHeldWeaponActivation" }>

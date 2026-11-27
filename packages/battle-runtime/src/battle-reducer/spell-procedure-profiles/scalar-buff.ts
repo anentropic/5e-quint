@@ -88,6 +88,7 @@ import {
 import { isScalarBuffTargetListInvocation } from "../spells-invocation-guards.ts";
 import {
   spellScalarBuffRollHole,
+  spellScalarBuffRollHoleId,
   validateScalarBuffTemporaryHitPointsFill,
 } from "../spells-damage-fills.ts";
 import {
@@ -1859,7 +1860,7 @@ function discoverScalarBuffCastAct(
   invocation: BattleExecutableSpellInvocation<ScalarBuffInvocation>,
 ): readonly BattleActDiscoveryCandidate[] {
   if (invocation.targeting.kind === "self") {
-    const initialHoles = scalarBuffInitialHoles(invocation);
+    const initialHoles = scalarBuffInitialHoles(actorId, invocation);
     const castActs = [
       {
         subject: spellCastSelectionSubject(actorId, invocation),
@@ -1923,10 +1924,11 @@ function scalarBuffSubtleMetamagicCastActs(input: {
 }
 
 function scalarBuffInitialHoles(
+  actorId: CombatantId,
   invocation: BattleExecutableSpellInvocation<ScalarBuffInvocation>,
 ): readonly ReturnType<typeof spellScalarBuffRollHole>[] {
   return invocation.effect.kind === "temporaryHitPoints"
-    ? [spellScalarBuffRollHole(invocation)]
+    ? [spellScalarBuffRollHole(actorId, invocation)]
     : [];
 }
 
@@ -2009,7 +2011,7 @@ function resolveScalarBuff(
     !fillsBelongToSpellCastHoles(input.input.fills, [
       ATTACK_TARGET_HOLE_ID,
       spellTargetListHoleId(input.invocation),
-      spellScalarBuffRollHole(input.invocation).holeId,
+      spellScalarBuffRollHoleId(input.invocation),
     ])
   ) {
     return invalidResult(
@@ -2041,7 +2043,7 @@ function resolveScalarBuff(
     input.fillSet.healingRoll == null
   ) {
     return needsHolesResult(input.input.state, input.input.subject, [
-      spellScalarBuffRollHole(input.invocation),
+      spellScalarBuffRollHole(input.actorId, input.invocation),
     ]);
   }
   if (

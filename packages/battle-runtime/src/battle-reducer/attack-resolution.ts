@@ -2351,13 +2351,13 @@ export function validateRolledDiceForWeaponAttack(
       return candidateValidation.reason;
     }
     /* v8 ignore stop -- @preserve */
-    const selectedCandidate =
-      weaponDamageDiceRollChoice.selection === "first"
-        ? weaponDamageDiceRollChoice.candidates[0]
-        : weaponDamageDiceRollChoice.candidates[1];
+    const selectedCandidate = weaponDamageDiceRollCandidate(
+      weaponDamageDiceRollChoice,
+      weaponDamageDiceRollChoice.selection,
+    );
     /* v8 ignore start -- @preserve -- Malformed damage-choice selection: the submitted base weapon group must equal the candidate selected at discovery. */
     if (
-      JSON.stringify(groups[0]?.results) !==
+      JSON.stringify(groups[WEAPON_DAMAGE_DICE_GROUP_INDEX]?.results) !==
       JSON.stringify(selectedCandidate.results)
     ) {
       return "Selected weapon damage dice roll choice must match the base weapon damage group.";
@@ -2366,6 +2366,25 @@ export function validateRolledDiceForWeaponAttack(
   }
 
   return null;
+}
+
+/**
+ * The damage group of a weapon attack's rolled-dice fill that holds the
+ * weapon's damage dice. Under a weapon damage dice roll choice (Savage
+ * Attacker) it holds the roll the roller picked.
+ */
+export const WEAPON_DAMAGE_DICE_GROUP_INDEX = 0;
+
+/** One of the two rolls of a weapon damage dice roll choice. */
+export function weaponDamageDiceRollCandidate(
+  choice: WeaponDamageDiceRollChoiceFill,
+  candidate: WeaponDamageDiceRollChoiceFill["selection"],
+): WeaponDamageDiceRollChoiceFill["candidates"][number] {
+  return Match.value(candidate).pipe(
+    Match.when("first", () => choice.candidates[0]),
+    Match.when("second", () => choice.candidates[1]),
+    Match.exhaustive,
+  );
 }
 
 export function attackRollHitsWithCriticalThreshold(
