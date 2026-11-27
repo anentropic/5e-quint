@@ -43,13 +43,13 @@
   "generatedBy": "scripts/unit-profile-coverage-check.cjs",
   "metrics": {
     "authoredSurfaceExecutableCatalogAdmissionCoverage": {
-      "denominator": 543,
-      "numerator": 398,
+      "denominator": 544,
+      "numerator": 399,
       "percent": "73.3%"
     },
     "authoredSurfaceUnitCatalogAdmissionCoverage": {
-      "denominator": 631,
-      "numerator": 453,
+      "denominator": 632,
+      "numerator": 454,
       "percent": "71.8%"
     },
     "classicNonSrdExpressionGate": {
@@ -59,7 +59,7 @@
     },
     "collectionInventoryCount": {
       "unit": "Units",
-      "value": 454
+      "value": 455
     },
     "deterministicAdmissionProjectionCoverage": {
       "denominator": 245,
@@ -67,8 +67,8 @@
       "percent": "96.7%"
     },
     "profileClassificationCoverage": {
-      "denominator": 454,
-      "numerator": 454,
+      "denominator": 455,
+      "numerator": 455,
       "percent": "100%"
     },
     "qntProfileModelingCoverage": {
@@ -112,9 +112,9 @@
       "percent": "97.6%"
     },
     "supportedProfileCoverage": {
-      "denominator": 399,
+      "denominator": 400,
       "numerator": 245,
-      "percent": "61.4%"
+      "percent": "61.3%"
     }
   },
   "metricSemantics": [
@@ -23689,8 +23689,8 @@
         "unsupportedOrOtherUnits": 75
       },
       {
-        "executableUnitDenominator": 128,
-        "installedUnitDenominator": 128,
+        "executableUnitDenominator": 129,
+        "installedUnitDenominator": 129,
         "kind": "class_feature",
         "label": "Class-feature Units",
         "profileFactDenominator": 180,
@@ -23700,7 +23700,7 @@
         "selectedIdentityReplayGapUnits": 0,
         "selectedIdentityReplayWitnessUnits": 91,
         "supportedProfileUnits": 117,
-        "unsupportedOrOtherUnits": 2
+        "unsupportedOrOtherUnits": 3
       }
     ]
   },
@@ -26668,6 +26668,29 @@
       ],
       "sourceRecordPath": "packages/surface/content/bard_font_of_inspiration.json",
       "unitId": "bard_font_of_inspiration"
+    },
+    {
+      "authoredSurfaceDuplicateIdCount": 1,
+      "catalogAdmission": {
+        "collectionId": "srd-5.2.1",
+        "status": "installed"
+      },
+      "claim": {
+        "battleReadinessClosure": {
+          "kind": "outside-battle-runtime",
+          "owner": "future class-feature triggered-Reaction save-failure reroll owner plus condition-application and range-witness owners",
+          "reason": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity."
+        },
+        "reason": "Countercharm is a level-7 Bard class-feature triggered Reaction, not an always-on Saving Throw modifier or Bardic Inspiration die use. It triggers only when the Bard or a creature within 30 feet fails a Saving Throw against an effect that applies Charmed or Frightened, then spends the Bard's Reaction to reroll that save with Advantage. No standalone battle Unit profile is claimed until a generic class-feature triggered-reaction owner can consume that in-flight save-failure event without duplicating condition, range, or Reaction state.",
+        "tag": "unsupported-profile"
+      },
+      "collectionId": "srd-5.2.1",
+      "evidence": [],
+      "executableMechanics": true,
+      "kind": "class_feature",
+      "profiles": [],
+      "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+      "unitId": "bard_countercharm"
     },
     {
       "authoredSurfaceDuplicateIdCount": 1,
