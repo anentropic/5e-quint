@@ -593,3 +593,31 @@ the result; the model reads the failure from the result that stands, so the
 attacker may answer the Reaction's miss with the die. It reads "add the number
 rolled to the d20" as A68 does: the number adds to the total, and the d20 still
 shows its face.
+
+## A70: A Reaction that rerolls a failed save asks one fresh roll, once the save stands failed
+
+**Assumption:** A Reaction that causes a failed saving throw to be rerolled
+(Countercharm) is offered once the save stands failed after its roller's own
+rerolls and added dice (A67). The responder picks one creature whose save
+failed, if more than one did, and the table rules whether that creature is
+within the range, measured as a straight line. The new roll is a roll of its
+own: its roll mode combines the Reaction's Advantage with the save's own
+Advantage and Disadvantage, which cancel as usual, and its roller may use any
+source the first roll left unspent, while a source the first roll spent stays
+spent. The new roll stands. A save is rerolled this way at most once, so the
+save-failed window doesn't reopen on the new roll, and a second responder
+can't take the Reaction on the same save.
+
+**Rules basis / gap:** `.references/srd-5.2.1/classes.md`, "Countercharm": "If
+you or a creature within 30 feet of you fails a saving throw against an effect
+that applies the Charmed or Frightened condition, you can take a Reaction to
+cause the save to be rerolled, and the new roll has Advantage."
+`.references/srd-5.2.1/playing-the-game.md`, "Advantage/Disadvantage": "If
+circumstances cause a roll to have both Advantage and Disadvantage, the roll
+has neither of them." The SRD doesn't say when the save has failed if its
+roller can still reroll it, which creature the Reaction rerolls when several
+fail, whether the new roll keeps the first roll's spent or unspent sources,
+or whether a failed new roll triggers the Reaction again. The model reads the
+failure from the result that stands, as A69 does, lets the responder choose,
+treats the new roll as a fresh D20 Test, and reads "the save" as the one save
+the trigger names, so the new roll can't trigger it again.

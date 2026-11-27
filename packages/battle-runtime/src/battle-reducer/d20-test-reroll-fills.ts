@@ -109,7 +109,12 @@ function savingThrowHoleAskedAgain(
 ): BattleOrdinaryHole | undefined {
   if (ask.stage === "failedSaveReactionReroll")
     return hole.kind === "savingThrowOutcome"
-      ? { ...hole, failedSaveReactionRerolls: [ask.option] }
+      ? {
+          ...(ask.newRollAsk === undefined
+            ? hole
+            : savingThrowHoleAskedAfterRoll(hole, ask.newRollAsk)),
+          failedSaveReactionRerolls: [ask.option],
+        }
       : undefined;
   return hole.kind === "savingThrowOutcome" ||
     hole.kind === "concentrationSavingThrow"
@@ -142,6 +147,8 @@ type D20TestAfterRollReask =
       readonly ask: {
         readonly stage: "failedSaveReactionReroll";
         readonly option: BattleFailedSaveReactionRerollOption;
+        /** The new roll's own after-roll decisions, once it is rolled. */
+        readonly newRollAsk?: SavingThrowAfterRollAsk;
       };
     };
 
@@ -505,7 +512,21 @@ function failedSaveReactionRerollRollChecks(input: {
   });
   return [
     savingThrowRollCheck(first, input.holeRef),
-    savingThrowRollCheck(newRoll, input.holeRef),
+    newRoll.tag === "decisionsRequired"
+      ? {
+          tag: "decisionsRequired",
+          fillIndex: input.holeRef.fillIndex,
+          holeId: input.holeRef.holeId,
+          reask: {
+            holeKind: "savingThrowOutcome",
+            ask: {
+              stage: "failedSaveReactionReroll",
+              option: failedSaveReactionRerollOption(grant, input.saveRollMode),
+              newRollAsk: newRoll.ask,
+            },
+          },
+        }
+      : savingThrowRollCheck(newRoll, input.holeRef),
   ];
 }
 

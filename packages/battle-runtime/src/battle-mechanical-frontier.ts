@@ -555,8 +555,8 @@ function projectMechanicalInterruptChoice(
     Match.discriminatorsExhaustive("kind")({
       nestedProcedure: (value) => projectChoiceWithMechanicalHoles(value),
       reactionModifier: (value) => projectChoiceWithMechanicalHoles(value),
-      failedSaveReactionReroll: (value) =>
-        projectChoiceWithMechanicalHoles(value),
+      // No initial holes to project.
+      failedSaveReactionReroll: (value) => value,
     }),
   );
 }

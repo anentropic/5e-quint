@@ -3,7 +3,7 @@
 // that applies the Charmed or Frightened condition, you can take a Reaction
 // to cause the save to be rerolled, and the new roll has Advantage."
 import { DieRollResult } from "@dnd/shared/types";
-import { Result } from "effect";
+import { Result, Schema } from "effect";
 import { describe, expect, test } from "vitest";
 
 import {
@@ -35,6 +35,7 @@ import {
   FAILED_SAVE_REACTION_REROLL_WITHOUT_GRANT_MESSAGE,
 } from "./battle-reducer/failed-save-reaction-reroll.ts";
 import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
+import { battleInterruptDecisionFillSchema } from "./battle-reducer/battle-codecs.ts";
 import { HEROIC_INSPIRATION_REROLL_UNAVAILABLE_MESSAGE } from "./battle-reducer/heroic-inspiration-reroll.ts";
 import {
   charmPersonUnitId,
@@ -556,6 +557,78 @@ describe("Countercharm's new roll is a fresh roll (the table's ruling)", () => {
       tag: "invalid",
       message: HEROIC_INSPIRATION_REROLL_UNAVAILABLE_MESSAGE,
     });
+  });
+});
+
+describe("Countercharm's new roll asks its own decisions", () => {
+  test("a new roll that fails is asked about its roller's sources, marked as the new roll", () => {
+    const save = charmPersonSave("target", HEROIC_INSPIRATION_AVAILABLE);
+    const firstRoll = {
+      succeeded: false,
+      d20TestRoll: charmedRoll,
+      d20TestRerolls: [declineHeroicInspiration],
+    } as const;
+    const asked = requireNeedsHoles(
+      takeCountercharm(save.resolve(save.state, firstRoll)),
+    );
+    const askedAgain = save.resolve(asked.state, {
+      ...firstRoll,
+      failedSaveReactionReroll: newRoll({
+        responderId: spellTargetId,
+        succeeded: false,
+        d20TestRoll: multiple(2, 6, "advantage"),
+      }),
+    });
+
+    expect(
+      requireResultHole(requireNeedsHoles(askedAgain), "savingThrowOutcome"),
+    ).toMatchObject({
+      failedSaveReactionRerolls: [
+        { rollerId: spellTargetId, responderId: spellTargetId },
+      ],
+      heroicInspirationRerolls: [
+        { effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND },
+      ],
+    });
+  });
+
+  test("taking the Reaction carries no fills: the new roll comes on the save's hole", () => {
+    const save = charmPersonSave();
+    const interrupted = requireNeedsHoles(
+      save.resolve(save.state, { succeeded: false, d20TestRoll: charmedRoll }),
+    );
+    const pending = battleFrontierInterruptDecisionForState(interrupted.state);
+    if (pending === null) throw new Error("Expected a Reaction window.");
+    const choice = countercharmChoice(interrupted);
+    const decode = Schema.decodeUnknownResult(
+      battleInterruptDecisionFillSchema(),
+    );
+    const decision = (fills: readonly unknown[]) => ({
+      kind: "interruptDecision",
+      holeId: pending.decisionHole.holeId,
+      value: {
+        kind: "resolve",
+        responderId: choice.responderId,
+        choice: { kind: "failedSaveReactionReroll", ...choice.reroll, fills },
+      },
+    });
+
+    expect(Result.isSuccess(decode(decision([])))).toBe(true);
+    expect(
+      Result.isFailure(
+        decode(
+          decision([
+            savingThrowOutcomeFill(save.saveHole, [
+              {
+                targetId: spellTargetId,
+                succeeded: true,
+                d20TestRoll: charmedRoll,
+              },
+            ]),
+          ]),
+        ),
+      ),
+    ).toBe(true);
   });
 });
 

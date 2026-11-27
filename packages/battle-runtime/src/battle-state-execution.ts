@@ -1218,8 +1218,8 @@ export type BattleInterruptProcedureChoice =
       readonly kind: "failedSaveReactionReroll";
       readonly responderId: CombatantId;
       readonly reroll: BattleFailedSaveReactionRerollChoice;
-      /** Empty: the new roll is asked on the save's own hole when the save replays. */
-      readonly initialHoles: readonly BattleHole[];
+      /** None: the new roll is asked on the save's own hole when the save replays. */
+      readonly initialHoles: readonly [];
     };
 
 /**
@@ -1327,6 +1327,8 @@ export type BattleInterruptProcedureSelection = {
     }
   | ({
       readonly kind: "failedSaveReactionReroll";
+      /** None: the new roll is asked on the save's own hole when it replays. */
+      readonly fills: readonly [];
     } & BattleFailedSaveReactionRerollChoice)
 );
 type BattleActiveInterruptProcedure = {
@@ -5222,7 +5224,9 @@ export type BattleSavingThrowRerollHoleOptions =
   };
 /**
  * The new roll a saving throw outcome hole asks, on a replay, of a failed
- * save that a Reaction caused to be rerolled.
+ * save that a Reaction caused to be rerolled. While it is present, the hole's
+ * other after-roll options are offered on the new roll: answer them in the
+ * outcome's `failedSaveReactionReroll.newRoll`.
  */
 export type BattleFailedSaveReactionRerollHoleOptions = {
   readonly failedSaveReactionRerolls?: readonly [

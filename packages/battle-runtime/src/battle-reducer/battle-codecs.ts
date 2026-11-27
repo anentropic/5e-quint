@@ -5482,7 +5482,7 @@ type BattleFillEncoded =
                 }
               | ({
                   readonly kind: "failedSaveReactionReroll";
-                  readonly fills: readonly BattleFillEncoded[];
+                  readonly fills: readonly [];
                 } & BattleFailedSaveReactionRerollChoiceEncoded);
           };
     }
@@ -5807,7 +5807,8 @@ export function battleInterruptDecisionFillSchema() {
           Schema.Struct({
             kind: Schema.Literal("failedSaveReactionReroll"),
             ...BattleFailedSaveReactionRerollChoiceFields,
-            fills: Schema.Array(BattleFillSchema),
+            // The new roll is asked on the save's own hole when it replays.
+            fills: Schema.Tuple([]),
           }),
         ]),
       }),
@@ -8268,23 +8269,29 @@ const BattleInterruptProcedureChoiceMembers = [
     responderId: CombatantId,
     modifier: BattleReactionModifierChoiceSchema,
   }),
-  pairedBattleInterruptProcedureChoiceMember({
-    kind: Schema.Literal("failedSaveReactionReroll"),
-    responderId: CombatantId,
-    reroll: Schema.Struct(BattleFailedSaveReactionRerollChoiceFields),
-  }),
 ] as const;
 const FirstBattleInterruptProcedureChoiceMember =
   BattleInterruptProcedureChoiceMembers[0];
 const BattleInterruptProcedureModifierChoiceMember =
   BattleInterruptProcedureChoiceMembers[1];
-const BattleInterruptProcedureFailedSaveReactionRerollChoiceMember =
-  BattleInterruptProcedureChoiceMembers[2];
+// No initial holes, labeled or mechanical: the new roll is asked on the save's
+// own hole when it replays.
+const BattleInterruptProcedureFailedSaveReactionRerollChoiceStruct =
+  Schema.Struct({
+    kind: Schema.Literal("failedSaveReactionReroll"),
+    responderId: CombatantId,
+    reroll: Schema.Struct(BattleFailedSaveReactionRerollChoiceFields),
+    initialHoles: Schema.Tuple([]),
+  });
+const BattleInterruptProcedureFailedSaveReactionRerollChoiceMember = {
+  labeled: BattleInterruptProcedureFailedSaveReactionRerollChoiceStruct,
+  mechanical: BattleInterruptProcedureFailedSaveReactionRerollChoiceStruct,
+} as const;
 type BattleInterruptProcedureChoiceCodec = Schema.Union<
   readonly [
     (typeof BattleInterruptProcedureChoiceMembers)[0]["labeled"],
     (typeof BattleInterruptProcedureChoiceMembers)[1]["labeled"],
-    (typeof BattleInterruptProcedureChoiceMembers)[2]["labeled"],
+    (typeof BattleInterruptProcedureFailedSaveReactionRerollChoiceMember)["labeled"],
   ]
 >;
 const BattleInterruptProcedureChoiceUnfilteredSchema: BattleInterruptProcedureChoiceCodec =
@@ -8298,7 +8305,7 @@ type BattleMechanicalInterruptProcedureChoiceCodec = Schema.Union<
   readonly [
     (typeof BattleInterruptProcedureChoiceMembers)[0]["mechanical"],
     (typeof BattleInterruptProcedureChoiceMembers)[1]["mechanical"],
-    (typeof BattleInterruptProcedureChoiceMembers)[2]["mechanical"],
+    (typeof BattleInterruptProcedureFailedSaveReactionRerollChoiceMember)["mechanical"],
   ]
 >;
 const BattleMechanicalInterruptProcedureChoiceUnfilteredSchema: BattleMechanicalInterruptProcedureChoiceCodec =
