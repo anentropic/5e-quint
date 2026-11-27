@@ -13,6 +13,8 @@ module ruleCoreHitPointDamageMbt {
   var qUnconscious: bool
   var qDamageToHitPoints: int
   var qRemainingDamageAtZero: int
+  // Death Saving Throw failures that damage at 0 Hit Points adds.
+  var qDeathSavingThrowFailureCountChange: int
   var qReplayIndex: int
   var qComponentRoute: List[RuleCoreComponentRouteEvent]
 
@@ -34,6 +36,7 @@ module ruleCoreHitPointDamageMbt {
     qUnconscious' = result.vitals.unconscious,
     qDamageToHitPoints' = result.damageToHitPoints,
     qRemainingDamageAtZero' = result.remainingDamageAtZero,
+    qDeathSavingThrowFailureCountChange' = 0,
     qReplayIndex' = nextReplayIndex,
     qComponentRoute' = componentRouteEvidence,
   }
@@ -47,6 +50,7 @@ module ruleCoreHitPointDamageMbt {
     qUnconscious' = false,
     qDamageToHitPoints' = 0,
     qRemainingDamageAtZero' = 0,
+    qDeathSavingThrowFailureCountChange' = 0,
     qReplayIndex' = 0,
     qComponentRoute' = componentRouteEvidence,
   }
@@ -99,36 +103,49 @@ module ruleCoreHitPointDamageMbt {
     }, 18), 4),
   }
 
-  action recordZeroHpDamageResult(scenario: str, vitals: CreatureVitals, nextReplayIndex: int): bool = all {
-    qLastScenario' = scenario,
-    qHitPoints' = vitals.hitPoints,
-    qHitPointMaximum' = vitals.hitPointMaximum,
-    qTemporaryHitPoints' = vitals.temporaryHitPoints,
-    qDead' = vitals.dead,
-    qUnconscious' = vitals.unconscious,
-    qDamageToHitPoints' = 0,
-    qRemainingDamageAtZero' = 0,
-    qReplayIndex' = nextReplayIndex,
-    qComponentRoute' = componentRouteEvidence,
+  // Applies damage at 0 Hit Points from one starting lifecycle and records the
+  // failure count after the damage minus the count before it. A creature that
+  // dies counts 3, so the change is capped at the failures still missing.
+  action recordZeroHpDamage(
+    scenario: str,
+    vitals: CreatureVitals,
+    before: DeathSavingThrowLifecycle,
+    damage: int,
+    criticalHit: bool,
+    nextReplayIndex: int
+  ): bool = {
+    val result = applyDamageToZeroHitPointCreature(vitals, before, damage, criticalHit)
+    all {
+      qLastScenario' = scenario,
+      qHitPoints' = result.vitals.hitPoints,
+      qHitPointMaximum' = result.vitals.hitPointMaximum,
+      qTemporaryHitPoints' = result.vitals.temporaryHitPoints,
+      qDead' = result.vitals.dead,
+      qUnconscious' = result.vitals.unconscious,
+      qDamageToHitPoints' = 0,
+      qRemainingDamageAtZero' = 0,
+      qDeathSavingThrowFailureCountChange' =
+        deathSavingThrowFailures(result.deathSavingThrows) - deathSavingThrowFailures(before),
+      qReplayIndex' = nextReplayIndex,
+      qComponentRoute' = componentRouteEvidence,
+    }
   }
 
   action doPlayerCharacterTempHpFullyAbsorbsAtZero = all {
     qReplayIndex == 4,
-    recordZeroHpDamageResult(
+    recordZeroHpDamage(
       playerCharacterTempHpFullyAbsorbsAtZero,
-      applyDamageToZeroHitPointCreature(
-        {
-          kind: PlayerCharacter,
-          hitPoints: 0,
-          hitPointMaximum: 12,
-          temporaryHitPoints: 3,
-          dead: false,
-          unconscious: true,
-        },
-        resetDeathSavingThrowLifecycle,
-        3,
-        false
-      ).vitals,
+      {
+        kind: PlayerCharacter,
+        hitPoints: 0,
+        hitPointMaximum: 12,
+        temporaryHitPoints: 3,
+        dead: false,
+        unconscious: true,
+      },
+      resetDeathSavingThrowLifecycle,
+      3,
+      false,
       5
     ),
   }
