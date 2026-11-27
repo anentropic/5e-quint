@@ -193,6 +193,7 @@ const projectionRolledDiceWithSpellDamageRerolls = {
   ...projectionHole("rolledDice", {
     holeInstanceKey: `${projectionBase.holeInstanceKey}-rolledDice-with-rerolls`,
     holeId: `${projectionBase.holeId}-rolledDice-with-rerolls`,
+    rollerId: projectionResponderId,
     critical: false,
     sourceProcedureRef: projectionProcedureRef,
   }),

@@ -933,6 +933,7 @@ export function weaponMasteryCleaveAttackRollHole(
 }
 
 export function weaponMasteryCleaveDamageHole(
+  rollerId: CombatantId,
   attack: CharacterWeaponAttackActionOption,
   critical: boolean,
   attackRoll: BattleAttackRollResult,
@@ -947,6 +948,7 @@ export function weaponMasteryCleaveDamageHole(
     holeId: WEAPON_MASTERY_CLEAVE_DAMAGE_HOLE_ID,
     holeInstanceKey: WEAPON_MASTERY_CLEAVE_DAMAGE_HOLE_INSTANCE,
     label: `Cleave damage (${expression})`,
+    rollerId,
     attack,
     critical,
     damageDice: attackDamageDiceRequest({ attack, critical, attackRoll }),
@@ -1065,6 +1067,7 @@ export function huntersPreyHordeBreakerAttackRollHole(
 }
 
 export function huntersPreyHordeBreakerDamageHole(
+  rollerId: CombatantId,
   attack: CharacterWeaponAttackActionOption,
   critical: boolean,
   attackRoll: BattleAttackRollResult,
@@ -1091,6 +1094,7 @@ export function huntersPreyHordeBreakerDamageHole(
     holeId: HUNTERS_PREY_HORDE_BREAKER_DAMAGE_HOLE_ID,
     holeInstanceKey: HUNTERS_PREY_HORDE_BREAKER_DAMAGE_HOLE_INSTANCE,
     label: `Horde Breaker damage (${expression})`,
+    rollerId,
     attack,
     critical,
     damageDice: attackDamageDiceRequest({

@@ -725,16 +725,17 @@ export function resolveChainedSpellAttackDamageAct(input: {
 
     if (step.damageRoll === undefined) {
       return needsHolesResult(replayState, input.input.subject, [
-        chainedSpellDamageRollHole(input.invocation, selectedDamageType, {
-          stepIndex,
-          critical,
-        }),
+        chainedSpellDamageRollHole(
+          input.actorId,
+          input.invocation,
+          selectedDamageType,
+          { stepIndex, critical },
+        ),
       ]);
     }
     const damageValidation = validateChainedSpellDamageFill(
       step.damageRoll,
       input.invocation,
-      selectedDamageType,
       { stepIndex, critical },
     );
     /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
@@ -1572,13 +1573,12 @@ export function validateChainedSpellDamageFill(
     BattleExecutableSpellInvocation,
     { readonly procedure: "chainedSpellAttackDamage" }
   >,
-  damageType: DamageType,
   step: { readonly stepIndex: number; readonly critical: boolean },
 ): string | null {
   /* v8 ignore start -- @preserve -- Malformed resolution input: discovery emits the damage hole for this exact chained step and critical-hit state. */
   if (
     fill.holeId !==
-    chainedSpellDamageRollHole(invocation, damageType, step).holeId
+    chainedSpellDamageRollHoleId(invocation, step.stepIndex, step.critical)
   ) {
     return step.critical
       ? "Critical hit chained spell damage must use the critical step damage hole."

@@ -1,3 +1,4 @@
+// KERNEL-COVERAGE: runtime-owner BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 import type {
   BattleAttackRollResult,
   BattleD20TestAddedDieDecision,
@@ -91,7 +92,9 @@ export function battleContinuationFillEquals(
         spellDamageRerollDecisionsEqual(
           left.spellDamageReroll,
           b.spellDamageReroll,
-        ),
+        ) &&
+        canonicalStructuralKey(left.heroicInspirationReroll) ===
+          canonicalStructuralKey(b.heroicInspirationReroll),
       attackDamageDisposition: (left) =>
         b.kind === "attackDamageDisposition" &&
         left.holeId === b.holeId &&

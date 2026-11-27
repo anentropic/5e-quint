@@ -137,7 +137,7 @@ describe("battle runtime: attack pipeline boundaries", () => {
 
     const holes = [
       attackRollHole(fighter, fighter.origin.attack),
-      attackDamageHole(fighter.origin.attack),
+      attackDamageHole(fighterId, fighter.origin.attack),
     ];
 
     for (const hole of holes) {

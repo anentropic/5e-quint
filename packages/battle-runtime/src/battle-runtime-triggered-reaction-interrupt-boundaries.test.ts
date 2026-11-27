@@ -1,5 +1,11 @@
+// KERNEL-COVERAGE: parity-witness BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 import { battleResolutionHolesForTest } from "./battle-runtime.test-support.ts";
 import { describe, expect, test } from "vitest";
+import {
+  HEROIC_INSPIRATION_AVAILABLE,
+  NO_HEROIC_INSPIRATION,
+} from "@dnd/shared/game-facts";
+import { DieRollResult } from "@dnd/shared/types";
 import { decodeCreatureImmunityDeclarationSync } from "@dnd/surface/surface/schema";
 
 import type {
@@ -36,6 +42,7 @@ import {
   wizardSpellcasting,
 } from "./battle-runtime.test-support.ts";
 import { battleRuntimeSessionForTest } from "./battle-runtime-session.test-support.ts";
+import { HEROIC_INSPIRATION_REROLL_EFFECT_KIND } from "./battle-state-execution.ts";
 import {
   spellAct,
   spellTargetListFill,
@@ -217,6 +224,106 @@ describe("triggered Reaction spell interrupt boundaries", () => {
         (combatant) => combatant.combatantId === attackerId,
       ),
     ).toMatchObject({ hp: 10 });
+  });
+
+  test("Hellish Rebuke's damage dice offer the reactor's Heroic Inspiration (A71)", () => {
+    const hellishRebuke = spellRecord("hellish_rebuke");
+    const session = startBattleSessionRight({
+      battleId: battleId("battle-triggered-reaction-heroic-inspiration"),
+      combatants: [
+        statBlockCreatureInit({
+          combatantId: attackerId,
+          statBlockName: "Rebuked attacker",
+          initiative: 20,
+          statBlock: statBlockWithCreatureType("humanoid"),
+        }),
+        characterSeed({
+          combatantId: reactionCasterId,
+          displayName: "Hellish Rebuke caster",
+          initiative: 10,
+          attack: null,
+          heroicInspiration: HEROIC_INSPIRATION_AVAILABLE,
+          spellcasting: wizardSpellcasting({
+            preparedSpells: [hellishRebuke],
+            spellSlots: [{ spellLevel: 1, count: 1 }],
+          }),
+        }),
+      ],
+    });
+    const attack = attackAgainstReactionCaster({
+      session,
+      attackerId,
+      targetId: reactionCasterId,
+      reactorId: reactionCasterId,
+      spellId: "hellish_rebuke",
+      slotLevel: 1,
+      attackRoll: { total: 20, naturalD20: 15 },
+    });
+    const choice = requireReactionSpellChoice(attack.result, reactionCasterId);
+    const save = findHole(choice.initialHoles, "savingThrowOutcome");
+    const damage = findHole(choice.initialHoles, "rolledDice");
+    expect(damage).toMatchObject({ rollerId: reactionCasterId });
+    const castRebuke = (damageFill: BattleFill) =>
+      resolveBattleInterrupt({
+        state: attack.result.state,
+        fill: interruptDecisionFill(
+          findHole(
+            battleResolutionHolesForTest(attack.result),
+            "interruptDecision",
+          ),
+          {
+            kind: "resolve",
+            responderId: reactionCasterId,
+            choice: {
+              kind: "castTriggeredReactionSpell",
+              procedureRef: choice.subject.procedureRef,
+              fills: [
+                savingThrowOutcomeFill(save, [
+                  {
+                    targetId: attackerId,
+                    succeeded: true,
+                    withoutRoll: true as const,
+                  },
+                ]),
+                damageFill,
+              ],
+            },
+          },
+        ),
+      });
+
+    const askedAgain = castRebuke(damageRollFillWithGroups(damage, [[1, 2]]));
+    expect(
+      askedAgain.tag === "needsHoles"
+        ? findHole(battleResolutionHolesForTest(askedAgain), "rolledDice")
+        : askedAgain,
+    ).toMatchObject({
+      heroicInspirationRerolls: [
+        { effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND },
+      ],
+    });
+    // The 1 was rerolled to a 3, and the reactor's Heroic Inspiration is spent.
+    const rerolled = castRebuke({
+      ...damageRollFillWithGroups(damage, [[3, 2]]),
+      heroicInspirationReroll: {
+        kind: "rerollRolledDie",
+        effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+        rolledDie: { source: "rolledDiceGroup", groupIndex: 0 },
+        original: DieRollResult(1),
+        replacement: DieRollResult(3),
+      },
+    });
+    if (rerolled.tag !== "resolved") {
+      throw new Error(
+        `Expected the rerolled rebuke to resolve: ${rerolled.tag}.`,
+      );
+    }
+    const reactor = rerolled.state.combatants.get(reactionCasterId);
+    expect(
+      reactor?.origin.kind === "character"
+        ? reactor.origin.heroicInspiration
+        : undefined,
+    ).toEqual(NO_HEROIC_INSPIRATION);
   });
 
   test("requests a damage relationship decision for a triggered Reaction spell", () => {

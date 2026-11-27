@@ -1677,6 +1677,7 @@ function ordinaryObjectAttackDamage<
         input.input.subject,
         [
           attackDamageHole(
+            input.attackerId,
             input.attack,
             critical,
             input.effectiveAttackRoll,
@@ -3176,6 +3177,7 @@ export function resolveSelectedAttackProcedure<
       input.subject,
       [
         attackDamageHole(
+          attackerId,
           attack,
           critical,
           effectiveAttackRoll,
@@ -4904,6 +4906,7 @@ function resolveWeaponMasteryCleaveAfterPrimaryDamage(input: {
       tag: "result",
       result: needsHolesResult(cleaveAttackRolledState, input.subject, [
         weaponMasteryCleaveDamageHole(
+          input.subject.actorId,
           cleaveAttack,
           cleaveCritical,
           effectiveCleaveAttackRoll,
@@ -5674,6 +5677,7 @@ function resolveHuntersPreyHordeBreakerAfterPrimaryDamage(input: {
       tag: "result",
       result: needsHolesResult(rolledState, input.subject, [
         huntersPreyHordeBreakerDamageHole(
+          input.subject.actorId,
           hordeBreakerAttack,
           critical,
           effectiveHordeBreakerAttackRoll,

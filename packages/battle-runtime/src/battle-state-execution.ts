@@ -6109,33 +6109,48 @@ export type BattleCunningStrikeOption = BattleCunningStrikeOptionSelection & {
     readonly dieSize: 6;
   };
 };
+/**
+ * What a rolled-dice hole states about whose dice it asks for: the roller,
+ * any creature, and, once the dice are rolled and the roller is a player
+ * character who has Heroic Inspiration, the option to reroll one (A71). A
+ * hole without these fields asks for dice nobody may reroll this way yet.
+ */
+export type BattleRolledDiceHeroicInspirationHoleFields = {
+  /** The creature that rolls the dice: the attacker, the caster or the healer. */
+  readonly rollerId: CombatantId;
+  readonly heroicInspirationRerolls?: readonly [
+    BattleHeroicInspirationRerollOption,
+  ];
+};
 export type BattleDamageRollHole = Extract<
   RuntimeHole & { readonly label: string },
   { readonly kind: "rolledDice" }
-> & {
-  readonly attack: SupportedAttackActionOption;
-  readonly critical: boolean;
-  readonly damageDice:
-    | {
-        readonly kind: "fixed";
-        readonly groups: readonly Pick<DiceExpr, "dice" | "dieSize">[];
-      }
-    | { readonly kind: "selectionDependent" };
-  readonly attackDamageRiders?: readonly AttackDamageRider[];
-  readonly spellWeaponDamageRiders?: readonly SpellAttackDamageComponent[];
-  readonly spellMarkedDamageRiders?: readonly SpellMarkedDamageRider[];
-  readonly cunningStrikeOptions?: readonly BattleCunningStrikeOption[];
-  readonly weaponDamageDiceRollChoiceProcedureRefs?: readonly BattleProcedureExecutionRef[];
-  readonly attackDamageDieFloorChoiceProcedureRefs?: AttackDamageDieFloorChoiceProcedureRefs;
-  readonly attackDamageAbilityModifierChoice?: AttackDamageAbilityModifierChoice;
-};
+> &
+  BattleRolledDiceHeroicInspirationHoleFields & {
+    readonly attack: SupportedAttackActionOption;
+    readonly critical: boolean;
+    readonly damageDice:
+      | {
+          readonly kind: "fixed";
+          readonly groups: readonly Pick<DiceExpr, "dice" | "dieSize">[];
+        }
+      | { readonly kind: "selectionDependent" };
+    readonly attackDamageRiders?: readonly AttackDamageRider[];
+    readonly spellWeaponDamageRiders?: readonly SpellAttackDamageComponent[];
+    readonly spellMarkedDamageRiders?: readonly SpellMarkedDamageRider[];
+    readonly cunningStrikeOptions?: readonly BattleCunningStrikeOption[];
+    readonly weaponDamageDiceRollChoiceProcedureRefs?: readonly BattleProcedureExecutionRef[];
+    readonly attackDamageDieFloorChoiceProcedureRefs?: AttackDamageDieFloorChoiceProcedureRefs;
+    readonly attackDamageAbilityModifierChoice?: AttackDamageAbilityModifierChoice;
+  };
 type BattleSpellDamageRollContext = Extract<
   RuntimeHole & { readonly label: string },
   { readonly kind: "rolledDice" }
-> & {
-  readonly sourceProcedureRef: BattleProcedureExecutionRef;
-  readonly critical: boolean;
-};
+> &
+  BattleRolledDiceHeroicInspirationHoleFields & {
+    readonly sourceProcedureRef: BattleProcedureExecutionRef;
+    readonly critical: boolean;
+  };
 export type BattleSpellDamageRollHole = BattleSpellDamageRollContext & {
   readonly spellMarkedDamageRiders?: readonly SpellMarkedDamageRider[];
   readonly spellDamageRerolls?: readonly BattleSpellDamageRerollOption[];
@@ -6781,7 +6796,10 @@ export type BattleProtectionRelevantEffectSavingThrowOutcomeHole = {
 export type BattleSpellHealingRollHole = Extract<
   RuntimeHole & { readonly label: string },
   { readonly kind: "rolledDice" }
-> & { readonly sourceProcedureRef: BattleProcedureExecutionRef };
+> &
+  BattleRolledDiceHeroicInspirationHoleFields & {
+    readonly sourceProcedureRef: BattleProcedureExecutionRef;
+  };
 export type BattleSpellSkillChoiceHole = {
   readonly sourceProcedureRef: BattleProcedureExecutionRef;
   readonly holeInstanceKey: HoleInstanceKey;
@@ -7777,7 +7795,38 @@ export type BattleRolledDiceFill = {
   readonly attackDamageDieFloorChoice?: AttackDamageDieFloorChoiceFill;
   readonly attackDamageAbilityModifierChoice?: AttackDamageAbilityModifierChoiceFill;
   readonly spellDamageReroll?: BattleSpellDamageRerollDecision;
+  readonly heroicInspirationReroll?: BattleRolledDiceHeroicInspirationRerollDecision;
 };
+/**
+ * Where a die Heroic Inspiration rerolled stands in a rolled-dice fill: in
+ * one of the fill's groups, in one of Savage Attacker's two rolls, or among
+ * the dice Empowered Spell rerolled.
+ */
+export type BattleRolledDieRef =
+  | { readonly source: "rolledDiceGroup"; readonly groupIndex: number }
+  | {
+      readonly source: "weaponDamageDiceRollCandidate";
+      readonly candidate: WeaponDamageDiceRollChoiceFill["selection"];
+    }
+  | { readonly source: "spellDamageReroll" };
+/**
+ * A roller's Heroic Inspiration decision on a rolled-dice fill. The fill
+ * reports each die as it stands, so a reroll names the die, the face it
+ * showed and the face that replaced it, which the fill reports there
+ * (ASSUMPTIONS.md A71).
+ */
+export type BattleRolledDiceHeroicInspirationRerollDecision =
+  | {
+      readonly kind: "decline";
+      readonly effectKind: typeof HEROIC_INSPIRATION_REROLL_EFFECT_KIND;
+    }
+  | {
+      readonly kind: "rerollRolledDie";
+      readonly effectKind: typeof HEROIC_INSPIRATION_REROLL_EFFECT_KIND;
+      readonly rolledDie: BattleRolledDieRef;
+      readonly original: DieRollResult;
+      readonly replacement: DieRollResult;
+    };
 export const ATTACK_DAMAGE_DIE_FLOOR_CHOICE_UNSUPPORTED_DAMAGE_ROLL_OWNER_MESSAGE =
   "Attack damage die floor choices are not available for this damage-roll owner.";
 export function attackDamageDieFloorChoiceUnsupportedIssue(

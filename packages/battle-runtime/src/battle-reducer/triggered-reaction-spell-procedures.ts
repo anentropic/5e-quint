@@ -528,7 +528,7 @@ export function resolveTriggeredReactionSaveGatedDamage(
     }
     /* v8 ignore stop -- @preserve */
     return needsHolesResult(input.state, input.subject, [
-      spellDamageHole(input.invocation),
+      spellDamageHole(input.subject.reactorId, input.invocation),
     ]);
   }
   const damageValidation = validateSpellDamageFill(
