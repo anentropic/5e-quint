@@ -14,7 +14,7 @@ module unitFeatureFailedSaveReactionRerollCore {
   // - rules-glossary.md: Reaction. "Once you take a Reaction, you can't take
   //   another one until the start of your next turn." Incapacitated: "You
   //   can't take any action, Bonus Action, or Reaction."
-  // - ASSUMPTIONS.md A70: the Reaction is offered once the save stands failed
+  // - ASSUMPTIONS.md A71: the Reaction is offered once the save stands failed
   //   after its roller's own rerolls and added dice; the responder picks one
   //   creature whose save failed; the table rules the range; the new roll
   //   is a roll of its own whose mode combines the Reaction's Advantage with

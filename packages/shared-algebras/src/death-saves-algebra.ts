@@ -228,7 +228,7 @@ export function deathSavingThrowRollAfterD20Reroll(
 /**
  * The roll after a die is added to it (a Bardic Inspiration die): the number
  * rolled adds to what was added to the d20, and the d20 stays
- * (ASSUMPTIONS.md A68).
+ * (ASSUMPTIONS.md A69).
  */
 export function deathSavingThrowRollWithAddedDie(
   roll: DeathSavingThrowRoll,

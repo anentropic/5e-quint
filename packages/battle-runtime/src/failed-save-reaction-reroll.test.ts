@@ -665,7 +665,7 @@ describe("Countercharm's Advantage meets the save's own roll mode", () => {
 });
 
 // A creature that repeats a save to end a condition, and fails it, fails a
-// save against the effect that applies that condition (ASSUMPTIONS.md A70).
+// save against the effect that applies that condition (ASSUMPTIONS.md A71).
 type SavingThrowOutcomeHole = Extract<
   BattleHole,
   { readonly kind: "savingThrowOutcome" }

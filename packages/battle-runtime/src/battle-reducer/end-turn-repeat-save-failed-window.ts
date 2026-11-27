@@ -3,7 +3,7 @@
 // The save-failed Reaction window for a repeat save at the end of a turn. A
 // creature that repeats a save to end a condition, and fails it, fails a
 // saving throw against the effect that applies that condition (ASSUMPTIONS.md
-// A70), so the window opens as it does for the save that first applied the
+// A71), so the window opens as it does for the save that first applied the
 // condition. The window names the save's own hole: the turn's other repeat
 // saves, against other effects, are not this failure.
 //

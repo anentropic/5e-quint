@@ -90,7 +90,7 @@ import type { CharacterBattleCreatureInit } from "./battle-init.ts";
 type RolledDiceFill = Extract<BattleFill, { readonly kind: "rolledDice" }>;
 type RolledDiceHole = Extract<BattleHole, { readonly kind: "rolledDice" }>;
 
-describe("Heroic Inspiration reroll on weapon attack damage (A71)", () => {
+describe("Heroic Inspiration reroll on weapon attack damage (A74)", () => {
   test("a character with Heroic Inspiration is asked again for their damage dice", () => {
     const state = fighterBattle(HEROIC_INSPIRATION_AVAILABLE);
     const hit = longswordHit(state);
@@ -371,7 +371,7 @@ describe("Heroic Inspiration reroll on weapon attack damage (A71)", () => {
   });
 });
 
-describe("Heroic Inspiration with Savage Attacker and Great Weapon Fighting (A71)", () => {
+describe("Heroic Inspiration with Savage Attacker and Great Weapon Fighting (A74)", () => {
   test("Heroic Inspiration rerolls a die of the Savage Attacker roll it belongs to", () => {
     const session = withHeroicInspiration(
       savageAttackerBattle({
@@ -513,7 +513,7 @@ describe("Heroic Inspiration with Savage Attacker and Great Weapon Fighting (A71
   });
 });
 
-describe("Heroic Inspiration reroll on spell healing (A71)", () => {
+describe("Heroic Inspiration reroll on spell healing (A74)", () => {
   test("the caster may reroll one healing die, and the target heals by the new face", () => {
     const session = woundedTargetSession(
       withHeroicInspiration(
@@ -579,7 +579,7 @@ describe("Heroic Inspiration reroll on spell healing (A71)", () => {
   });
 });
 
-describe("Heroic Inspiration reroll replayed after a reaction (A71)", () => {
+describe("Heroic Inspiration reroll replayed after a reaction (A74)", () => {
   test("a damage reroll made after a declined Shield spends Heroic Inspiration once", () => {
     const scorchingRay = spellRecord("scorching_ray");
     const session = withHeroicInspiration(
@@ -697,7 +697,7 @@ describe("Heroic Inspiration reroll replayed after a reaction (A71)", () => {
   });
 });
 
-describe("Heroic Inspiration reroll on a Temporary Hit Points roll (A71)", () => {
+describe("Heroic Inspiration reroll on a Temporary Hit Points roll (A74)", () => {
   test("the caster may reroll one die of the roll, and gains the new total", () => {
     const session = withHeroicInspiration(
       spellBattle({

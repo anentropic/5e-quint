@@ -6108,7 +6108,7 @@ export type BattleDeathSavingThrowD20TestRerollDecisions = readonly [
 ];
 /**
  * A source's decision on a die added to a Death Saving Throw: the engine adds
- * the number rolled to the d20 and judges the result (ASSUMPTIONS.md A68).
+ * the number rolled to the d20 and judges the result (ASSUMPTIONS.md A69).
  */
 export type BattleDeathSavingThrowAddedDieDecision =
   BattleD20TestAddedDieDecision<typeof BARDIC_INSPIRATION_DIE_EFFECT_KIND>;
@@ -6176,7 +6176,7 @@ export type BattleCunningStrikeOption = BattleCunningStrikeOptionSelection & {
 /**
  * What a rolled-dice hole states about whose dice it asks for: the roller,
  * any creature, and, once the dice are rolled and the roller is a player
- * character who has Heroic Inspiration, the option to reroll one (A71). A
+ * character who has Heroic Inspiration, the option to reroll one (A74). A
  * hole without these fields asks for dice nobody may reroll this way yet.
  */
 export type BattleRolledDiceHeroicInspirationHoleFields = {
@@ -7879,7 +7879,7 @@ export type BattleRolledDieRef =
  * A roller's Heroic Inspiration decision on a rolled-dice fill. The fill
  * reports each die as it stands, so a reroll names the die, the face it
  * showed and the face that replaced it, which the fill reports there
- * (ASSUMPTIONS.md A71).
+ * (ASSUMPTIONS.md A74).
  */
 export type BattleRolledDiceHeroicInspirationRerollDecision =
   | {

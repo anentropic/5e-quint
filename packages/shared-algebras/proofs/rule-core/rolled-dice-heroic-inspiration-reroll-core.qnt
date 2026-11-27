@@ -13,7 +13,7 @@ module rolledDiceHeroicInspirationRerollCore {
   //   twice and use either roll against the target."
   // - classes.md: Empowered Spell. "you can reroll a number of the damage
   //   dice up to your Charisma modifier ... and you must use the new rolls."
-  // - ASSUMPTIONS.md A71: the roller sees the dice they roll together (a
+  // - ASSUMPTIONS.md A74: the roller sees the dice they roll together (a
   //   pool) before deciding, and rerolls one die of it. Great Weapon
   //   Fighting treats the die that stands after every reroll. Under Savage
   //   Attacker each of the two pools may take the reroll, at most once in

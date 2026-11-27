@@ -5166,7 +5166,7 @@ describe("battle runtime: Sorcerer save-affecting Metamagic", () => {
   });
 });
 
-describe("battle runtime: Heroic Inspiration on spell damage dice with Empowered Spell (A71)", () => {
+describe("battle runtime: Heroic Inspiration on spell damage dice with Empowered Spell (A74)", () => {
   function rayOfFrostHit(session: BattleRuntimeSession) {
     const state = session.state;
     const act = actionRayOfFrostAct(session);

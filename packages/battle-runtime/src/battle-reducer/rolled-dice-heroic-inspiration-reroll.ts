@@ -7,7 +7,7 @@
 // its healing or its Temporary Hit Points), checks the roller's decision, and
 // spends it once, before the subject's owners read the dice.
 //
-// The table rulings it applies are ASSUMPTIONS.md A71: the roller sees the
+// The table rulings it applies are ASSUMPTIONS.md A74: the roller sees the
 // dice they roll together, then rerolls one of them; the fill reports each
 // die as it stands, so a die floor (Great Weapon Fighting) applies to the
 // new face; under Savage Attacker it rerolls a die of either roll before the
@@ -320,7 +320,7 @@ function rolledDiceFillAsRolled(
   return Match.value(decision.rolledDie).pipe(
     Match.discriminatorsExhaustive("source")({
       // Heroic Inspiration on a die as rolled comes before Empowered Spell
-      // (A71), so the roll before it has no Empowered Spell reroll yet.
+      // (A74), so the roll before it has no Empowered Spell reroll yet.
       rolledDiceGroup: ({ groupIndex }): BattleRolledDiceFill => {
         const { spellDamageReroll: _later, ...beforeEmpoweredSpell } =
           withoutDecision;

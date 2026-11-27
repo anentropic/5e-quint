@@ -226,7 +226,7 @@ describe("triggered Reaction spell interrupt boundaries", () => {
     ).toMatchObject({ hp: 10 });
   });
 
-  test("Hellish Rebuke's damage dice offer the reactor's Heroic Inspiration (A71)", () => {
+  test("Hellish Rebuke's damage dice offer the reactor's Heroic Inspiration (A74)", () => {
     const hellishRebuke = spellRecord("hellish_rebuke");
     const session = startBattleSessionRight({
       battleId: battleId("battle-triggered-reaction-heroic-inspiration"),

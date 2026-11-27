@@ -1,7 +1,7 @@
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE
 // Every decision a D20 Test takes after its roll: its rerolls
 // (d20-test-outcome-rerolls.ts), then the dice added to the roll the rerolls
-// leave (d20-test-added-dice.ts, ASSUMPTIONS.md A67). A roller with a reroll
+// leave (d20-test-added-dice.ts, ASSUMPTIONS.md A68). A roller with a reroll
 // source to decide on is asked for that first; the hole asks for the added
 // dice only once every reroll is decided. Each owner that checks a saving
 // throw, a Death Saving Throw or an ability check before it resolves goes

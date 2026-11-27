@@ -15,7 +15,7 @@
 // after its roller's own rerolls and added dice. The new roll is a roll of its
 // own: its roller may decide on it with any source the first roll left
 // unspent. Its outcome stands in place of the failed one. The table rulings
-// this applies are ASSUMPTIONS.md A70.
+// this applies are ASSUMPTIONS.md A71.
 
 import { Match } from "effect";
 import { append } from "effect/Array";

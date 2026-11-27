@@ -4,7 +4,7 @@ module rolledDiceHeroicInspirationRerollCoreExamples {
   import heroicInspirationRerollCore.* from "./heroic-inspiration-reroll-core"
   import rolledDiceHeroicInspirationRerollCore.* from "./rolled-dice-heroic-inspiration-reroll-core"
 
-  // Fireball's 8d6, seen whole before the roller decides (A71).
+  // Fireball's 8d6, seen whole before the roller decides (A74).
   pure val inspiredPool: RolledDicePoolRerollFacts = {
     playerCharacter: true,
     inspiration: HeroicInspirationAvailable,

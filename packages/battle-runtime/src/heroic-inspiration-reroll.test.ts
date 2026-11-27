@@ -832,7 +832,7 @@ describe("Heroic Inspiration reroll on attack rolls", () => {
     );
   });
 
-  test("an Opportunity Attack's damage dice offer the reactor's Heroic Inspiration (A71)", () => {
+  test("an Opportunity Attack's damage dice offer the reactor's Heroic Inspiration (A74)", () => {
     const state = startBattleRight({
       battleId: battleId("heroic-inspiration-opportunity-damage"),
       combatants: [

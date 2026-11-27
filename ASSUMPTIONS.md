@@ -572,7 +572,7 @@ on the d20 decides first, whatever the bonus: a 1 is two failures and a 20
 regains 1 Hit Point. A later reroll of that d20 by another source replaces only
 the d20 and keeps the bonus, as a reroll keeps a save's other modifiers. A die
 added to a failed Death Saving Throw (Bardic Inspiration, after its rerolls as
-A67 sets) is a bonus the same way: it counts toward 10, and it can't change a 1
+A68 sets) is a bonus the same way: it counts toward 10, and it can't change a 1
 or a 20.
 
 **Rules basis / gap:** `.references/srd-5.2.1/playing-the-game.md`, "Death
@@ -590,10 +590,10 @@ not the saving throw's modifiers. Bardic Inspiration adds "the number rolled to
 the d20", which the model reads the same way as any bonus: it adds to the roll's
 total, and the d20 still shows its face.
 
-## A69: A die added to a missed attack roll answers the Armor Class as it stands
+## A70: A die added to a missed attack roll answers the Armor Class as it stands
 
 **Assumption:** A die added to an attack roll that misses (Bardic Inspiration,
-after the roll's rerolls as A67 sets) is offered while the roll misses the
+after the roll's rerolls as A68 sets) is offered while the roll misses the
 target's Armor Class as it stands, including after a Reaction raises that Armor
 Class (Shield) or lowers the roll (Cutting Words) and so turns a hit into a
 miss. The die adds to the roll's total and the d20 keeps its face, so the die
@@ -610,14 +610,14 @@ modifiers or the target's AC". `.references/srd-5.2.1/spells.md`, "Shield":
 doesn't say when an attack roll has failed if a Reaction to the hit changes
 the result; the model reads the failure from the result that stands, so the
 attacker may answer the Reaction's miss with the die. It reads "add the number
-rolled to the d20" as A68 does: the number adds to the total, and the d20 still
+rolled to the d20" as A69 does: the number adds to the total, and the d20 still
 shows its face.
 
-## A70: A Reaction that rerolls a failed save asks one fresh roll, once the save stands failed
+## A71: A Reaction that rerolls a failed save asks one fresh roll, once the save stands failed
 
 **Assumption:** A Reaction that causes a failed saving throw to be rerolled
 (Countercharm) is offered once the save stands failed after its roller's own
-rerolls and added dice (A67). The responder picks one creature whose save
+rerolls and added dice (A68). The responder picks one creature whose save
 failed, if more than one did, and the table rules whether that creature is
 within the range, measured as a straight line. The new roll is a roll of its
 own: its roll mode combines the Reaction's Advantage with the save's own
@@ -643,41 +643,10 @@ roller can still reroll it, which creature the Reaction rerolls when several
 fail, whether the new roll keeps the first roll's spent or unspent sources,
 whether a failed new roll triggers the Reaction again, or whether a repeat
 save to end the condition counts. The model reads the failure from the result
-that stands, as A69 does, lets the responder choose, treats the new roll as a
+that stands, as A70 does, lets the responder choose, treats the new roll as a
 fresh D20 Test, reads "the save" as the one save the trigger names, so the new
 roll can't trigger it again, and counts a repeat save, which is still "a
 saving throw against an effect that applies" the condition.
-
-## A71: Heroic Inspiration rerolls one die of a roll its roller sees whole
-
-**Assumption:** A player character with Heroic Inspiration may reroll one die
-of a damage, healing or Temporary Hit Points roll that is theirs: the dice of
-their own attack or spell, which they roll. Dice rolled together (8d6 for one
-spell) are seen together, so the roller picks the die after seeing them all;
-one use rerolls one die, and the new face stands. A die floor (Great Weapon
-Fighting) applies to the face that stands after the reroll. Under Savage
-Attacker the two rolls of the weapon's damage dice stay two rolls: the roller
-may reroll one die of either roll before picking the roll to use, never the
-best dice of both. With Empowered Spell the roller may reroll a die before
-Empowered Spell rerolls its dice, or one of the dice Empowered Spell rerolled.
-
-**Rules basis / gap:** `.references/srd-5.2.1/rules-glossary.md`, "Heroic
-Inspiration": "you can expend it to reroll any die immediately after rolling
-it, and you must use the new roll." `.references/srd-5.2.1/feats.md`, "Savage
-Attacker": "you can roll the weapon's damage dice twice and use either roll
-against the target"; "Great Weapon Fighting": "you can treat any 1 or 2 on a
-damage die as a 3". `.references/srd-5.2.1/classes.md`, "Empowered Spell":
-"you can spend 1 Sorcery Point to reroll a number of the damage dice up to
-your Charisma modifier (minimum of one), and you must use the new rolls." The
-SRD doesn't say who rolls an effect's dice, whether "any die" means one die
-of a roll or the roll, when "immediately after rolling it" falls for dice
-rolled together, or how the reroll orders with a die floor, Savage Attacker
-or Empowered Spell. The model has the creature whose attack or spell it is
-roll its dice, reads "any die" as one die, treats dice rolled together as
-rolled at once, applies the floor to the die that stands, as a d20 minimum
-applies to the d20 that stands, keeps Savage Attacker a choice between two
-rolls, and lets the roller order Heroic Inspiration and Empowered Spell, as
-A55 does for d20 rerolls.
 
 ## A72: Damage that Temporary Hit Points absorb at 0 Hit Points
 
@@ -719,3 +688,34 @@ remains the same from round to round." `.references/srd-5.2.1/rules-glossary.md`
 dead creature returning to life. The SRD doesn't say whether a dead creature
 is still a participant that takes turns, or who stops the fighting when
 nobody is left alive.
+
+## A74: Heroic Inspiration rerolls one die of a roll its roller sees whole
+
+**Assumption:** A player character with Heroic Inspiration may reroll one die
+of a damage, healing or Temporary Hit Points roll that is theirs: the dice of
+their own attack or spell, which they roll. Dice rolled together (8d6 for one
+spell) are seen together, so the roller picks the die after seeing them all;
+one use rerolls one die, and the new face stands. A die floor (Great Weapon
+Fighting) applies to the face that stands after the reroll. Under Savage
+Attacker the two rolls of the weapon's damage dice stay two rolls: the roller
+may reroll one die of either roll before picking the roll to use, never the
+best dice of both. With Empowered Spell the roller may reroll a die before
+Empowered Spell rerolls its dice, or one of the dice Empowered Spell rerolled.
+
+**Rules basis / gap:** `.references/srd-5.2.1/rules-glossary.md`, "Heroic
+Inspiration": "you can expend it to reroll any die immediately after rolling
+it, and you must use the new roll." `.references/srd-5.2.1/feats.md`, "Savage
+Attacker": "you can roll the weapon's damage dice twice and use either roll
+against the target"; "Great Weapon Fighting": "you can treat any 1 or 2 on a
+damage die as a 3". `.references/srd-5.2.1/classes.md`, "Empowered Spell":
+"you can spend 1 Sorcery Point to reroll a number of the damage dice up to
+your Charisma modifier (minimum of one), and you must use the new rolls." The
+SRD doesn't say who rolls an effect's dice, whether "any die" means one die
+of a roll or the roll, when "immediately after rolling it" falls for dice
+rolled together, or how the reroll orders with a die floor, Savage Attacker
+or Empowered Spell. The model has the creature whose attack or spell it is
+roll its dice, reads "any die" as one die, treats dice rolled together as
+rolled at once, applies the floor to the die that stands, as a d20 minimum
+applies to the d20 that stands, keeps Savage Attacker a choice between two
+rolls, and lets the roller order Heroic Inspiration and Empowered Spell, as
+A55 does for d20 rerolls.
