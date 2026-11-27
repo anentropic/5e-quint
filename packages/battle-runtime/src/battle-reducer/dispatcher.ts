@@ -35,6 +35,7 @@ import { resolveLongCastingCommand } from "./long-casting-lifecycle.ts";
 import { Match } from "effect";
 import { resolveReportReadyTriggerCommand } from "./ready-trigger.ts";
 import { optionalProperty } from "../optional-property.ts";
+import type { BattleInterruptTrigger } from "../battle-interrupt-triggers.ts";
 
 import { currentInterruptFrame, snapshotBattle } from "./battle-snapshot.ts";
 export {
@@ -839,7 +840,7 @@ function resolveBattleSubjectAfterD20TestRerolls(
   if (obligationAdmission !== null) return obligationAdmission;
   const result = (() => {
     if (input.admissionKind !== "general") {
-      return resolveSpecializedAdmission(input);
+      return resolveSpecializedAdmission(input, handledInterruptTrigger);
     }
     const subject = input.subject;
     if (isLongCastingCommandSubject(subject)) {
@@ -1203,9 +1204,15 @@ function resolveSpecializedAdmission(
     AdmittedBattleResolutionInput,
     { readonly admissionKind: "general" }
   >,
+  handledInterruptTrigger: BattleInterruptTrigger | undefined,
 ): BattleResolutionResult {
   return Match.value(input).pipe(
-    Match.when({ admissionKind: "unitFeature" }, resolveUnitFeature),
+    Match.when({ admissionKind: "unitFeature" }, (unitFeatureInput) =>
+      resolveUnitFeature({
+        ...unitFeatureInput,
+        ...optionalProperty("handledInterruptTrigger", handledInterruptTrigger),
+      }),
+    ),
     Match.when(
       { admissionKind: "druidWildShape" },
       resolveDruidWildShapeUnitFeature,

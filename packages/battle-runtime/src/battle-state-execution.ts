@@ -1341,12 +1341,7 @@ export type BattleInterruptCheckpoint =
       readonly targetIds: readonly CombatantId[];
       readonly reactionSpellTargetFacts: readonly BattleSpellCastReactionFact[];
     })
-  | (BattleInterruptCheckpointWithContinuationBase & {
-      readonly trigger: "saveFailed";
-      readonly targetId: CombatantId;
-      readonly sourceProcedureRef?: BattleProcedureExecutionRef;
-      readonly effectRef?: BattleEffectExecutionRef;
-    })
+  | (BattleInterruptCheckpointWithContinuationBase & BattleSaveFailedOccurrence)
   | (BattleInterruptCheckpointWithContinuationBase & {
       readonly trigger: "afterDamage";
       readonly damageSourceId: CombatantId;
@@ -1444,13 +1439,23 @@ export type BattleSpellCastMetamagicCommitment =
 export type BattleSpellCastConcentrationCommitment =
   | { readonly kind: "none" }
   | { readonly kind: "breakExisting" };
+/**
+ * The saving throws one effect's resolution leaves failed. Each failed creature
+ * is a trigger for a Reaction that answers a failed save.
+ */
+export type BattleSaveFailedOccurrence = {
+  readonly trigger: "saveFailed";
+  readonly failedTargetIds: ReadonlyNonEmptyArray<CombatantId>;
+  /**
+   * The conditions the effect applies to a creature that fails this save, from
+   * the effect's own shape. Empty when the failure applies no condition.
+   */
+  readonly appliedConditions: readonly Condition[];
+  readonly sourceProcedureRef?: BattleProcedureExecutionRef;
+  readonly effectRef?: BattleEffectExecutionRef;
+};
 export type BattleHandledInterruptOccurrence =
-  | {
-      readonly trigger: "saveFailed";
-      readonly targetId: CombatantId;
-      readonly sourceProcedureRef?: BattleProcedureExecutionRef;
-      readonly effectRef?: BattleEffectExecutionRef;
-    }
+  | BattleSaveFailedOccurrence
   | {
       readonly trigger: "attackHit";
       readonly spatialMeleeSpellAttackProxyCommitCheckpoint?: BattleSpatialMeleeSpellAttackProxyCommitCheckpoint;
@@ -8467,7 +8472,9 @@ export type BonusActionDashSpellBattleResolutionInput =
   };
 export type UnitFeatureBattleResolutionInput = BattleResolutionInputForSubject<
   Extract<BattleSubject, { readonly tag: "unitFeature" }>
->;
+> & {
+  readonly handledInterruptTrigger?: BattleInterruptTrigger;
+};
 export type UnitFeatureHeldWeaponActivationBattleResolutionInput =
   BattleResolutionInputForSubject<
     Extract<BattleSubject, { readonly tag: "unitFeatureHeldWeaponActivation" }>

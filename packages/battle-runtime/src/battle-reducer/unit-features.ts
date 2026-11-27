@@ -84,7 +84,10 @@ import {
   OTHER_MAGICAL_EFFECT_SOURCE,
   magicalEffectTargetsInterdictionMessage,
 } from "./magic-suppression-magical-effect-interdiction.ts";
-import { spendReaction } from "./interrupt-execution.ts";
+import {
+  maybeOpenInterruptWindow,
+  spendReaction,
+} from "./interrupt-execution.ts";
 import { snapshotBattle } from "./battle-snapshot.ts";
 import {
   reactionModifierResourceAvailable,
@@ -996,11 +999,19 @@ function resolveMagicActionAreaSaveDamageHealingAfterSpend(input: {
   };
 }
 
-function resolveMagicActionSaveGatedConditionUnitFeature(
+/** The caster's spell save DC, once the action's resource still has a use. */
+function magicActionSaveGatedConditionSpellSaveDc(
   input: UnitFeatureBattleResolutionInput,
   actor: CharacterBattleCreatureState,
   unitFeature: MechanicalUnitFeature<"magicActionSaveGatedCondition">,
-): BattleResolutionResult {
+):
+  | Extract<BattleResolutionResult, { readonly tag: "invalid" }>
+  | {
+      readonly tag: "ok";
+      readonly spellSaveDc: NonNullable<
+        ReturnType<typeof spellSaveDcForCaster>
+      >;
+    } {
   const resource = actor.origin.resources.find(
     (candidate) =>
       candidate.resourcePoolRef ===
@@ -1021,6 +1032,45 @@ function resolveMagicActionSaveGatedConditionUnitFeature(
       "Magic Action condition requires a spell save DC.",
     );
   }
+  return { tag: "ok", spellSaveDc };
+}
+
+/** Opens the failed-save Reaction window before the action spends anything; the replay applies the condition. */
+function magicActionSaveGatedConditionSaveFailedReactionWindow(
+  input: UnitFeatureBattleResolutionInput,
+  unitFeature: MechanicalUnitFeature<"magicActionSaveGatedCondition">,
+  failedTargetIds: readonly CombatantId[],
+): Extract<BattleResolutionResult, { readonly tag: "needsHoles" }> | null {
+  if (!isReadonlyArrayNonEmpty(failedTargetIds)) return null;
+  return maybeOpenInterruptWindow(
+    input.state,
+    {
+      trigger: "saveFailed",
+      failedTargetIds,
+      appliedConditions: [unitFeature.condition.onFail.condition],
+      sourceProcedureRef: input.subject.procedureRef,
+      continuation: {
+        kind: "replay",
+        subject: input.subject,
+        fills: input.fills,
+      },
+    },
+    input.handledInterruptTrigger,
+  );
+}
+
+function resolveMagicActionSaveGatedConditionUnitFeature(
+  input: UnitFeatureBattleResolutionInput,
+  actor: CharacterBattleCreatureState,
+  unitFeature: MechanicalUnitFeature<"magicActionSaveGatedCondition">,
+): BattleResolutionResult {
+  const spellSaveDcResult = magicActionSaveGatedConditionSpellSaveDc(
+    input,
+    actor,
+    unitFeature,
+  );
+  if (spellSaveDcResult.tag === "invalid") return spellSaveDcResult;
+  const spellSaveDc = spellSaveDcResult.spellSaveDc;
   const fills = magicActionSaveGatedConditionFills(
     input.fills,
     input.subject.procedureRef,
@@ -1090,6 +1140,14 @@ function resolveMagicActionSaveGatedConditionUnitFeature(
       "Magic Action condition is no longer available.",
     );
   }
+  const failedTargetIds = failedSavingThrowTargetIds(validation.outcomes);
+  const saveFailedReactionWindow =
+    magicActionSaveGatedConditionSaveFailedReactionWindow(
+      input,
+      unitFeature,
+      failedTargetIds,
+    );
+  if (saveFailedReactionWindow !== null) return saveFailedReactionWindow;
   const actorAfterResourceSpend: CharacterBattleCreatureState = {
     ...actor,
     origin: {
@@ -1116,7 +1174,6 @@ function resolveMagicActionSaveGatedConditionUnitFeature(
     savingThrowTargetIds,
     relationshipFacts,
   );
-  const failedTargetIds = failedSavingThrowTargetIds(validation.outcomes);
   const stateAfterConditions = applyMagicActionSaveGatedConditionFailures(
     stateAfterSpend,
     actor.combatantId,

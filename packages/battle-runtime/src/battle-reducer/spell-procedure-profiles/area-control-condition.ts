@@ -1,3 +1,5 @@
+import type { Condition } from "@dnd/shared/game-facts";
+import { isReadonlyArrayNonEmpty } from "effect/Array";
 import type { AdmittedSpellFacts } from "./profile.ts";
 import { leveledSpellInvocationOptions } from "./profile.ts";
 import { savingThrowMetamagicHoles } from "../saving-throw-metamagic-holes.ts";
@@ -764,13 +766,25 @@ function admitSaveGatedAreaControl(
   );
 }
 
-function isApplyConditionEffect(
+/** The conditions a failed save against the save-gated area-control profile applies. */
+const SAVE_GATED_AREA_CONTROL_FAILED_SAVE_CONDITIONS = [
+  "charmed",
+  "incapacitated",
+] as const satisfies readonly Condition[];
+type SaveGatedAreaControlFailedSaveCondition =
+  (typeof SAVE_GATED_AREA_CONTROL_FAILED_SAVE_CONDITIONS)[number];
+
+function isSaveGatedAreaControlFailedSaveConditionEffect(
   effect: EffectAtom,
-  condition: "charmed" | "incapacitated",
 ): effect is Extract<EffectAtom, { readonly kind: "apply_condition" }> & {
-  readonly condition: typeof condition;
+  readonly condition: SaveGatedAreaControlFailedSaveCondition;
 } {
-  return effect.kind === "apply_condition" && effect.condition === condition;
+  return (
+    effect.kind === "apply_condition" &&
+    SAVE_GATED_AREA_CONTROL_FAILED_SAVE_CONDITIONS.some(
+      (condition) => condition === effect.condition,
+    )
+  );
 }
 
 const SAVE_GATED_AREA_CONTROL_FAILED_EFFECT_ROLES = [
@@ -784,7 +798,7 @@ type SaveGatedAreaControlFailedEffectRole =
 
 type SaveGatedAreaControlFailedRoleEffect =
   | (Extract<EffectAtom, { readonly kind: "apply_condition" }> & {
-      readonly condition: "charmed" | "incapacitated";
+      readonly condition: SaveGatedAreaControlFailedSaveCondition;
     })
   | (Extract<EffectAtom, { readonly kind: "set_speed" }> & {
       readonly feet: 0;
@@ -794,10 +808,7 @@ type SaveGatedAreaControlFailedRoleEffect =
 function saveGatedAreaControlFailedRoleEffect(
   effect: EffectAtom,
 ): SaveGatedAreaControlFailedRoleEffect | undefined {
-  if (
-    isApplyConditionEffect(effect, "charmed") ||
-    isApplyConditionEffect(effect, "incapacitated")
-  ) {
+  if (isSaveGatedAreaControlFailedSaveConditionEffect(effect)) {
     return effect;
   }
   if (isSaveGatedAreaControlSpeedZeroEffect(effect)) {
@@ -1006,7 +1017,7 @@ function resolveSaveGatedAreaControl(
   const failedTargets = failedSavingThrowTargetIds(
     savingThrowOutcomes.outcomes,
   );
-  if (failedTargets.length > 0) {
+  if (isReadonlyArrayNonEmpty(failedTargets)) {
     const continuation: BattleInterruptedProcedure = spellReplayContinuation(
       input.input,
     );
@@ -1014,7 +1025,8 @@ function resolveSaveGatedAreaControl(
       input.input.state,
       {
         trigger: "saveFailed",
-        targetId: failedTargets[0]!,
+        failedTargetIds: failedTargets,
+        appliedConditions: SAVE_GATED_AREA_CONTROL_FAILED_SAVE_CONDITIONS,
         sourceProcedureRef: input.invocation.sourceProcedureRef,
         continuation,
       },

@@ -1,3 +1,4 @@
+import { isReadonlyArrayNonEmpty } from "effect/Array";
 import { spellFillSetTargetSelection } from "./spells-resolve-fill-set.ts";
 import * as Result from "effect/Result";
 // UNIT-PROFILE-COVERAGE: runtime-owner spell.invocation-fog-cloud-obscurement spell.invocation-flaming-sphere-hazard-ram spell.invocation-moonbeam-movable-zone
@@ -1050,12 +1051,14 @@ export function resolveDirectionalPersistentAreaSpellAct(input: {
     return invalidResult(input.input.state, "invalidFill", areaValidation);
   }
   /* v8 ignore stop -- @preserve */
-  if (failedTargetIds.length > 0) {
+  if (isReadonlyArrayNonEmpty(failedTargetIds)) {
     const saveFailedReactionWindow = maybeOpenInterruptWindow(
       input.input.state,
       {
         trigger: "saveFailed",
-        targetId: failedTargetIds[0]!,
+        failedTargetIds,
+        // The area's failed save pushes the creature and applies no condition.
+        appliedConditions: [],
         sourceProcedureRef: input.invocation.sourceProcedureRef,
         continuation: spellReplayContinuation(input.input),
       },

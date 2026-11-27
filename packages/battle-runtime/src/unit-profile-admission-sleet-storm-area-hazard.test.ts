@@ -1,3 +1,4 @@
+import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
 import { testMovementPath } from "./battle-runtime.test-support.ts";
 // UNIT-IDENTITY-EVIDENCE: selected-identity-replay L3-FOLLOWUP-SLEET-STORM-AREA-HAZARD-RUNTIME sleet_storm
 // UNIT-IDENTITY-EVIDENCE: deterministic-admission-projection L3-FOLLOWUP-SLEET-STORM-AREA-HAZARD-RUNTIME sleet_storm
@@ -514,6 +515,13 @@ describe("Task 11 deterministic Sleet Storm area-hazard admission", () => {
         kind: "interruptDecision",
         decisionHole: { kind: "interruptDecision", trigger: "saveFailed" },
       },
+    });
+    if (awaitingReaction.tag !== "needsHoles") {
+      throw new Error("Expected the failed-save Reaction window.");
+    }
+    expect(currentInterruptCheckpoint(awaitingReaction.state)).toMatchObject({
+      failedTargetIds: [spellTargetId],
+      appliedConditions: ["prone"],
     });
     const declined = declineTargetReadiedSpellAfterFailedSave(awaitingReaction);
     expect(requireCombatant(declined.state, spellTargetId)).toMatchObject({

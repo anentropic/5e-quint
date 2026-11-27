@@ -52,7 +52,8 @@ describe("interrupt lifecycle", () => {
       state,
       {
         trigger: "saveFailed",
-        targetId: actorId,
+        failedTargetIds: [actorId],
+        appliedConditions: ["charmed"],
         sourceProcedureRef,
         effectRef,
         continuation: {
@@ -127,7 +128,8 @@ describe("interrupt lifecycle", () => {
         continuation: expect.objectContaining({ kind: "resolved" }),
         handledInterruptOccurrence: expect.objectContaining({
           trigger: "saveFailed",
-          targetId: actorId,
+          failedTargetIds: [actorId],
+          appliedConditions: ["charmed"],
           sourceProcedureRef,
           effectRef,
         }),
@@ -184,7 +186,8 @@ describe("interrupt lifecycle", () => {
       state,
       {
         trigger: "saveFailed",
-        targetId: actorId,
+        failedTargetIds: [actorId],
+        appliedConditions: [],
         continuation: {
           kind: "resolved",
           subject: { tag: "action", actorId, action: "dodge" },
@@ -384,7 +387,8 @@ describe("interrupt lifecycle", () => {
       saveFailedState,
       {
         trigger: "saveFailed",
-        targetId: currentActorId(saveFailedState),
+        failedTargetIds: [currentActorId(saveFailedState)],
+        appliedConditions: [],
         continuation: {
           kind: "resolved",
           subject: {

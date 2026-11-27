@@ -1273,7 +1273,8 @@ export function handledInterruptOccurrenceForCheckpoint(
   return Match.value(frame).pipe(
     Match.when({ trigger: "saveFailed" }, (saveFailed) => ({
       trigger: "saveFailed" as const,
-      targetId: saveFailed.targetId,
+      failedTargetIds: saveFailed.failedTargetIds,
+      appliedConditions: saveFailed.appliedConditions,
       ...optionalProperty("sourceProcedureRef", saveFailed.sourceProcedureRef),
       ...optionalProperty("effectRef", saveFailed.effectRef),
     })),
