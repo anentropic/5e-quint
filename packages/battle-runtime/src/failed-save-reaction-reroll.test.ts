@@ -14,6 +14,9 @@ import { describe, expect, test } from "vitest";
 import {
   battleFrontierInterruptDecisionForState,
   battleResolutionHolesForTest,
+  battleStateWithAllocatedEffectForTest,
+  discoverBattleActCandidates,
+  endTurn,
   characterBattleFeatureInitForTest,
   interruptDecisionFill,
   resolveBattleInterrupt,
@@ -48,8 +51,10 @@ import {
 import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
 import { battleInterruptDecisionFillSchema } from "./battle-reducer/battle-codecs.ts";
 import { HEROIC_INSPIRATION_REROLL_UNAVAILABLE_MESSAGE } from "./battle-reducer/heroic-inspiration-reroll.ts";
+import type { BattleEffectExecutionRef } from "./identity.ts";
 import {
   charmPersonUnitId,
+  commandUnitId,
   viciousMockeryUnitId,
 } from "./unit-profile-admission-catalog.test-support.ts";
 import {
@@ -666,53 +671,154 @@ type SavingThrowOutcomeHole = Extract<
   { readonly kind: "savingThrowOutcome" }
 >;
 
+type RepeatSaveFamily =
+  | "spellCondition"
+  | "countedSpellCondition"
+  | "unitFeatureCondition";
+
+type RepeatSaveSpec = {
+  readonly family: RepeatSaveFamily;
+  readonly condition: Condition;
+};
+
+const repeatSave = {
+  ability: "wis",
+  dc: { kind: "fixed", dc: difficultyClass(13) },
+} as const;
+
+const repeatSaveExpiry = {
+  kind: "duration",
+  durationTicks: elapsedTimeTicks(10),
+} as const;
+
 /**
- * The Bard, on its own turn, under a condition it repeats a save against at
- * the end of each of its turns. Each condition is a synthetic low-level
- * repeat-save effect with a fixed DC, sourced from the other creature.
+ * The owner under a condition it repeats a save against at the end of each
+ * of its turns: a synthetic low-level repeat-save effect with a fixed DC,
+ * sourced from the other creature, of the given family.
  */
-function repeatSaveBattle(conditions: readonly Condition[]) {
+function withConditionRepeatSave(
+  state: BattleState,
+  input: RepeatSaveSpec & {
+    readonly ownerId: CombatantId;
+    readonly sourceId: CombatantId;
+  },
+): BattleState {
+  const allocated = battleStateWithLowLevelSourceOwnedEffectOccurrenceForTest({
+    state,
+    sourceCombatantId: input.sourceId,
+    ownerId: input.ownerId,
+    effect: {
+      kind: "spellConditionEndTurnSave",
+      condition: input.condition,
+      conditionHadNonSpellSource: false,
+      heightenedSpellTargetDisadvantage: null,
+      save: repeatSave,
+      expiresAt: repeatSaveExpiry,
+    },
+  });
+  // The low-level boundary allocates only the spell family; the other
+  // families take the same source procedure in place of that occurrence.
+  const withEffect =
+    input.family === "spellCondition"
+      ? allocated.state
+      : battleStateWithAllocatedEffectForTest({
+          state: withoutActiveEffect(
+            allocated.state,
+            input.ownerId,
+            allocated.effectRef,
+          ),
+          ownerId: input.ownerId,
+          effect:
+            input.family === "countedSpellCondition"
+              ? {
+                  kind: "spellConditionCountedEndTurnSave",
+                  sourceProcedureRef: allocated.sourceProcedureRef,
+                  sourceCombatantId: input.sourceId,
+                  condition: input.condition,
+                  conditionHadNonSpellSource: false,
+                  save: repeatSave,
+                  successes: 0,
+                  failures: 0,
+                  successThreshold: 3,
+                  failureThreshold: 3,
+                  savingThrowDisadvantageAbility: "str",
+                  lockedIn: false,
+                  expiresAt: repeatSaveExpiry,
+                }
+              : {
+                  kind: "unitFeatureConditionEndTurnSave",
+                  sourceProcedureRef: allocated.sourceProcedureRef,
+                  sourceCombatantId: input.sourceId,
+                  condition: input.condition,
+                  conditionHadNonSpellSource: false,
+                  save: repeatSave,
+                  expiresAt: repeatSaveExpiry,
+                },
+        });
+  const owner = withEffect.combatants.get(input.ownerId);
+  if (owner === undefined) throw new Error("Expected the repeat save's owner.");
+  return {
+    ...withEffect,
+    combatants: new Map(withEffect.combatants).set(
+      input.ownerId,
+      testBattleCreatureStateWithConditions(
+        owner,
+        applyCondition(owner.conditions, input.condition),
+      ),
+    ),
+  };
+}
+
+function withoutActiveEffect(
+  state: BattleState,
+  ownerId: CombatantId,
+  effectRef: BattleEffectExecutionRef,
+): BattleState {
+  const owner = state.combatants.get(ownerId);
+  if (owner === undefined) throw new Error("Expected the effect's owner.");
+  return {
+    ...state,
+    combatants: new Map(state.combatants).set(ownerId, {
+      ...owner,
+      activeEffects: owner.activeEffects.filter(
+        (effect) => !("effectRef" in effect) || effect.effectRef !== effectRef,
+      ),
+    }),
+  };
+}
+
+/**
+ * The end of a turn whose ending creature repeats the given saves: the Bard's
+ * own turn, or, with "ally", the other creature's turn after the Bard's.
+ */
+function repeatSaveBattle(
+  repeatSaves: readonly (Condition | RepeatSaveSpec)[],
+  ender: "bard" | "ally" = "bard",
+) {
   const session = countercharmBattle({
     bard: "caster",
     spellId: viciousMockeryUnitId,
   });
-  let state = session.state;
-  for (const condition of conditions) {
-    state = battleStateWithLowLevelSourceOwnedEffectOccurrenceForTest({
-      state,
-      sourceCombatantId: spellTargetId,
-      ownerId: spellCasterId,
-      effect: {
-        kind: "spellConditionEndTurnSave",
-        condition,
-        conditionHadNonSpellSource: false,
-        heightenedSpellTargetDisadvantage: null,
-        save: {
-          ability: "wis",
-          dc: { kind: "fixed", dc: difficultyClass(13) },
-        },
-        expiresAt: {
-          kind: "duration",
-          durationTicks: elapsedTimeTicks(10),
-        },
-      },
-    }).state;
-    const bard = state.combatants.get(spellCasterId);
-    if (bard === undefined) throw new Error("Expected the Bard.");
-    state = {
-      ...state,
-      combatants: new Map(state.combatants).set(
-        spellCasterId,
-        testBattleCreatureStateWithConditions(
-          bard,
-          applyCondition(bard.conditions, condition),
-        ),
-      ),
-    };
+  const enderId = ender === "bard" ? spellCasterId : spellTargetId;
+  const sourceId = ender === "bard" ? spellTargetId : spellCasterId;
+  let state =
+    ender === "bard"
+      ? session.state
+      : requireResolved(
+          endTurn({ state: session.state, actorId: spellCasterId }),
+        ).state;
+  for (const spec of repeatSaves) {
+    state = withConditionRepeatSave(state, {
+      ...(typeof spec === "string"
+        ? { family: "spellCondition" as const, condition: spec }
+        : spec),
+      ownerId: enderId,
+      sourceId,
+    });
   }
   const subject: BattleSubject = {
     tag: "runtimeCommand",
-    actorId: spellCasterId,
+    actorId: enderId,
     command: "endTurn",
   };
   const saveHoles = battleResolutionHolesForTest(
@@ -721,7 +827,7 @@ function repeatSaveBattle(conditions: readonly Condition[]) {
     (hole): hole is SavingThrowOutcomeHole =>
       hole.kind === "savingThrowOutcome",
   );
-  const endTurn = (
+  const resolveEndTurn = (
     current: BattleState,
     outcomes: readonly CharmPersonOutcome[],
   ): BattleResolutionResult =>
@@ -732,11 +838,22 @@ function repeatSaveBattle(conditions: readonly Condition[]) {
         const outcome = outcomes[index];
         if (outcome === undefined) throw new Error("Expected an outcome.");
         return savingThrowOutcomeFill(hole, [
-          { targetId: spellCasterId, ...outcome },
+          { targetId: enderId, ...outcome },
         ]);
       }),
     });
-  return { state, saveHoles, endTurn };
+  return { state, saveHoles, endTurn: resolveEndTurn };
+}
+
+function requireResolved(
+  result: BattleResolutionResult,
+): Extract<BattleResolutionResult, { readonly tag: "resolved" }> {
+  if (result.tag !== "resolved") {
+    throw new Error(
+      `Expected resolution, got ${result.tag}: ${result.tag === "invalid" ? result.message : ""}`,
+    );
+  }
+  return result;
 }
 
 const failedRepeatSave = {
@@ -744,8 +861,8 @@ const failedRepeatSave = {
   d20TestRoll: single(4),
 } as const;
 
-function conditionsOf(state: BattleState) {
-  return state.combatants.get(spellCasterId)?.conditions;
+function conditionsOf(state: BattleState, id: CombatantId = spellCasterId) {
+  return state.combatants.get(id)?.conditions;
 }
 
 describe("Countercharm on a repeat save at the end of a turn", () => {
@@ -863,5 +980,230 @@ describe("Countercharm on a repeat save at the end of a turn", () => {
         ? checkpoint.failedSaveHoleIds
         : undefined,
     ).toEqual([rerolledHoles[0]?.holeId]);
+  });
+  test("a counted repeat save that Countercharm's new roll wins counts as a success", () => {
+    const battle = repeatSaveBattle([
+      { family: "countedSpellCondition", condition: "frightened" },
+    ]);
+    const interrupted = battle.endTurn(battle.state, [failedRepeatSave]);
+    expect(
+      currentInterruptCheckpoint(requireNeedsHoles(interrupted).state),
+    ).toMatchObject({
+      trigger: "saveFailed",
+      appliedConditions: ["frightened"],
+    });
+    const asked = requireNeedsHoles(takeCountercharm(interrupted));
+    const resolved = requireResolved(
+      battle.endTurn(asked.state, [
+        {
+          ...failedRepeatSave,
+          failedSaveReactionReroll: newRoll({
+            responderId: spellCasterId,
+            succeeded: true,
+            d20TestRoll: multiple(3, 16, "advantage"),
+          }),
+        },
+      ]),
+    );
+
+    expect(resolved.state.combatants.get(spellCasterId)?.activeEffects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "spellConditionCountedEndTurnSave",
+          successes: 1,
+          failures: 0,
+        }),
+      ]),
+    );
+  });
+
+  test("a Unit feature's failed repeat save against Frightened offers the Reaction", () => {
+    const battle = repeatSaveBattle([
+      { family: "unitFeatureCondition", condition: "frightened" },
+    ]);
+    const interrupted = battle.endTurn(battle.state, [failedRepeatSave]);
+
+    expect(
+      currentInterruptCheckpoint(requireNeedsHoles(interrupted).state),
+    ).toMatchObject({
+      trigger: "saveFailed",
+      appliedConditions: ["frightened"],
+    });
+    const asked = requireNeedsHoles(takeCountercharm(interrupted));
+    const resolved = requireResolved(
+      battle.endTurn(asked.state, [
+        {
+          ...failedRepeatSave,
+          failedSaveReactionReroll: newRoll({
+            responderId: spellCasterId,
+            succeeded: true,
+            d20TestRoll: multiple(3, 16, "advantage"),
+          }),
+        },
+      ]),
+    );
+    expect(conditionsOf(resolved.state)).not.toEqual(
+      expect.objectContaining({ frightened: true }),
+    );
+  });
+
+  test("a Bard rerolls an ally's failed repeat save at the end of the ally's turn", () => {
+    const battle = repeatSaveBattle(["frightened"], "ally");
+    const interrupted = battle.endTurn(battle.state, [failedRepeatSave]);
+
+    expect(countercharmChoice(interrupted)).toMatchObject({
+      responderId: spellCasterId,
+      reroll: {
+        rollerId: spellTargetId,
+        rollerPosition: { kind: "withinRange", rangeFeet: 30 },
+      },
+    });
+    const asked = requireNeedsHoles(takeCountercharm(interrupted));
+    const resolved = requireResolved(
+      battle.endTurn(asked.state, [
+        {
+          ...failedRepeatSave,
+          failedSaveReactionReroll: newRoll({
+            responderId: spellCasterId,
+            succeeded: true,
+            d20TestRoll: multiple(3, 16, "advantage"),
+          }),
+        },
+      ]),
+    );
+    expect(conditionsOf(resolved.state, spellTargetId)).not.toEqual(
+      expect.objectContaining({ frightened: true }),
+    );
+  });
+
+  test("when a command ends the turn, the window replays End Turn after the command's changes", () => {
+    // Command (Grovel) makes the Bard fall Prone and end its turn. The window
+    // opens on the state with the Bard Prone, so its replay resumes End Turn
+    // and the command doesn't apply again.
+    const session = countercharmBattle({
+      bard: "target",
+      spellId: commandUnitId,
+    });
+    const act = spellAct({ session, spellId: commandUnitId });
+    const targetFill = spellTargetListFill(
+      requireHole(act.initialHoles, "spellTargetList"),
+      spellCasterId,
+      commandUnitId,
+      [spellTargetId],
+    );
+    const optionHole = requireHole(
+      act.initialHoles,
+      "compelledBehaviorOptionChoice",
+    );
+    const optionFill = {
+      kind: "compelledBehaviorOptionChoice",
+      holeId: optionHole.holeId,
+      value: "grovel",
+    } as const;
+    const commandSave = requireResultHole(
+      resolveBattleSubject({
+        state: session.state,
+        subject: act.subject,
+        fills: [targetFill, optionFill],
+      }),
+      "savingThrowOutcome",
+    );
+    const commanded = requireResolved(
+      resolveBattleSubject({
+        state: session.state,
+        subject: act.subject,
+        fills: [
+          targetFill,
+          optionFill,
+          savingThrowOutcomeFill(commandSave, [
+            { targetId: spellTargetId, succeeded: false, withoutRoll: true },
+          ]),
+        ],
+      }),
+    );
+    const bardTurn = withConditionRepeatSave(
+      requireResolved(
+        endTurn({ state: commanded.state, actorId: spellCasterId }),
+      ).state,
+      {
+        family: "spellCondition",
+        condition: "frightened",
+        ownerId: spellTargetId,
+        sourceId: spellCasterId,
+      },
+    );
+    const grovel = discoverBattleActCandidates(bardTurn).find(
+      (candidate) =>
+        candidate.subject.tag === "runtimeCommand" &&
+        candidate.subject.command === "executeCompelledGrovel",
+    );
+    if (grovel === undefined) throw new Error("Expected the Grovel act.");
+    const saveHole = requireResultHole(
+      resolveBattleSubject({
+        state: bardTurn,
+        subject: grovel.subject,
+        fills: [],
+      }),
+      "savingThrowOutcome",
+    );
+    const grovelWith = (
+      state: BattleState,
+      outcome: CharmPersonOutcome,
+    ): BattleResolutionResult =>
+      resolveBattleSubject({
+        state,
+        subject: grovel.subject,
+        fills: [
+          savingThrowOutcomeFill(saveHole, [
+            { targetId: spellTargetId, ...outcome },
+          ]),
+        ],
+      });
+    const interrupted = grovelWith(bardTurn, failedRepeatSave);
+    const endTurnSubject: BattleSubject = {
+      tag: "runtimeCommand",
+      actorId: spellTargetId,
+      command: "endTurn",
+    };
+
+    expect(
+      currentInterruptCheckpoint(requireNeedsHoles(interrupted).state),
+    ).toMatchObject({
+      trigger: "saveFailed",
+      appliedConditions: ["frightened"],
+      continuation: { kind: "replay", subject: endTurnSubject },
+    });
+    const interruptedBard =
+      requireNeedsHoles(interrupted).state.combatants.get(spellTargetId);
+    expect(interruptedBard?.conditions).toEqual(
+      expect.objectContaining({ prone: true }),
+    );
+    const asked = requireNeedsHoles(takeCountercharm(interrupted));
+    const resolved = requireResolved(
+      resolveBattleSubject({
+        state: asked.state,
+        subject: endTurnSubject,
+        fills: [
+          savingThrowOutcomeFill(saveHole, [
+            {
+              targetId: spellTargetId,
+              ...failedRepeatSave,
+              failedSaveReactionReroll: newRoll({
+                responderId: spellTargetId,
+                succeeded: true,
+                d20TestRoll: multiple(3, 16, "advantage"),
+              }),
+            },
+          ]),
+        ],
+      }),
+    );
+    expect(conditionsOf(resolved.state, spellTargetId)).toEqual(
+      expect.objectContaining({ prone: true }),
+    );
+    expect(conditionsOf(resolved.state, spellTargetId)).not.toEqual(
+      expect.objectContaining({ frightened: true }),
+    );
+    expect(resolved.state.initiative).not.toEqual(bardTurn.initiative);
   });
 });

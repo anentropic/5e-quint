@@ -50,10 +50,11 @@ module unitFeatureFailedSaveReactionRerollCoreExamples {
     }
   }
 
-  // A save repeated at the end of a turn to end Frightened is a save against
-  // the effect that applies it: a failure offers the reroll as the first save
-  // does, and a new roll that succeeds ends the condition.
-  run test_failed_repeat_save_against_frightened_offers_the_reroll = {
+  // The core reads every failed save against an effect that applies
+  // Frightened alike, whether it first applies the condition or repeats to
+  // end it (A70): the failure offers the reroll, and a new roll that succeeds
+  // stands as a success. Ending the condition belongs to the effect's owner.
+  run test_failed_save_against_frightened_offers_the_reroll_and_a_success_stands = {
     val repeatSave = {
       ...responderFailsCharm,
       appliedConditions: Set(SaveEffectFrightenedCondition),

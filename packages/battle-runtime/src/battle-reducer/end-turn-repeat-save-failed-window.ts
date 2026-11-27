@@ -6,6 +6,12 @@
 // A70), so the window opens as it does for the save that first applied the
 // condition. The window names the save's own hole: the turn's other repeat
 // saves, against other effects, are not this failure.
+//
+// A parent command may end the turn (a compelled behavior, a persistent
+// area's end-turn command). Its own changes already stand in the End Turn
+// state the window opens on, so the window replays End Turn from that state,
+// and replaying the parent would apply them again. The window keeps the
+// parent's object outcomes, so the replay still reports them.
 
 import type { Condition } from "@dnd/shared/game-facts";
 
@@ -13,10 +19,12 @@ import type { BattleInterruptTrigger } from "../battle-interrupt-triggers.ts";
 import type {
   BattleFill,
   BattleHoleId,
+  BattleObjectOutcomeAccumulation,
   BattleResolutionInput,
   BattleResolutionResult,
 } from "../battle-state-execution.ts";
 import type { BattleProcedureExecutionRef, CombatantId } from "../identity.ts";
+import { optionalProperty } from "../optional-property.ts";
 import { maybeOpenInterruptWindow } from "./interrupt-execution.ts";
 
 type SavingThrowOutcomeFill = Extract<
@@ -41,6 +49,8 @@ export type EndTurnConditionRepeatSave = {
  */
 export function endTurnRepeatSaveFailedInterruptWindow(input: {
   readonly resolution: BattleResolutionInput;
+  /** What the parent command that ends the turn reports, if one does. */
+  readonly parentObjectOutcomes: BattleObjectOutcomeAccumulation | undefined;
   readonly actorId: CombatantId;
   readonly repeatSaves: readonly EndTurnConditionRepeatSave[];
   readonly handledInterruptTrigger: BattleInterruptTrigger | undefined;
@@ -59,6 +69,7 @@ export function endTurnRepeatSaveFailedInterruptWindow(input: {
           kind: "replay",
           subject: input.resolution.subject,
           fills: input.resolution.fills,
+          ...optionalProperty("objectOutcomes", input.parentObjectOutcomes),
         },
       },
       input.handledInterruptTrigger,

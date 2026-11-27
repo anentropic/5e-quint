@@ -5241,6 +5241,7 @@ function resolveDelegatedEndTurnCommandWithReplayState(
  */
 function endTurnSaveHoldResult(input: {
   readonly resolution: EndTurnResolutionInput;
+  readonly parent: ReplayParentContinuation;
   readonly actorId: CombatantId;
   readonly sourceTurn: Extract<
     BattleTurnBoundaryHoleRequest,
@@ -5263,6 +5264,7 @@ function endTurnSaveHoldResult(input: {
   }
   return endTurnRepeatSaveFailedInterruptWindow({
     resolution: input.resolution,
+    parentObjectOutcomes: input.parent.objectOutcomes,
     actorId: input.actorId,
     repeatSaves: input.repeatSaves,
     handledInterruptTrigger: input.resolution.handledInterruptTrigger,
@@ -5701,6 +5703,7 @@ function resolveEndTurnCommandForParent(
   });
   const endTurnSaveHold = endTurnSaveHoldResult({
     resolution: input,
+    parent,
     actorId,
     sourceTurn: nextSourceTurn,
     missingSaveHoles: missingEndTurnSaveHoles,
