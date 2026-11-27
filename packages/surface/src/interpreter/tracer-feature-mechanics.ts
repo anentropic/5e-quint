@@ -338,6 +338,20 @@ export function traceClassFeatureMechanics(
         });
         return [indomitableId];
       },
+      failed_saving_throw_reroll_reaction: (m) => {
+        const rerollReactionId = ids("failed-saving-throw-reroll-reaction");
+        nodes.push({
+          id: rerollReactionId,
+          category: "procedure",
+          atomKind: "failed_saving_throw_reroll_reaction",
+          label:
+            `failed_saving_throw_reroll_reaction\n${m.activationCost.kind}\n` +
+            `${m.trigger.kind} ${m.trigger.creatures} ${m.trigger.rangeFeet} ft\n` +
+            `against ${m.trigger.againstEffectApplyingAnyOf.join(" | ")}\n` +
+            `reroll ${m.reroll.rollMode}, must use new roll ${m.reroll.mustUseNewRoll}`,
+        });
+        return [rerollReactionId];
+      },
       weapon_mastery_property_replacement: (m) => {
         const tacticalId = ids("tactical-master");
         nodes.push({

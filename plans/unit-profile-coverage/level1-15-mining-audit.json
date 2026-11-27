@@ -55,8 +55,8 @@
       "owner-evidence-required": 97
     },
     "rowsByCatalogAdmission": {
-      "installed": 1068,
-      "not-installed": 283
+      "installed": 1069,
+      "not-installed": 282
     },
     "rowsByCategory": {
       "character-creation or progression mechanic": 268,
@@ -22513,7 +22513,9 @@
       },
       "supportSnapshot": {
         "authoredContent": {
-          "state": "missing-authored-record"
+          "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+          "state": "authored-record-present",
+          "unitId": "bard_countercharm"
         },
         "battleReadiness": {
           "state": "recorded",
@@ -22527,7 +22529,7 @@
           "state": "recorded"
         },
         "catalogAdmission": {
-          "state": "not-installed",
+          "state": "installed",
           "unitId": "bard_countercharm"
         },
         "finalDisposition": "catalog-only/dead-for-now",

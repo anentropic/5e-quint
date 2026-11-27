@@ -783,6 +783,44 @@
       "unitId": "banishment"
     },
     {
+      "catalogStatus": "installed",
+      "claimTag": "unsupported-profile",
+      "closureKinds": [
+        "outside-battle-runtime"
+      ],
+      "collectionId": "srd-5.2.1",
+      "executableMechanics": true,
+      "kind": "class_feature",
+      "reason": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
+      "selectedIdentity": {
+        "reason": "Selected identity replay evidence is only required for supported profile claims.",
+        "status": "not-required"
+      },
+      "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+      "sourceRows": [
+        {
+          "battleReadinessStatus": "accepted-no-battle-effect",
+          "catalogAdmissionState": "installed",
+          "category": "class feature",
+          "concept": "Bard Countercharm",
+          "finalDisposition": "catalog-only/dead-for-now",
+          "id": "srd521:classes:level-7:class-feature-grant:bard_countercharm",
+          "levelBand": "level-7",
+          "nextAction": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
+          "rowKind": "class-feature-grant",
+          "source": {
+            "lineEnd": 917,
+            "lineStart": 914,
+            "path": ".references/srd-5.2.1/classes.md"
+          },
+          "unitProfileDisposition": "unsupported-profile"
+        }
+      ],
+      "status": "closed-outside-battle-runtime-boundary",
+      "strictTargetClosed": true,
+      "unitId": "bard_countercharm"
+    },
+    {
       "catalogDisposition": {
         "category": "srd-candidate",
         "planningLane": "QMBT14-QMBT16",
@@ -10533,12 +10571,13 @@
       ]
     },
     {
-      "count": 44,
+      "count": 45,
       "description": "The remaining residuals are explicitly outside promoted battle-runtime ownership.",
       "status": "closed-outside-battle-runtime-boundary",
       "unitIds": [
         "aura_of_life",
         "banishment",
+        "bard_countercharm",
         "beacon_of_hope",
         "bestow_curse",
         "blight",
@@ -10657,13 +10696,13 @@
       "percent": "100%"
     },
     "strictRuntimeProfileSupport": {
-      "denominator": 364,
+      "denominator": 365,
       "numerator": 215,
-      "percent": "59.1%"
+      "percent": "58.9%"
     },
     "strictTargetClosure": {
-      "denominator": 364,
-      "numerator": 364,
+      "denominator": 365,
+      "numerator": 365,
       "percent": "100%"
     }
   },
@@ -10737,49 +10776,6 @@
           }
         ],
         "unitId": "barbarian_mindless_rage"
-      },
-      {
-        "inventoryAccounting": [
-          {
-            "battleReadinessClosure": {
-              "kind": "outside-battle-runtime",
-              "owner": "future class-feature triggered-Reaction save-failure reroll owner plus condition-application and range-witness owners",
-              "reason": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-              "source": "unit-claim",
-              "state": "recorded"
-            },
-            "battleReadinessStatus": "accepted-no-battle-effect",
-            "catalogAdmissionState": "not-installed",
-            "concept": "Bard Countercharm",
-            "finalDisposition": "catalog-only/dead-for-now",
-            "levelBand": "level-7",
-            "nextAction": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-            "rowId": "srd521:classes:level-7:class-feature-grant:bard_countercharm",
-            "rowKind": "class-feature-grant",
-            "unitProfileDisposition": "unsupported-profile"
-          }
-        ],
-        "reason": "The SRD row has level-7 class-feature pressure, but no Unit matrix row exists yet.",
-        "sourceRows": [
-          {
-            "battleReadinessStatus": "accepted-no-battle-effect",
-            "catalogAdmissionState": "not-installed",
-            "category": "class feature",
-            "concept": "Bard Countercharm",
-            "finalDisposition": "catalog-only/dead-for-now",
-            "id": "srd521:classes:level-7:class-feature-grant:bard_countercharm",
-            "levelBand": "level-7",
-            "nextAction": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-            "rowKind": "class-feature-grant",
-            "source": {
-              "lineEnd": 917,
-              "lineStart": 914,
-              "path": ".references/srd-5.2.1/classes.md"
-            },
-            "unitProfileDisposition": "unsupported-profile"
-          }
-        ],
-        "unitId": "bard_countercharm"
       },
       {
         "inventoryAccounting": [
@@ -23074,7 +23070,7 @@
     },
     "rowsByStatus": {
       "not-applicable": 39,
-      "not-required": 89,
+      "not-required": 90,
       "witness-present": 236
     }
   },
@@ -23596,8 +23592,8 @@
         "group": "level-scoped-class-feature-grants",
         "label": "SRD class feature grants through level 10",
         "metrics": {
-          "denominator": 104,
-          "numerator": 104,
+          "denominator": 105,
+          "numerator": 105,
           "percent": "100%"
         },
         "rows": [
@@ -23744,6 +23740,15 @@
             "sourceRecordPath": "packages/surface/content/bard_font_of_inspiration.json",
             "status": "installed",
             "unitId": "bard_font_of_inspiration"
+          },
+          {
+            "kind": "class_feature",
+            "ownerUnitId": "class_bard",
+            "ready": true,
+            "relation": "class.featureGrants.level-7",
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "status": "installed",
+            "unitId": "bard_countercharm"
           },
           {
             "kind": "class_feature",
@@ -24539,7 +24544,7 @@
           }
         ],
         "rowsByStatus": {
-          "installed": 104
+          "installed": 105
         }
       },
       {
@@ -24730,8 +24735,8 @@
       }
     ],
     "metrics": {
-      "denominator": 162,
-      "numerator": 162,
+      "denominator": 163,
+      "numerator": 163,
       "percent": "100%"
     },
     "openBlockerCount": 0
@@ -24742,17 +24747,17 @@
     "groupsByClaimTag": {
       "profile-subset-supported": 60,
       "supported-profile": 215,
-      "unsupported-profile": 89
+      "unsupported-profile": 90
     },
     "groupsByStatus": {
       "blocked-follow-up-split": 10,
       "closed-character-fact-and-runtime-detached-split": 4,
       "closed-companion-control-boundary": 7,
-      "closed-outside-battle-runtime-boundary": 44,
+      "closed-outside-battle-runtime-boundary": 45,
       "closed-runtime-detached-table-adjudication": 84,
       "supported-profile": 215
     },
-    "nonSupportedFrontier": 149,
-    "strictDenominator": 364
+    "nonSupportedFrontier": 150,
+    "strictDenominator": 365
   }
 }

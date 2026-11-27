@@ -431,6 +431,7 @@ export {
   ResetCadenceSchema,
   RestResetCadenceSchema,
   IndomitableMechanicsSchema,
+  FailedSavingThrowRerollReactionMechanicsSchema,
   RerollWeaponDamageDiceRiderSchema,
   RiderExpirySchema,
   RogueClassFeatureMechanicsSchema,

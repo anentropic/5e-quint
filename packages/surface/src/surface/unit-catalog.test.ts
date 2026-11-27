@@ -19,6 +19,7 @@ import phantasmalForceInput from "../../content/phantasmal_force.json";
 import shieldOfFaithInput from "../../content/shield_of_faith.json";
 import spikeGrowthInput from "../../content/spike_growth.json";
 import conjureAnimalsInput from "../../content/conjure_animals.json";
+import countercharmInput from "../../content/bard_countercharm.json";
 import sorcererFontOfMagicInput from "../../content/sorcerer_font_of_magic.json";
 import sorcererMetamagicInput from "../../content/sorcerer_metamagic.json";
 import {
@@ -759,6 +760,39 @@ describe("SRD Unit catalog boundary", () => {
     expect(
       Result.isFailure(decodeUnitRecordResult(missingSuccessfulOutcome)),
     ).toBe(true);
+  });
+
+  test("installs Countercharm as the Bard's level 7 failed-save reroll Reaction", () => {
+    const decoded = decodeUnitRecordSync(countercharmInput);
+    const result = buildUnitCatalog({ collections: [srdUnitCollection] });
+
+    expect(result.tag).toBe("ok");
+    if (result.tag !== "ok") return;
+    expect(result.catalog.requireUnit("bard_countercharm")).toEqual(decoded);
+    expect(decoded).toEqual({
+      id: "bard_countercharm",
+      kind: "class_feature",
+      name: "Countercharm",
+      className: "bard",
+      acquiredAtLevel: 7,
+      provenance: { kind: "srd-5.2.1", section: "classes.md:914-916" },
+      mechanics: {
+        family: "failed_saving_throw_reroll_reaction",
+        activationCost: { kind: "reaction" },
+        trigger: {
+          kind: "creature_fails_saving_throw",
+          creatures: "self_or_creature_within_range",
+          rangeFeet: 30,
+          againstEffectApplyingAnyOf: ["charmed", "frightened"],
+        },
+        reroll: { mustUseNewRoll: true, rollMode: "advantage" },
+      },
+    });
+    expect(result.catalog.requireUnit("class_bard")).toMatchObject({
+      featureGrants: expect.arrayContaining([
+        { level: 7, unitId: "bard_countercharm" },
+      ]),
+    });
   });
 
   test("keeps Shield of Faith's creature target and Armor Class bonus explicit", () => {
