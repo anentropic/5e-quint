@@ -120,4 +120,47 @@ module battleRuntimeTurnOrderTests {
       assert(initiativeStillToActActors(result.initiative) == [Fighter, Goblin]),
     }
   }
+
+  run test_end_turn_passes_a_dead_creature_back_to_the_living_one = {
+    val deadGoblin = { ...initialState, goblin: { ...initialState.goblin, hp: 0 } }
+    val result = endTurn({ ...deadGoblin, actionAvailable: false })
+    all {
+      assert(actorIsDead(deadGoblin, Goblin)),
+      assert(currentActor(result) == Fighter),
+      assert(result.initiative.round == 2),
+      assert(result.actionAvailable),
+      assert(result.lastTurnActor == LastTurnFighter),
+    }
+  }
+
+  run test_end_turn_with_nobody_alive_leaves_the_order_where_it_is = {
+    val nobodyAlive = {
+      ...initialState,
+      fighter: { ...initialState.fighter, hp: 0, deathFailures: 3 },
+      goblin: { ...initialState.goblin, hp: 0 },
+    }
+    all {
+      assert(actorIsDead(nobodyAlive, Fighter)),
+      assert(endTurn(nobodyAlive) == nobodyAlive),
+    }
+  }
+
+  run test_a_dead_fighter_turn_passing_ends_its_help_and_readied_action = {
+    val goblinTurn = endTurn(initialState)
+    val deadFighter = {
+      ...goblinTurn,
+      fighterHelpAttackGoblinForGoblin: true,
+      fighter: { ...goblinTurn.fighter, hp: 0, deathFailures: 3, readiedSpellHeld: true, readiedMovementHeld: true },
+    }
+    val result = endTurn(deadFighter)
+    all {
+      assert(currentActor(goblinTurn) == Goblin),
+      assert(actorIsDead(deadFighter, Fighter)),
+      assert(currentActor(result) == Goblin),
+      assert(result.initiative.round == 2),
+      assert(not(result.fighterHelpAttackGoblinForGoblin)),
+      assert(not(result.fighter.readiedSpellHeld)),
+      assert(not(result.fighter.readiedMovementHeld)),
+    }
+  }
 }

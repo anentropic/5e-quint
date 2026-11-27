@@ -33,6 +33,7 @@ import { registeredSpellProcedureDeclarations } from "./spell-procedure-profiles
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.HASTE_POSITIVE_EFFECTS
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.CLOUDKILL_AREA_HAZARD_LIFECYCLE
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.SLOW_ACTIVE_PENALTIES_LIFECYCLE BATTLE.SPELL.SLOW_MULTIATTACK_ATTACK_CAP BATTLE.STAT_BLOCK.MULTIATTACK
+// KERNEL-COVERAGE: runtime-owner BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 // This module owns Effect Schema values for battle state execution.
 
 import {
@@ -101,6 +102,7 @@ import {
   CUNNING_STRIKE_END_TURN_COVER_DEGREES,
   MONK_FOCUS_BATTLE_OPTIONS_SUPPORT_PROFILE,
   REACTION_ROLL_OR_DAMAGE_REDUCTION_SUPPORT_PROFILE,
+  FAILED_SAVING_THROW_REROLL_REACTION_SUPPORT_PROFILE,
 } from "../unit-feature-support.ts";
 import { Match, Schema, type Brand } from "effect";
 import { SpellExecutionFactsSchema } from "./spell-execution-facts-codec.ts";
@@ -237,6 +239,7 @@ import {
   BARDIC_INSPIRATION_DIE_EFFECT_KIND,
   FAILED_ABILITY_CHECK_RESOURCE_BOOST_EFFECT_KIND,
   FAILED_SAVING_THROW_REROLL_EFFECT_KIND,
+  FAILED_SAVE_REACTION_REROLL_EFFECT_KIND,
   HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
   D20_TEST_DIE_MINIMUM_DECISION_KINDS,
   D20_TEST_DIE_MINIMUM_EFFECT_KIND,
@@ -1810,6 +1813,33 @@ const D20TestNaturalOneRerollHoleOptionsFields = (() => {
   };
 })();
 
+/** A roller's Heroic Inspiration decision on a rolled-dice fill. */
+const BattleRolledDiceHeroicInspirationRerollDecisionSchema = Schema.Union([
+  Schema.Struct({
+    kind: Schema.Literal("decline"),
+    effectKind: Schema.Literal(HEROIC_INSPIRATION_REROLL_EFFECT_KIND),
+  }),
+  Schema.Struct({
+    kind: Schema.Literal("rerollRolledDie"),
+    effectKind: Schema.Literal(HEROIC_INSPIRATION_REROLL_EFFECT_KIND),
+    rolledDie: Schema.Union([
+      Schema.Struct({
+        source: Schema.Literal("rolledDiceGroup"),
+        groupIndex: Schema.Number.pipe(
+          Schema.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0)),
+        ),
+      }),
+      Schema.Struct({
+        source: Schema.Literal("weaponDamageDiceRollCandidate"),
+        candidate: Schema.Literals(D20_TEST_ROLLED_DIE_KEYS),
+      }),
+      Schema.Struct({ source: Schema.Literal("spellDamageReroll") }),
+    ]),
+    original: DieRollResultSchema,
+    replacement: DieRollResultSchema,
+  }),
+]);
+
 const HeroicInspirationRerollHoleOptionsFields = (() => {
   const member = pairedBattleHoleNestedMember({
     effectKind: Schema.Literal(HEROIC_INSPIRATION_REROLL_EFFECT_KIND),
@@ -1866,10 +1896,34 @@ const FailedSavingThrowRerollHoleOptionsFields = (() => {
   };
 })();
 
+const FailedSaveReactionRerollHoleOptionsFields = (() => {
+  const member = pairedBattleHoleNestedMember({
+    effectKind: Schema.Literal(FAILED_SAVE_REACTION_REROLL_EFFECT_KIND),
+    rollerId: CombatantId,
+    responderId: CombatantId,
+    rollMode: Schema.Literals(ATTACK_ROLL_MODES),
+  });
+  return {
+    labeled: {
+      failedSaveReactionRerolls: Schema.optionalKey(
+        Schema.Tuple([member.labeled]),
+      ),
+    },
+    mechanical: {
+      failedSaveReactionRerolls: Schema.optionalKey(
+        Schema.Tuple([member.mechanical]),
+      ),
+    },
+  };
+})();
+
 /** Every reroll a saving throw hole can offer. */
 const SavingThrowRerollHoleOptionsFields = mergeBattleHoleFieldPairs(
-  D20TestRerollHoleOptionsFields,
-  FailedSavingThrowRerollHoleOptionsFields,
+  mergeBattleHoleFieldPairs(
+    D20TestRerollHoleOptionsFields,
+    FailedSavingThrowRerollHoleOptionsFields,
+  ),
+  FailedSaveReactionRerollHoleOptionsFields,
 );
 
 const BardicInspirationDieHoleOptionsFields = (() => {
@@ -2985,8 +3039,8 @@ const BattleHolePayloadMembers = [
       mergeBattleHoleFieldPairs(
         AttackRollMissToHitReplacementFields,
         mergeBattleHoleFieldPairs(
-          D20TestNaturalOneRerollHoleOptionsFields,
-          HeroicInspirationRerollHoleOptionsFields,
+          D20TestRerollHoleOptionsFields,
+          BardicInspirationDieHoleOptionsFields,
         ),
       ),
     ),
@@ -3004,8 +3058,8 @@ const BattleHolePayloadMembers = [
       mergeBattleHoleFieldPairs(
         SpellAttackRerollHoleOptionsFields,
         mergeBattleHoleFieldPairs(
-          D20TestNaturalOneRerollHoleOptionsFields,
-          HeroicInspirationRerollHoleOptionsFields,
+          D20TestRerollHoleOptionsFields,
+          BardicInspirationDieHoleOptionsFields,
         ),
       ),
     ),
@@ -3014,6 +3068,7 @@ const BattleHolePayloadMembers = [
     {
       ...BattleHoleBaseFieldsSchema,
       kind: Schema.Literal("rolledDice"),
+      rollerId: CombatantId,
       attack: SupportedAttackActionOptionSchema,
       critical: Schema.Boolean,
       damageDice: Schema.Union([
@@ -3075,13 +3130,17 @@ const BattleHolePayloadMembers = [
         labeled: {},
         mechanical: { attack: MechanicalSupportedAttackActionOptionSchema },
       },
-      AttackDamageAbilityModifierChoiceHoleFields,
+      mergeBattleHoleFieldPairs(
+        AttackDamageAbilityModifierChoiceHoleFields,
+        HeroicInspirationRerollHoleOptionsFields,
+      ),
     ),
   ),
   pairedBattleHoleMemberWithFields(
     {
       ...BattleHoleBaseFieldsSchema,
       kind: Schema.Literal("rolledDice"),
+      rollerId: CombatantId,
       critical: Schema.Boolean,
       sourceProcedureRef: BattleProcedureExecutionRef,
       allocatedDamageDice: Schema.optionalKey(Schema.Never),
@@ -3089,23 +3148,42 @@ const BattleHolePayloadMembers = [
         Schema.Array(SpellMarkedDamageRiderSchema),
       ),
     },
-    SpellDamageRerollHoleOptionsFields,
+    mergeBattleHoleFieldPairs(
+      SpellDamageRerollHoleOptionsFields,
+      HeroicInspirationRerollHoleOptionsFields,
+    ),
   ),
-  pairedBattleHoleMember({
-    ...BattleHoleBaseFieldsSchema,
-    kind: Schema.Literal("rolledDice"),
-    critical: Schema.Boolean,
-    sourceProcedureRef: BattleProcedureExecutionRef,
-    allocatedDamageDice: Schema.Struct({
-      groups: Schema.Array(
-        Schema.Struct({
-          targetId: CombatantId,
-          dice: PositiveIntegerSchema,
-          dieSize: PositiveIntegerSchema,
-        }),
-      ),
-    }),
-  }),
+  pairedBattleHoleMemberWithFields(
+    {
+      ...BattleHoleBaseFieldsSchema,
+      kind: Schema.Literal("rolledDice"),
+      rollerId: CombatantId,
+      critical: Schema.Boolean,
+      sourceProcedureRef: BattleProcedureExecutionRef,
+      allocatedDamageDice: Schema.Struct({
+        groups: Schema.Array(
+          Schema.Struct({
+            targetId: CombatantId,
+            dice: PositiveIntegerSchema,
+            dieSize: PositiveIntegerSchema,
+          }),
+        ),
+      }),
+    },
+    HeroicInspirationRerollHoleOptionsFields,
+  ),
+  // Spell healing and Temporary Hit Points rolls: no critical, so after the
+  // spell damage members.
+  pairedBattleHoleMemberWithFields(
+    {
+      ...BattleHoleBaseFieldsSchema,
+      kind: Schema.Literal("rolledDice"),
+      rollerId: CombatantId,
+      sourceProcedureRef: BattleProcedureExecutionRef,
+      critical: Schema.optionalKey(Schema.Never),
+    },
+    HeroicInspirationRerollHoleOptionsFields,
+  ),
   pairedBattleHoleMember({
     ...BattleHoleBaseFieldsSchema,
     kind: Schema.Literal("rolledDice"),
@@ -3831,7 +3909,7 @@ const BattleHolePayloadMembers = [
       combatantId: CombatantId,
       rollMode: Schema.optionalKey(Schema.Literals(ATTACK_ROLL_MODES)),
     },
-    D20TestRerollHoleOptionsFields,
+    SavingThrowAfterRollHoleOptionsFields,
   ),
   pairedBattleHoleMember({
     ...BattleHoleBaseFieldsSchema,
@@ -4258,6 +4336,9 @@ const BattleDeathSavingThrowD20TestRerollDecisionsSchema = Schema.NonEmptyArray(
   Schema.Union([
     battleD20TestDieRerollDecisionSchema("d20_test_natural_one_reroll"),
     battleD20TestDieRerollDecisionSchema(HEROIC_INSPIRATION_REROLL_EFFECT_KIND),
+    battleD20TestDieRerollDecisionSchema(
+      FAILED_SAVING_THROW_REROLL_EFFECT_KIND,
+    ),
   ]),
 );
 
@@ -4303,6 +4384,14 @@ const BattleAbilityCheckAddedDieDecisionsSchema = Schema.NonEmptyArray(
   ]),
 );
 
+const BattleDeathSavingThrowAddedDieDecisionsSchema = Schema.NonEmptyArray(
+  battleD20TestAddedDieDecisionSchema(BARDIC_INSPIRATION_DIE_EFFECT_KIND),
+);
+
+const BattleAttackRollAddedDieDecisionsSchema = Schema.NonEmptyArray(
+  battleD20TestAddedDieDecisionSchema(BARDIC_INSPIRATION_DIE_EFFECT_KIND),
+);
+
 const BattleRolledOutcomeAddedDieDecisionsSchema = Schema.NonEmptyArray(
   battleD20TestOutcomeAddedDieDecisionSchema(
     BARDIC_INSPIRATION_DIE_EFFECT_KIND,
@@ -4344,16 +4433,39 @@ const BattleConcentrationSavingThrowValueSchema = Schema.Union([
   BattleD20TestRolledOutcomeSchema,
   BattleD20TestWithoutRollOutcomeSchema,
 ]);
+const BattleFailedSaveReactionRerollChoiceFields = {
+  procedureRef: BattleProcedureExecutionRef,
+  rollerId: CombatantId,
+  rollerPosition: Schema.Union([
+    Schema.Struct({ kind: Schema.Literal("responder") }),
+    Schema.Struct({
+      kind: Schema.Literal("withinRange"),
+      rangeFeet: MovementFeet,
+    }),
+  ]),
+} as const;
+type BattleFailedSaveReactionRerollChoiceEncoded = Schema.Codec.Encoded<
+  Schema.Struct<typeof BattleFailedSaveReactionRerollChoiceFields>
+>;
+const BattleFailedSaveReactionRerollSchema = Schema.Struct({
+  effectKind: Schema.Literal(FAILED_SAVE_REACTION_REROLL_EFFECT_KIND),
+  responderId: CombatantId,
+  newRoll: BattleD20TestRolledOutcomeSchema,
+});
 const BattleSavingThrowOutcomeSchema = Schema.Union([
   Schema.Struct({
     targetId: CombatantId,
     ...BattleD20TestRolledOutcomeFields,
     cover: Schema.optionalKey(Schema.Literals(BONUS_COVER_TYPES)),
+    failedSaveReactionReroll: Schema.optionalKey(
+      BattleFailedSaveReactionRerollSchema,
+    ),
   }),
   Schema.Struct({
     targetId: CombatantId,
     ...BattleD20TestWithoutRollOutcomeFields,
     cover: Schema.optionalKey(Schema.Never),
+    failedSaveReactionReroll: Schema.optionalKey(Schema.Never),
   }),
 ]);
 
@@ -4377,6 +4489,7 @@ const BattleAttackRollResultSchema = Schema.Struct({
       ]),
     ),
   ),
+  d20TestAddedDice: Schema.optionalKey(BattleAttackRollAddedDieDecisionsSchema),
 });
 
 const BattleRolledDiceGroupSchema = Schema.Struct({
@@ -5109,6 +5222,9 @@ type BattleFillEncoded =
           BattleAttackRollD20TestRerollDecisionEncoded,
           ...BattleAttackRollD20TestRerollDecisionEncoded[],
         ];
+        readonly d20TestAddedDice?: Schema.Codec.Encoded<
+          typeof BattleAttackRollAddedDieDecisionsSchema
+        >;
       };
       readonly relationshipFacts?: BattleAttackRollRelationshipFactsEncoded;
     }
@@ -5338,6 +5454,9 @@ type BattleFillEncoded =
       readonly d20TestRerolls?: Schema.Codec.Encoded<
         typeof BattleDeathSavingThrowD20TestRerollDecisionsSchema
       >;
+      readonly d20TestAddedDice?: Schema.Codec.Encoded<
+        typeof BattleDeathSavingThrowAddedDieDecisionsSchema
+      >;
     }
   | {
       readonly kind: "statBlockRechargeRoll";
@@ -5451,7 +5570,11 @@ type BattleFillEncoded =
                     | "attackDamageReduction"
                     | "fallDamageReduction";
                   readonly fills: readonly BattleFillEncoded[];
-                };
+                }
+              | ({
+                  readonly kind: "failedSaveReactionReroll";
+                  readonly fills: readonly [];
+                } & BattleFailedSaveReactionRerollChoiceEncoded);
           };
     }
   | {
@@ -5771,6 +5894,12 @@ export function battleInterruptDecisionFillSchema() {
               "fallDamageReduction",
             ]),
             fills: Schema.Array(BattleFillSchema),
+          }),
+          Schema.Struct({
+            kind: Schema.Literal("failedSaveReactionReroll"),
+            ...BattleFailedSaveReactionRerollChoiceFields,
+            // The new roll is asked on the save's own hole when it replays.
+            fills: Schema.Tuple([]),
           }),
         ]),
       }),
@@ -6497,6 +6626,9 @@ export const BattleFillSchema: Schema.Codec<
           ),
         }),
       ),
+      heroicInspirationReroll: Schema.optionalKey(
+        BattleRolledDiceHeroicInspirationRerollDecisionSchema,
+      ),
       value: Schema.NonEmptyArray(BattleRolledDiceGroupSchema),
     }),
     Schema.Struct({
@@ -6505,6 +6637,9 @@ export const BattleFillSchema: Schema.Codec<
       value: D20Roll,
       d20TestRerolls: Schema.optionalKey(
         BattleDeathSavingThrowD20TestRerollDecisionsSchema,
+      ),
+      d20TestAddedDice: Schema.optionalKey(
+        BattleDeathSavingThrowAddedDieDecisionsSchema,
       ),
     }),
     Schema.Struct({
@@ -8239,28 +8374,45 @@ const FirstBattleInterruptProcedureChoiceMember =
   BattleInterruptProcedureChoiceMembers[0];
 const BattleInterruptProcedureModifierChoiceMember =
   BattleInterruptProcedureChoiceMembers[1];
+// No initial holes, labeled or mechanical: the new roll is asked on the save's
+// own hole when it replays.
+const BattleInterruptProcedureFailedSaveReactionRerollChoiceStruct =
+  Schema.Struct({
+    kind: Schema.Literal("failedSaveReactionReroll"),
+    responderId: CombatantId,
+    reroll: Schema.Struct(BattleFailedSaveReactionRerollChoiceFields),
+    initialHoles: Schema.Tuple([]),
+  });
+const BattleInterruptProcedureFailedSaveReactionRerollChoiceMember = {
+  labeled: BattleInterruptProcedureFailedSaveReactionRerollChoiceStruct,
+  mechanical: BattleInterruptProcedureFailedSaveReactionRerollChoiceStruct,
+} as const;
 type BattleInterruptProcedureChoiceCodec = Schema.Union<
   readonly [
     (typeof BattleInterruptProcedureChoiceMembers)[0]["labeled"],
     (typeof BattleInterruptProcedureChoiceMembers)[1]["labeled"],
+    (typeof BattleInterruptProcedureFailedSaveReactionRerollChoiceMember)["labeled"],
   ]
 >;
 const BattleInterruptProcedureChoiceUnfilteredSchema: BattleInterruptProcedureChoiceCodec =
   Schema.Union([
     FirstBattleInterruptProcedureChoiceMember.labeled,
     BattleInterruptProcedureModifierChoiceMember.labeled,
+    BattleInterruptProcedureFailedSaveReactionRerollChoiceMember.labeled,
   ]);
 
 type BattleMechanicalInterruptProcedureChoiceCodec = Schema.Union<
   readonly [
     (typeof BattleInterruptProcedureChoiceMembers)[0]["mechanical"],
     (typeof BattleInterruptProcedureChoiceMembers)[1]["mechanical"],
+    (typeof BattleInterruptProcedureFailedSaveReactionRerollChoiceMember)["mechanical"],
   ]
 >;
 const BattleMechanicalInterruptProcedureChoiceUnfilteredSchema: BattleMechanicalInterruptProcedureChoiceCodec =
   Schema.Union([
     FirstBattleInterruptProcedureChoiceMember.mechanical,
     BattleInterruptProcedureModifierChoiceMember.mechanical,
+    BattleInterruptProcedureFailedSaveReactionRerollChoiceMember.mechanical,
   ]);
 export const BattleInterruptProcedureChoiceSchema: typeof BattleInterruptProcedureChoiceUnfilteredSchema =
   BattleInterruptProcedureChoiceUnfilteredSchema;
@@ -8271,6 +8423,8 @@ export const BattleInterruptProcedureChoiceWithSubjectSchema: typeof FirstBattle
   FirstBattleInterruptProcedureChoiceMember.labeled;
 export const BattleInterruptProcedureModifierChoiceSchema: typeof BattleInterruptProcedureModifierChoiceMember.labeled =
   BattleInterruptProcedureModifierChoiceMember.labeled;
+export const BattleInterruptProcedureFailedSaveReactionRerollChoiceSchema: typeof BattleInterruptProcedureFailedSaveReactionRerollChoiceMember.labeled =
+  BattleInterruptProcedureFailedSaveReactionRerollChoiceMember.labeled;
 
 const BattleLightEmitterEndOfTurnExpirationSchema = Schema.Struct({
   kind: Schema.Literal("endOfTurn"),
@@ -9629,6 +9783,22 @@ function serializedReactionModifierProcedureRefIsBound(
   combatantId: CombatantId,
   procedureRef: BattleProcedureExecutionRef,
 ): boolean {
+  return serializedUnitProcedureRefIsBoundAs(
+    combatants,
+    combatantId,
+    procedureRef,
+    REACTION_ROLL_OR_DAMAGE_REDUCTION_SUPPORT_PROFILE,
+  );
+}
+
+function serializedUnitProcedureRefIsBoundAs(
+  combatants: readonly EncodedBattleCreatureSnapshot[],
+  combatantId: CombatantId,
+  procedureRef: BattleProcedureExecutionRef,
+  executionKind:
+    | typeof REACTION_ROLL_OR_DAMAGE_REDUCTION_SUPPORT_PROFILE
+    | typeof FAILED_SAVING_THROW_REROLL_REACTION_SUPPORT_PROFILE,
+): boolean {
   const binding = characterProcedureBinding(
     combatants,
     combatantId,
@@ -9637,8 +9807,7 @@ function serializedReactionModifierProcedureRefIsBound(
   return (
     (binding?.procedure.kind === "unitFeature" ||
       binding?.procedure.kind === "unitSupportProfile") &&
-    serializedUnitProcedureExecutionKind(binding.procedure) ===
-      REACTION_ROLL_OR_DAMAGE_REDUCTION_SUPPORT_PROFILE
+    serializedUnitProcedureExecutionKind(binding.procedure) === executionKind
   );
 }
 
@@ -10637,6 +10806,13 @@ function serializedInterruptChoiceOwnsBoundProcedure(input: {
           reaction.responderId,
           reaction.modifier.procedureRef,
         ),
+      failedSaveReactionReroll: (reaction) =>
+        serializedUnitProcedureRefIsBoundAs(
+          combatants,
+          reaction.responderId,
+          reaction.reroll.procedureRef,
+          FAILED_SAVING_THROW_REROLL_REACTION_SUPPORT_PROFILE,
+        ),
     }),
   );
 }
@@ -11218,6 +11394,7 @@ function serializedInterruptChoiceSubject(
       nestedProcedure: ({ subject }) =>
         subject.tag === "runtimeCommand" ? subject : undefined,
       reactionModifier: () => undefined,
+      failedSaveReactionReroll: () => undefined,
     }),
   );
 }
@@ -11287,6 +11464,7 @@ function serializedInterruptChoiceMatchesTrigger(
           Match.when("fallDamageReduction", () => trigger === "creatureFalls"),
           Match.exhaustive,
         ),
+      failedSaveReactionReroll: () => trigger === "saveFailed",
     }),
   );
 }
@@ -11299,6 +11477,7 @@ function serializedInterruptChoiceExpectedProcedureRefs(
       nestedProcedure: ({ subject }) =>
         new Set(battleSubjectProcedureRefs(subject)),
       reactionModifier: ({ modifier }) => new Set([modifier.procedureRef]),
+      failedSaveReactionReroll: ({ reroll }) => new Set([reroll.procedureRef]),
     }),
   );
 }

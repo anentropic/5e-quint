@@ -22,9 +22,12 @@ import {
   zeroAbilityWeaponAttack,
 } from "./unit-profile-admission-creature-fixture.test-support.ts";
 import {
+  declineTargetReadiedSpellAfterFailedSave,
   resolvedAnimalFriendshipState,
   spellBattle,
+  spellBattleWithTargetReadiedRay,
 } from "./unit-profile-admission-spell-battle.test-support.ts";
+import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
 import {
   savingThrowOutcomeFill,
   spellAct,
@@ -646,6 +649,49 @@ describe("SRDINV30C deterministic creature charm Spell Unit admission", () => {
       ]),
     );
   });
+  test("charm person's failed-save Reaction window names the Charmed condition it applies", () => {
+    const session = spellBattleWithTargetReadiedRay({
+      preparedSpells: [spellRecord(charmPersonUnitId)],
+    });
+    const act = spellAct({ session, spellId: charmPersonUnitId });
+    const targetFill = spellTargetListFill(
+      requireHole(act.initialHoles, "spellTargetList"),
+      spellCasterId,
+      charmPersonUnitId,
+      [spellTargetId],
+    );
+    const saveHole = requireResultHole(
+      resolveBattleSubject({
+        state: session.state,
+        subject: act.subject,
+        fills: [targetFill],
+      }),
+      "savingThrowOutcome",
+    );
+    const interrupted = resolveBattleSubject({
+      state: session.state,
+      subject: act.subject,
+      fills: [
+        targetFill,
+        savingThrowOutcomeFill(saveHole, [
+          { targetId: spellTargetId, succeeded: false, withoutRoll: true },
+        ]),
+      ],
+    });
+    if (interrupted.tag !== "needsHoles") {
+      throw new Error("Expected the failed-save Reaction window.");
+    }
+    expect(currentInterruptCheckpoint(interrupted.state)).toMatchObject({
+      trigger: "saveFailed",
+      failedTargetIds: [spellTargetId],
+      appliedConditions: ["charmed"],
+    });
+    const declined = declineTargetReadiedSpellAfterFailedSave(interrupted);
+    expect(declined.state.combatants.get(spellTargetId)?.conditions).toEqual(
+      expect.objectContaining({ charmed: true }),
+    );
+  });
+
   test("charm person ends when the caster damages the target with a spell", () => {
     const charmPerson = spellRecord(charmPersonUnitId);
     const sacredFlame = spellRecord(sacredFlameUnitId);

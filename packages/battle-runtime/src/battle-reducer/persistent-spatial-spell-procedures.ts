@@ -4,6 +4,7 @@
 import { savingThrowTargetModifiers } from "./saving-throw-modifier-collector.ts";
 import { savingThrowOutcomesThatStand } from "./d20-test-rolls-that-stand.ts";
 import { Result, Match } from "effect";
+import type { Condition } from "@dnd/shared/game-facts";
 import {
   canSpendBonusAction,
   spendAction,
@@ -68,6 +69,11 @@ import {
   everyFillUsesHoleId,
 } from "./fill-hole-protocol.ts";
 import { maybeOpenInterruptWindow } from "./interrupt-execution.ts";
+import {
+  PERSISTENT_AREA_SAVE_COMPOSITE_FAILED_SAVE_CONDITION,
+  PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION,
+  PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION,
+} from "./domain-constants.ts";
 import { needsHolesResult } from "./needs-holes-result.ts";
 import { invalidResult } from "./result-helpers.ts";
 import { snapshotBattle } from "./battle-snapshot.ts";
@@ -96,7 +102,7 @@ import { concentrationSavingThrowFillFor } from "./spells-resolve-fill-helpers.t
 import { saveGatedConditionDamageOccurrenceKeyForHoleTarget } from "./staged-condition-repeat-save.ts";
 import { applyPreparedSlotSpellDamage } from "./spells-damage-fills.ts";
 import {
-  applyPersistentAreaSaveConditionProneToTarget,
+  applyPersistentAreaSaveConditionToTarget,
   applyPersistentAreaSaveCompositeFailedSaveEffect,
   applyPersistentAreaSaveConditionEscapeRestrainedCondition,
   markPersistentAreaSaveCompositeSavedThisTurn,
@@ -223,6 +229,29 @@ function persistentSpatialReplayEffectRef(
   );
 }
 
+/** The conditions a failed save in this persistent area applies, from the admitted profile's shape. */
+function persistentSpatialFailedSaveAppliedConditions(
+  subject: PersistentSpatialSaveFailedReplaySubject,
+): readonly Condition[] {
+  return Match.value(subject).pipe(
+    Match.discriminatorsExhaustive("command")({
+      persistentAreaSaveConditionSave: () => [
+        PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION,
+      ],
+      persistentAreaSaveConditionEscapeSave: () => [
+        PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION,
+      ],
+      persistentAreaSaveCompositeSave: () => [
+        PERSISTENT_AREA_SAVE_COMPOSITE_FAILED_SAVE_CONDITION,
+      ],
+      // A push, and damage with or without a change of form: no condition.
+      directionalPersistentAreaSave: () => [],
+      movableZoneSave: () => [],
+      movableZoneRam: () => [],
+    }),
+  );
+}
+
 function maybeOpenPersistentSpatialSaveFailedReplayInterrupt(input: {
   readonly state: BattleState;
   readonly outcome: BattleSavingThrowOutcome;
@@ -244,7 +273,9 @@ function maybeOpenPersistentSpatialSaveFailedReplayInterrupt(input: {
   }
   const effectRef = persistentSpatialReplayEffectRef(input.replaySubject);
   const handledThisOccurrence =
-    input.handledSaveFailedOccurrence?.targetId === input.outcome.targetId &&
+    input.handledSaveFailedOccurrence?.failedTargetIds.includes(
+      input.outcome.targetId,
+    ) === true &&
     input.handledSaveFailedOccurrence.sourceProcedureRef ===
       input.sourceProcedureRef &&
     input.handledSaveFailedOccurrence.effectRef === effectRef;
@@ -252,7 +283,10 @@ function maybeOpenPersistentSpatialSaveFailedReplayInterrupt(input: {
     input.state,
     {
       trigger: "saveFailed",
-      targetId: input.outcome.targetId,
+      failedTargetIds: [input.outcome.targetId],
+      appliedConditions: persistentSpatialFailedSaveAppliedConditions(
+        input.replaySubject,
+      ),
       sourceProcedureRef: input.sourceProcedureRef,
       effectRef,
       continuation: {
@@ -552,7 +586,7 @@ function resolvePersistentAreaSaveConditionEntrySaveCommand(
   }
   const nextState = outcome.succeeded
     ? input.state
-    : applyPersistentAreaSaveConditionProneToTarget(
+    : applyPersistentAreaSaveConditionToTarget(
         input.state,
         input.subject.actorId,
       );
@@ -3318,7 +3352,7 @@ function resolvePersistentAreaSaveConditionEndTurnSaveCommand(
   }
   const nextState = outcome.succeeded
     ? input.state
-    : applyPersistentAreaSaveConditionProneToTarget(
+    : applyPersistentAreaSaveConditionToTarget(
         input.state,
         input.subject.actorId,
       );

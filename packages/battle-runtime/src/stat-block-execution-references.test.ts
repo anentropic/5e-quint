@@ -2199,6 +2199,7 @@ describe("Stat Block execution references", () => {
       holeId: "battle:test:unbound-damage-choice",
       holeInstanceKey: "battle:test:unbound-damage-choice",
       label: "Synthetic damage",
+      rollerId: encodedAttackAct.subject.actorId,
       attack: decodedStatBlockAttack,
       critical: false,
       damageDice: attackDamageDiceRequest({

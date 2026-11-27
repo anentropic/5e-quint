@@ -596,6 +596,7 @@ export function chainedSpellAttackRollHole(
 }
 
 export function chainedSpellDamageRollHole(
+  rollerId: CombatantId,
   invocation: BattleExecutableSpellInvocation<
     Extract<
       RuntimeSpellProcedure,
@@ -617,9 +618,14 @@ export function chainedSpellDamageRollHole(
   );
   return {
     kind: "rolledDice",
-    holeId: holeId(protocolId),
+    holeId: chainedSpellDamageRollHoleId(
+      invocation,
+      step.stepIndex,
+      step.critical,
+    ),
     holeInstanceKey: holeInstanceKey(protocolId),
     label: `Spell damage ${step.stepIndex + 1} (${expr})`,
+    rollerId,
     sourceProcedureRef: invocation.sourceProcedureRef,
     critical: step.critical,
   };
@@ -788,6 +794,7 @@ export function spellDamageTypes(
 }
 
 export function spellDamageHole(
+  rollerId: CombatantId,
   invocation: RuntimeExecutableDamageSpellProcedure,
   critical = false,
   spellMarkedDamageRiders: readonly SpellMarkedDamageRider[] = [],
@@ -804,6 +811,7 @@ export function spellDamageHole(
       `battle:spell:damage-result:${invocation.procedure}:${expr}`,
     ),
     label: `Spell damage (${expr})`,
+    rollerId,
     sourceProcedureRef: invocation.sourceProcedureRef,
     critical,
     ...nonEmptyArrayProperty(
@@ -813,7 +821,7 @@ export function spellDamageHole(
   };
 }
 
-function spellDamageHoleId(
+export function spellDamageHoleId(
   invocation: RuntimeDamageSpellProcedure,
   critical: boolean,
   spellMarkedDamageRiders: readonly SpellMarkedDamageRider[],
@@ -827,6 +835,7 @@ function spellDamageHoleId(
 }
 
 export function spellAttackSequencePartDamageHole(
+  rollerId: CombatantId,
   invocation: BattleExecutableSpellInvocation<
     Extract<
       RuntimeSpellProcedure,
@@ -853,6 +862,7 @@ export function spellAttackSequencePartDamageHole(
     holeId: holeId(protocolId),
     holeInstanceKey: holeInstanceKey(protocolId),
     label: `Spell ${partName} ${partIndex + 1} damage (${expr})`,
+    rollerId,
     sourceProcedureRef: invocation.sourceProcedureRef,
     critical,
     ...nonEmptyArrayProperty(
@@ -887,6 +897,7 @@ function spellAttackSequencePartDamageProtocolId(
 }
 
 export function spellBurstDamageHole(
+  rollerId: CombatantId,
   invocation: BattleExecutableSpellInvocation<
     Extract<
       RuntimeSpellProcedure,
@@ -902,12 +913,13 @@ export function spellBurstDamageHole(
       `battle:spell:burst-damage-result:${invocation.procedure}:${expr}`,
     ),
     label: `Spell burst damage (${expr})`,
+    rollerId,
     sourceProcedureRef: invocation.sourceProcedureRef,
     critical: false,
   };
 }
 
-function spellBurstDamageHoleId(
+export function spellBurstDamageHoleId(
   invocation: Extract<
     RuntimeSpellProcedure,
     { readonly procedure: "attackBurstSaveDamage" }
@@ -920,6 +932,7 @@ function spellBurstDamageHoleId(
 }
 
 export function spellHealingRollHole(
+  rollerId: CombatantId,
   invocation: BattleExecutableSpellInvocation<
     Extract<
       RuntimeSpellProcedure,
@@ -935,11 +948,12 @@ export function spellHealingRollHole(
       `battle:spell:healing-result:${invocation.procedure}:${expr}`,
     ),
     label: `Spell healing (${expr})`,
+    rollerId,
     sourceProcedureRef: invocation.sourceProcedureRef,
   };
 }
 
-function spellHealingRollHoleId(
+export function spellHealingRollHoleId(
   invocation: Extract<
     RuntimeSpellProcedure,
     { readonly procedure: "directHitPointRestoration" }
@@ -950,6 +964,7 @@ function spellHealingRollHoleId(
 }
 
 export function spellScalarBuffRollHole(
+  rollerId: CombatantId,
   invocation: BattleExecutableSpellInvocation<
     Extract<RuntimeSpellProcedure, { readonly procedure: "scalarBuff" }>
   >,
@@ -962,11 +977,12 @@ export function spellScalarBuffRollHole(
       `battle:spell:scalar-buff-result:${invocation.procedure}:${expr}`,
     ),
     label: `Spell Temporary Hit Points (${expr})`,
+    rollerId,
     sourceProcedureRef: invocation.sourceProcedureRef,
   };
 }
 
-function spellScalarBuffRollHoleId(
+export function spellScalarBuffRollHoleId(
   invocation: Extract<
     RuntimeSpellProcedure,
     { readonly procedure: "scalarBuff" }

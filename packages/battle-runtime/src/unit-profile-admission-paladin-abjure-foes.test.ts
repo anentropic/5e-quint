@@ -9,7 +9,7 @@ import {
 import { describe, expect, test } from "vitest";
 
 import { hasCondition } from "@dnd/shared-algebras/conditions-algebra";
-import { damageAmount, type ClassLevel } from "@dnd/shared/types";
+import { Round, damageAmount, type ClassLevel } from "@dnd/shared/types";
 import { Result } from "effect";
 import type { CharacterBattleClassLevelInits } from "./character-class-level.ts";
 
@@ -62,6 +62,8 @@ import {
   magicActionSaveGatedConditionProfileForUnit,
 } from "./unit-feature-support.ts";
 import { battleInitializationIssueMessage } from "./battle-reducer/api-lifecycle.ts";
+import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
+import { declineTargetReadiedSpellAfterFailedSave } from "./unit-profile-admission-spell-battle.test-support.ts";
 
 const paladinAbjureFoesUnitId = "paladin_abjure_foes";
 const abjureFoesUnit = unitLibrary.requireUnit(paladinAbjureFoesUnitId);
@@ -355,6 +357,84 @@ describe("Paladin Abjure Foes Magic Action save-gated condition", () => {
         (effect) =>
           effect.kind === "unitFeatureCondition" &&
           effect.sourceProcedureRef === procedureRef,
+      ),
+    ).toBe(false);
+  });
+
+  test("opens the failed-save Reaction window with the Frightened condition before it spends anything", () => {
+    const session = sessionWithCasterReadiedSaveFailedSpell(abjureFoesBattle());
+    const act = abjureFoesAct(session);
+    const save = requireHole(act.initialHoles, "savingThrowOutcome");
+    const procedureRef = requireCharacterUnitProcedureRefForTest(
+      session,
+      spellCasterId,
+      paladinAbjureFoesUnitId,
+    );
+    const interrupted = resolveBattleSubject({
+      state: session.state,
+      subject: act.subject,
+      fills: [
+        abjureFoesSavingThrowFill(procedureRef, save, [
+          {
+            targetId: spellTargetId,
+            succeeded: false,
+            withoutRoll: true as const,
+          },
+          {
+            targetId: secondTargetId,
+            succeeded: true,
+            withoutRoll: true as const,
+          },
+        ]),
+      ],
+    });
+    if (interrupted.tag !== "needsHoles") {
+      throw new Error("Expected the failed-save Reaction window.");
+    }
+    expect(currentInterruptCheckpoint(interrupted.state)).toMatchObject({
+      trigger: "saveFailed",
+      failedTargetIds: [spellTargetId],
+      appliedConditions: ["frightened"],
+      sourceProcedureRef: procedureRef,
+    });
+    expect(
+      channelDivinityUsesRemaining(
+        battleRuntimeSessionForTest({
+          state: interrupted.state,
+          context: session.context,
+        }),
+      ),
+    ).toBe(2);
+    expect(
+      hasCondition(
+        requireCombatant(interrupted.state, spellTargetId).conditions,
+        "frightened",
+      ),
+    ).toBe(false);
+
+    const declined = declineTargetReadiedSpellAfterFailedSave(
+      interrupted,
+      spellCasterId,
+    );
+    expect(
+      channelDivinityUsesRemaining(
+        battleRuntimeSessionForTest({
+          state: declined.state,
+          context: session.context,
+        }),
+      ),
+    ).toBe(1);
+    expect(declined.state.currentTurnResources.actionResources).toHaveLength(0);
+    expect(
+      hasCondition(
+        requireCombatant(declined.state, spellTargetId).conditions,
+        "frightened",
+      ),
+    ).toBe(true);
+    expect(
+      hasCondition(
+        requireCombatant(declined.state, secondTargetId).conditions,
+        "frightened",
       ),
     ).toBe(false);
   });
@@ -655,4 +735,40 @@ function requireAbjureFoesUnitRef(paladinLevel: ClassLevel) {
   }
   expect(unitRef.success.supportProfiles).toContainEqual(support);
   return unitRef.success;
+}
+
+function sessionWithCasterReadiedSaveFailedSpell(
+  session: BattleRuntimeSession,
+): BattleRuntimeSession {
+  const caster = requireCombatant(session.state, spellCasterId);
+  const readiedSource = session.context.characters
+    .get(spellCasterId)
+    ?.spellPresentationSources.find(
+      (source) => source.invocation.spell.id === "ray_of_frost",
+    );
+  if (readiedSource === undefined) {
+    throw new Error("Expected a Ray of Frost invocation to ready.");
+  }
+  return battleRuntimeSessionForTest({
+    context: session.context,
+    state: {
+      ...session.state,
+      combatants: new Map(session.state.combatants).set(spellCasterId, {
+        ...caster,
+        concentration: {
+          sourceProcedureRef: readiedSource.procedureRef,
+          effectKind: "readiedSpell",
+        },
+      }),
+      readiedSpells: new Map(session.state.readiedSpells).set(spellCasterId, {
+        procedureRef: readiedSource.procedureRef,
+        trigger: "saveFailed",
+        expiresAt: {
+          kind: "endOfTurn",
+          combatantId: spellCasterId,
+          round: Round(1),
+        },
+      }),
+    },
+  });
 }

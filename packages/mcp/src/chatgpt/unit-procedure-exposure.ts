@@ -39,6 +39,7 @@ const UNIT_PROCEDURE_EXPOSURE = {
   extraActionGrant: tool("gain_extra_action"),
   failedAbilityCheckResourceBoost: boundContinuation(),
   failedSavingThrowReroll: boundContinuation(),
+  failedSavingThrowRerollReaction: boundContinuation(),
   grappler: internal(),
   hideActionObscurementPermission: internal(),
   huntersPrey: boundContinuation(),
@@ -118,6 +119,8 @@ const SHARED_UNIT_PROCEDURE_EXPOSURE = {
   failedAbilityCheckResourceBoost:
     UNIT_PROCEDURE_EXPOSURE["failedAbilityCheckResourceBoost"],
   failedSavingThrowReroll: UNIT_PROCEDURE_EXPOSURE["failedSavingThrowReroll"],
+  failedSavingThrowRerollReaction:
+    UNIT_PROCEDURE_EXPOSURE["failedSavingThrowRerollReaction"],
   grappler: UNIT_PROCEDURE_EXPOSURE["grappler"],
   hideActionObscurementPermission:
     UNIT_PROCEDURE_EXPOSURE["hideActionObscurementPermission"],

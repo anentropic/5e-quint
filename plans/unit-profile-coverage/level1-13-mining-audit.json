@@ -45,14 +45,14 @@
       "spell-level": 791
     },
     "rowsByBattleReadinessStatus": {
-      "accepted": 648,
-      "accepted-no-battle-effect": 513,
+      "accepted": 649,
+      "accepted-no-battle-effect": 512,
       "battle-runtime-required": 47,
       "owner-evidence-required": 57
     },
     "rowsByCatalogAdmission": {
-      "installed": 1036,
-      "not-installed": 229
+      "installed": 1037,
+      "not-installed": 228
     },
     "rowsByCategory": {
       "character-creation or progression mechanic": 244,
@@ -67,8 +67,8 @@
     },
     "rowsByFinalDisposition": {
       "catalog-authored-review-required": 32,
-      "catalog-installed-owner-evidence-present": 652,
-      "catalog-only/dead-for-now": 330,
+      "catalog-installed-owner-evidence-present": 653,
+      "catalog-only/dead-for-now": 329,
       "class-progression-follow-up-required": 25,
       "missing-authored-record": 47,
       "missing-authored-runtime-closed": 23,
@@ -113,9 +113,9 @@
     },
     "rowsByUnitProfileDisposition": {
       "not-recorded": 118,
-      "profile-subset-supported": 140,
-      "supported-profile": 379,
-      "unsupported-profile": 628
+      "profile-subset-supported": 138,
+      "supported-profile": 382,
+      "unsupported-profile": 627
     }
   },
   "rows": [
@@ -11318,11 +11318,7 @@
           "status": "accepted"
         },
         "battleReadinessClosure": {
-          "kind": "profile-subset-remaining-mechanics-closed",
-          "owner": "follow-up Death Saving Throw failed-save reroll owner",
-          "reason": "A Death Saving Throw is a saving throw, so a rolled one can be rerolled; its natural 1 and natural 20 effects and its fixed DC need their own decision shape on the death save hole. A failure taken without a roll has no roll to reroll.",
-          "source": "deferred-mechanics",
-          "state": "recorded"
+          "state": "not-recorded"
         },
         "catalogAdmission": {
           "state": "installed",
@@ -11330,7 +11326,7 @@
         },
         "finalDisposition": "catalog-installed-owner-evidence-present",
         "unitProfile": {
-          "disposition": "profile-subset-supported",
+          "disposition": "supported-profile",
           "state": "recorded"
         }
       }
@@ -20078,7 +20074,7 @@
         "sourceInventoryRowId": "srd521:classes:level-7:class-feature-grant:bard_countercharm",
         "state": "present"
       },
-      "nextAction": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
+      "nextAction": "Owner-specific operational evidence is classified and present.",
       "rowId": "srd521:classes:level-7:class-feature-grant:bard_countercharm",
       "rowKind": "class-feature-grant",
       "source": {
@@ -20088,26 +20084,24 @@
       },
       "supportSnapshot": {
         "authoredContent": {
-          "state": "missing-authored-record"
+          "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+          "state": "authored-record-present",
+          "unitId": "bard_countercharm"
         },
         "battleReadiness": {
           "state": "recorded",
-          "status": "accepted-no-battle-effect"
+          "status": "accepted"
         },
         "battleReadinessClosure": {
-          "kind": "outside-battle-runtime",
-          "owner": "future class-feature triggered-Reaction save-failure reroll owner plus condition-application and range-witness owners",
-          "reason": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-          "source": "unit-claim",
-          "state": "recorded"
+          "state": "not-recorded"
         },
         "catalogAdmission": {
-          "state": "not-installed",
+          "state": "installed",
           "unitId": "bard_countercharm"
         },
-        "finalDisposition": "catalog-only/dead-for-now",
+        "finalDisposition": "catalog-installed-owner-evidence-present",
         "unitProfile": {
-          "disposition": "unsupported-profile",
+          "disposition": "supported-profile",
           "state": "recorded"
         }
       }
@@ -22750,11 +22744,7 @@
           "status": "accepted"
         },
         "battleReadinessClosure": {
-          "kind": "profile-subset-remaining-mechanics-closed",
-          "owner": "follow-up Death Saving Throw failed-save reroll owner",
-          "reason": "A Death Saving Throw is a saving throw, so a rolled one can be rerolled; its natural 1 and natural 20 effects and its fixed DC need their own decision shape on the death save hole. A failure taken without a roll has no roll to reroll.",
-          "source": "deferred-mechanics",
-          "state": "recorded"
+          "state": "not-recorded"
         },
         "catalogAdmission": {
           "state": "installed",
@@ -22762,7 +22752,7 @@
         },
         "finalDisposition": "catalog-installed-owner-evidence-present",
         "unitProfile": {
-          "disposition": "profile-subset-supported",
+          "disposition": "supported-profile",
           "state": "recorded"
         }
       }

@@ -1,5 +1,5 @@
 // KERNEL-COVERAGE: runtime-owner BATTLE.ATTACK.PRONE_TARGET_ROLL_MODE
-// KERNEL-COVERAGE: runtime-owner BATTLE.REACTION.OFFER_DECLINE_RESUME BATTLE.PROTOCOL.INTERRUPT_STACK_RESUME_REPLAY
+// KERNEL-COVERAGE: runtime-owner BATTLE.REACTION.OFFER_DECLINE_RESUME BATTLE.PROTOCOL.INTERRUPT_STACK_RESUME_REPLAY BATTLE.D20_TEST.FAILED_SAVE_REACTION_REROLL
 
 import { optionalProperty } from "../optional-property.ts";
 import { Match } from "effect";
@@ -8,9 +8,11 @@ import {
   sameBattleSubject,
 } from "../battle-subjects.ts";
 import { interruptChoiceResponderId } from "../battle-state-execution.ts";
+import { attackRollLoweredBy } from "./reaction-lowered-attack-roll.ts";
 import type {
   AdmittedBattleResolutionInput,
   BattleAttackDamageEvent,
+  BattleFailedSaveReactionRerollChoice,
   BattleFill,
   BattleHandledInterruptOccurrence,
   BattleInterruptCheckpoint,
@@ -38,6 +40,10 @@ import {
   unofferedEligibleResponders,
 } from "./battle-snapshot.ts";
 import { combatantCanTakeReactions } from "./creature-state-execution.ts";
+import {
+  checkpointAfterFailedSaveReactionReroll,
+  sameFailedSaveReactionRerollChoice,
+} from "./failed-save-reaction-reroll.ts";
 import {
   interruptCheckpointFrame,
   interruptChoices,
@@ -159,6 +165,48 @@ type ResolvedObjectOutcomeSource = Pick<
   "objectDamages" | "objectIgnitions" | "droppedObjects"
 >;
 
+/** A Reaction modifier the responder still holds, resolved on the checkpoint. */
+function resolveAdmittedReactionModifierChoice(input: {
+  readonly state: BattleState;
+  readonly frame: BattleInterruptCheckpoint;
+  readonly admittedChoice: Extract<
+    AdmittedInterruptChoice,
+    { readonly tag: "modifier" }
+  >;
+  readonly execution: InterruptLifecycleExecution;
+}): InterruptLifecycleDecisionOutcome {
+  const { admittedChoice, frame } = input;
+  const currentChoice = reactionRollOrDamageReductionChoices(
+    input.state,
+    frame,
+  ).find(
+    (candidate): candidate is BattleInterruptProcedureModifierChoice =>
+      candidate.kind === "reactionModifier" &&
+      candidate.responderId === admittedChoice.choice.responderId &&
+      candidate.modifier.procedureRef ===
+        admittedChoice.choice.modifier.procedureRef &&
+      candidate.modifier.kind === admittedChoice.choice.modifier.kind,
+  );
+  if (currentChoice === undefined) {
+    return withoutInterruptRoute(
+      invalidResult(
+        input.state,
+        "staleSubject",
+        "The selected Reaction modifier is no longer bound to this responder.",
+      ),
+    );
+  }
+  return withInterruptRoute(
+    resolveReactionRollOrDamageReduction({
+      state: input.state,
+      frame,
+      choice: currentChoice,
+      selection: admittedChoice.selection,
+      execution: input.execution,
+    }),
+  );
+}
+
 export function resolveInterruptLifecycleDecision(input: {
   readonly state: BattleState;
   readonly fill: InterruptDecisionFill;
@@ -245,31 +293,20 @@ export function resolveInterruptLifecycleDecision(input: {
     );
   }
   if (admittedChoice.tag === "modifier") {
-    const currentChoice = reactionRollOrDamageReductionChoices(
-      input.state,
+    return resolveAdmittedReactionModifierChoice({
+      state: input.state,
       frame,
-    ).find(
-      (candidate): candidate is BattleInterruptProcedureModifierChoice =>
-        candidate.kind === "reactionModifier" &&
-        candidate.responderId === admittedChoice.choice.responderId &&
-        candidate.modifier.procedureRef ===
-          admittedChoice.choice.modifier.procedureRef &&
-        candidate.modifier.kind === admittedChoice.choice.modifier.kind,
-    );
-    if (currentChoice === undefined) {
-      return withoutInterruptRoute(
-        invalidResult(
-          input.state,
-          "staleSubject",
-          "The selected Reaction modifier is no longer bound to this responder.",
-        ),
-      );
-    }
+      admittedChoice,
+      execution: input.execution,
+    });
+  }
+
+  if (admittedChoice.tag === "failedSaveReroll") {
     return withInterruptRoute(
-      resolveReactionRollOrDamageReduction({
+      resolveFailedSaveReactionReroll({
         state: input.state,
         frame,
-        choice: currentChoice,
+        responderId: admittedChoice.choice.responderId,
         selection: admittedChoice.selection,
         execution: input.execution,
       }),
@@ -647,6 +684,35 @@ function resolveReactionRollOrDamageReduction(input: {
   });
 }
 
+/**
+ * Takes a Reaction that causes a failed saving throw to be rerolled: spends
+ * the Reaction and keeps the grant on the interrupted subject, whose replay
+ * asks the save's new roll.
+ */
+function resolveFailedSaveReactionReroll(input: {
+  readonly state: BattleState;
+  readonly frame: BattleInterruptCheckpoint;
+  readonly responderId: CombatantId;
+  readonly selection: BattleFailedSaveReactionRerollChoice;
+  readonly execution: InterruptLifecycleExecution;
+}): BattleResolutionResult {
+  const grantedFrame = checkpointAfterFailedSaveReactionReroll(input);
+  if (grantedFrame === undefined) {
+    return invalidResult(
+      input.state,
+      "staleSubject",
+      "The selected Reaction reroll is no longer offered for this failed saving throw.",
+    );
+  }
+  copyInterruptCheckpointIdentity(input.frame, grantedFrame);
+  return advanceInterruptCheckpointAfterResponder({
+    state: spendReaction(input.state, input.responderId),
+    frame: grantedFrame,
+    responderId: input.responderId,
+    execution: input.execution,
+  });
+}
+
 function advanceInterruptCheckpointAfterResponder(input: {
   readonly state: BattleState;
   readonly frame: BattleInterruptCheckpoint;
@@ -997,13 +1063,7 @@ function interruptCheckpointAfterModifier(
       },
       continuation:
         frame.continuation.kind === "replay"
-          ? {
-              ...frame.continuation,
-              fills: reactionModifiedAttackRollFills(
-                frame.continuation.fills,
-                frame.attackRoll.total - reduction,
-              ),
-            }
+          ? reactionLoweredReplay(frame.continuation, reduction)
           : frame.continuation,
     };
     copyInterruptCheckpointIdentity(frame, modifiedFrame);
@@ -1063,13 +1123,37 @@ function interruptCheckpointAfterModifier(
   return frame;
 }
 
+/**
+ * The interrupted attack's replay after a Reaction lowered its roll: its fills
+ * lowered, and the reduction kept with them so that a roll the replay asks
+ * again is lowered by the same amount.
+ */
+function reactionLoweredReplay(
+  continuation: Extract<
+    BattleInterruptedProcedure,
+    { readonly kind: "replay" }
+  >,
+  reduction: number,
+): Extract<BattleInterruptedProcedure, { readonly kind: "replay" }> {
+  return {
+    ...continuation,
+    fills: reactionModifiedAttackRollFills(continuation.fills, reduction),
+    attackRollReduction: (continuation.attackRollReduction ?? 0) + reduction,
+  };
+}
+
+/**
+ * The fills an interrupted attack replays with after a Reaction lowered its
+ * roll: the attack roll lowered by the reduction, without the damage and
+ * Concentration fills the lowered roll no longer decides.
+ */
 function reactionModifiedAttackRollFills(
   fills: readonly BattleFill[],
-  total: number,
+  reduction: number,
 ): readonly BattleFill[] {
   return fills.flatMap<BattleFill>((fill) => {
     if (fill.kind === "attackRoll") {
-      return [{ ...fill, value: { ...fill.value, total } }];
+      return [{ ...fill, value: attackRollLoweredBy(fill.value, reduction) }];
     }
     return fill.kind === "rolledDice" ||
       fill.kind === "concentrationSavingThrow"
@@ -1088,6 +1172,17 @@ type AdmittedInterruptChoice =
       >;
     }
   | {
+      readonly tag: "failedSaveReroll";
+      readonly choice: Extract<
+        BattleInterruptProcedureChoice,
+        { readonly kind: "failedSaveReactionReroll" }
+      >;
+      readonly selection: Extract<
+        BattleInterruptProcedureSelection,
+        { readonly kind: "failedSaveReactionReroll" }
+      >;
+    }
+  | {
       readonly tag: "procedure";
       readonly choice: Extract<
         BattleInterruptProcedureChoice,
@@ -1095,7 +1190,11 @@ type AdmittedInterruptChoice =
       >;
       readonly selection: Exclude<
         BattleInterruptProcedureSelection,
-        { readonly kind: "reactionRollOrDamageReduction" }
+        {
+          readonly kind:
+            | "reactionRollOrDamageReduction"
+            | "failedSaveReactionReroll";
+        }
       >;
     };
 
@@ -1118,7 +1217,8 @@ function admittedInterruptChoice(
   return Match.value(choice).pipe(
     Match.discriminatorsExhaustive("kind")({
       nestedProcedure: (nestedChoice) =>
-        decision.choice.kind === "reactionRollOrDamageReduction"
+        decision.choice.kind === "reactionRollOrDamageReduction" ||
+        decision.choice.kind === "failedSaveReactionReroll"
           ? null
           : {
               tag: "procedure" as const,
@@ -1131,6 +1231,14 @@ function admittedInterruptChoice(
           : {
               tag: "modifier" as const,
               choice: modifierChoice,
+              selection: decision.choice,
+            },
+      failedSaveReactionReroll: (rerollChoice) =>
+        decision.choice.kind !== "failedSaveReactionReroll"
+          ? null
+          : {
+              tag: "failedSaveReroll" as const,
+              choice: rerollChoice,
               selection: decision.choice,
             },
     }),
@@ -1149,6 +1257,7 @@ function interruptChoiceTurnResource(
           ? ("none" as const)
           : ("reaction" as const),
       reactionModifier: () => "reaction" as const,
+      failedSaveReactionReroll: () => "reaction" as const,
     }),
   );
 }
@@ -1166,6 +1275,13 @@ function sameInterruptProcedureChoice(
         choice.responderId === responderId &&
         choice.modifier.procedureRef === decision.procedureRef &&
         choice.modifier.kind === decision.modifierKind,
+    ),
+    Match.when(
+      { kind: "failedSaveReactionReroll" },
+      (decision) =>
+        choice.kind === "failedSaveReactionReroll" &&
+        choice.responderId === responderId &&
+        sameFailedSaveReactionRerollChoice(choice.reroll, decision),
     ),
     Match.when(
       { kind: "releaseReadiedSpell" },
@@ -1254,7 +1370,9 @@ export function handledInterruptOccurrenceForCheckpoint(
   return Match.value(frame).pipe(
     Match.when({ trigger: "saveFailed" }, (saveFailed) => ({
       trigger: "saveFailed" as const,
-      targetId: saveFailed.targetId,
+      failedTargetIds: saveFailed.failedTargetIds,
+      appliedConditions: saveFailed.appliedConditions,
+      ...optionalProperty("failedSaveHoleIds", saveFailed.failedSaveHoleIds),
       ...optionalProperty("sourceProcedureRef", saveFailed.sourceProcedureRef),
       ...optionalProperty("effectRef", saveFailed.effectRef),
     })),

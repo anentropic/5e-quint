@@ -1,3 +1,4 @@
+import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
 import { battleResolutionHolesForTest } from "./battle-runtime.test-support.ts";
 import { unitId as parseSharedUnitId } from "@dnd/shared/game-facts";
 import { battleRuntimeSessionForTest } from "./battle-runtime-session.test-support.ts";
@@ -331,6 +332,14 @@ describe("QMBT14 deterministic Grease ground hazard admission", () => {
         ]),
       ],
     });
+    if (awaitingReaction.tag !== "needsHoles") {
+      throw new Error("Expected the failed-save Reaction window.");
+    }
+    expect(currentInterruptCheckpoint(awaitingReaction.state)).toMatchObject({
+      trigger: "saveFailed",
+      failedTargetIds: [spellTargetId],
+      appliedConditions: ["prone"],
+    });
 
     const declined = declineTargetReadiedSpellAfterFailedSave(awaitingReaction);
     expect(requireCombatant(declined.state, spellTargetId)).toMatchObject({
@@ -395,6 +404,13 @@ describe("QMBT14 deterministic Grease ground hazard admission", () => {
           trigger: "saveFailed",
         },
       },
+    });
+    if (endTurnReaction.tag !== "needsHoles") {
+      throw new Error("Expected the failed-save Reaction window.");
+    }
+    expect(currentInterruptCheckpoint(endTurnReaction.state)).toMatchObject({
+      failedTargetIds: [spellTargetId],
+      appliedConditions: ["prone"],
     });
     const afterDecline =
       declineTargetReadiedSpellAfterFailedSave(endTurnReaction);

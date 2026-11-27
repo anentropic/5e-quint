@@ -53,6 +53,14 @@ function reactionChoiceRouting(
     Match.when({ kind: "nestedProcedure" }, ({ subject }) =>
       operationRouting(chatGptBattleSubjectExposure(state, subject)),
     ),
+    Match.when({ kind: "failedSaveReactionReroll" }, () =>
+      operationRouting(
+        Result.succeed(
+          CHATGPT_OPERATION_EXPOSURE.interruptSelections
+            .failedSaveReactionReroll,
+        ),
+      ),
+    ),
     Match.exhaustive,
   );
 }

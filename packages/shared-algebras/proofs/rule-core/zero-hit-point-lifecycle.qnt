@@ -20,6 +20,21 @@ module zeroHitPointLifecycle {
     deathSavingThrowOutcome: DeathSavingThrowOutcome,
   }
 
+  // A Death Saving Throw's d20 and the bonus added to it.
+  type DeathSavingThrowRoll = { naturalD20: int, bonus: int }
+
+  pure def unmodifiedDeathSavingThrowRoll(naturalD20: int): DeathSavingThrowRoll =
+    { naturalD20: naturalD20, bonus: 0 }
+
+  pure val deathSavingThrowSuccessTotal: int = 10
+
+  // playing-the-game.md:1235, 1239: a 20 on the d20 regains a Hit Point and a 1
+  // is two failures, whatever the bonus; otherwise the save fails under 10.
+  pure def deathSavingThrowRollFails(roll: DeathSavingThrowRoll): bool =
+    if (roll.naturalD20 == 20) false
+    else if (roll.naturalD20 == 1) true
+    else roll.naturalD20 + roll.bonus < deathSavingThrowSuccessTotal
+
   pure def resetDeathSavingThrowLifecycle: DeathSavingThrowLifecycle = {
     Dying({ successes: 0, failures: 0 })
   }
@@ -152,11 +167,15 @@ module zeroHitPointLifecycle {
     }
 
   // playing-the-game.md:1241, "Damage at 0 Hit Points": if you take any damage
-  // while you have 0 Hit Points, you suffer a Death Saving Throw failure.
-  // "Take damage" here means damage that actually reduces Hit Points after
-  // Temporary Hit Point absorption (playing-the-game.md:1255, "Temporary Hit
-  // Points"); temp HP offset incoming damage and do not restore Hit Points, so
-  // fully temp-HP-absorbed damage adds no failure.
+  // while you have 0 Hit Points, you suffer a Death Saving Throw failure, and
+  // you die if "the damage" equals or exceeds your Hit Point maximum.
+  // playing-the-game.md:1255, "Lose Temporary Hit Points First": a creature
+  // with Temporary Hit Points still takes the damage; those points are lost
+  // first. So Temporary Hit Points absorb damage without stopping it from being
+  // damage taken: the failure and the maximum test use the incoming damage
+  // (ASSUMPTIONS.md A72).
+  // Only the positive-HP Massive Damage rule (playing-the-game.md:1221) tests
+  // a remainder.
   pure def applyDamageToZeroHitPointCreature(
     vitals: CreatureVitals,
     lifecycle: DeathSavingThrowLifecycle,
@@ -171,7 +190,6 @@ module zeroHitPointLifecycle {
     } else {
       val resolvedDamage = nonnegative(rawDamage)
       val absorbedByTemporaryHitPoints = absorbTemporaryHitPoints(vitals, resolvedDamage)
-      val damageAfterTemporaryHitPoints = resolvedDamage - absorbedByTemporaryHitPoints
       val nextVitals = {
         kind: vitals.kind,
         hitPoints: vitals.hitPoints,
@@ -180,24 +198,24 @@ module zeroHitPointLifecycle {
         dead: vitals.dead,
         unconscious: vitals.unconscious,
       }
-      if (damageAfterTemporaryHitPoints <= 0) {
-        vitals: nextVitals,
-        deathSavingThrows: lifecycle,
-        deathSavingThrowFailuresAdded: 0,
-        deathSavingThrowOutcome: DeathSavingThrowNoHitPointRecovery,
-      } else {
-        applyDamageAtZeroHitPoints(nextVitals, lifecycle, damageAfterTemporaryHitPoints, criticalHitDamage)
-      }
+      applyDamageAtZeroHitPoints(nextVitals, lifecycle, resolvedDamage, criticalHitDamage)
     }
 
   // playing-the-game.md:1233: a creature starting its turn at 0 Hit Points rolls
   // a Death Saving Throw. The guard is state only — at 0, not Stable, not dead —
   // so once per turn is the caller's invariant, not enforced here.
+  //
+  // The roll is the d20 and a bonus to it. Nothing in the core rule adds one; a
+  // feature that rerolls the save with a bonus does (classes.md, Fighter,
+  // Indomitable). The bonus counts toward 10, but a 1 or a 20 on the d20 decides
+  // first (playing-the-game.md:1239, "When you roll a 1 on the d20";
+  // ASSUMPTIONS.md A69).
   pure def resolveStartTurnDeathSavingThrow(
     vitals: CreatureVitals,
     lifecycle: DeathSavingThrowLifecycle,
-    d20Roll: int
-  ): ZeroHitPointLifecycleResult =
+    roll: DeathSavingThrowRoll
+  ): ZeroHitPointLifecycleResult = {
+    val d20Roll = roll.naturalD20
     if (not(canUseDeathSavingThrowLifecycle(vitals, lifecycle)) or
       not(deathSavingThrowLifecycleIsDying(lifecycle)) or d20Roll <= 0) {
       vitals: vitals,
@@ -220,7 +238,7 @@ module zeroHitPointLifecycle {
       }
     } else if (d20Roll == 1) {
       addDeathSavingThrowFailures(vitals, lifecycle, 2)
-    } else if (d20Roll >= 10) {
+    } else if (not(deathSavingThrowRollFails(roll))) {
       val nextSuccesses = deathSavingThrowCount(deathSavingThrowSuccesses(lifecycle) + 1)
       if (nextSuccesses >= 3) {
         {
@@ -243,6 +261,7 @@ module zeroHitPointLifecycle {
     } else {
       addDeathSavingThrowFailures(vitals, lifecycle, 1)
     }
+  }
 
   pure def deathSavingThrowLifecycleAfterPositiveHitPointDamage(
     previous: DeathSavingThrowLifecycle,

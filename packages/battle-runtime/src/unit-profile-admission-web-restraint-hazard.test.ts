@@ -1,3 +1,4 @@
+import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
 import { testMovementPath } from "./battle-runtime.test-support.ts";
 import { battleRuntimeSessionForTest } from "./battle-runtime-session.test-support.ts";
 import { battleActSpellPresentation } from "./battle-act-composition.ts";
@@ -384,6 +385,13 @@ describe("L12G deterministic Web restraint-hazard admission", () => {
         kind: "interruptDecision",
         decisionHole: { kind: "interruptDecision", trigger: "saveFailed" },
       },
+    });
+    if (awaitingReaction.tag !== "needsHoles") {
+      throw new Error("Expected the failed-save Reaction window.");
+    }
+    expect(currentInterruptCheckpoint(awaitingReaction.state)).toMatchObject({
+      failedTargetIds: [spellTargetId],
+      appliedConditions: ["restrained"],
     });
     const declined = declineTargetReadiedSpellAfterFailedSave(awaitingReaction);
     const target = requireCombatant(declined.state, spellTargetId);

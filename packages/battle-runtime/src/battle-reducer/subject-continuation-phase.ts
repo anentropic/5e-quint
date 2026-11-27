@@ -1,14 +1,18 @@
 import { copyInterruptCheckpointIdentity } from "./interrupt-checkpoint-identity.ts";
 import { Match } from "effect";
-// KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE BATTLE.EQUIPMENT.AMMUNITION_LIFECYCLE BATTLE.ATTACK.THROWN_WEAPON_ATTACK
+// KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE BATTLE.EQUIPMENT.AMMUNITION_LIFECYCLE BATTLE.ATTACK.THROWN_WEAPON_ATTACK BATTLE.D20_TEST.FAILED_SAVE_REACTION_REROLL
+import type { ReadonlyNonEmptyArray } from "@dnd/shared/types";
+import { isReadonlyArrayNonEmpty } from "effect/Array";
 import type {
   BattleAcceptedSubjectReplayEvidence,
+  BattleD20TestRollKey,
   BattleInterruptCheckpoint,
   BattleInterruptedProcedure,
   BattleState,
 } from "../battle-state-execution.ts";
 import { sameBattleSubject, type BattleSubject } from "../battle-subjects.ts";
 import { optionalProperty } from "../optional-property.ts";
+import { sameD20TestRollKey } from "./d20-test-roll-key.ts";
 
 type SubjectContinuationPhase = Extract<
   BattleState["subjectResolutionPhase"],
@@ -55,6 +59,10 @@ export function acceptedSubjectReplayEvidence(
       source.acceptedFailedAbilityCheckResourceBoosts,
     ),
     ...optionalProperty(
+      "grantedFailedSaveReactionRerolls",
+      source.grantedFailedSaveReactionRerolls,
+    ),
+    ...optionalProperty(
       "acceptedAttackAmmunitionSpend",
       source.acceptedAttackAmmunitionSpend,
     ),
@@ -87,29 +95,89 @@ export function checkpointWithAcceptedSubjectReplayEvidence<
   return checkpoint;
 }
 
-/** Restore the owner's witnesses, never a nested subject's. */
+/**
+ * A spend record's rolls as the checkpoint froze them, then the rolls this
+ * pass of the owner decided after it: a roll the checkpoint never saw (the
+ * new roll a Reaction caused) can only have spent its source on this pass.
+ */
+function rollsWithLaterSpends<Entry extends BattleD20TestRollKey>(
+  frozen: ReadonlyNonEmptyArray<Entry> | undefined,
+  owner: ReadonlyNonEmptyArray<Entry> | undefined,
+): ReadonlyNonEmptyArray<Entry> | undefined {
+  const later = (owner ?? []).filter(
+    (entry) => !(frozen ?? []).some((roll) => sameD20TestRollKey(roll, entry)),
+  );
+  const rolls = [...(frozen ?? []), ...later];
+  return isReadonlyArrayNonEmpty(rolls) ? rolls : undefined;
+}
+
+/** The checkpoint's witnesses, with the costed rolls the owner decided after it froze. */
+function continuationReplayEvidence(
+  continuation: BattleInterruptedProcedure,
+  owner: BattleAcceptedSubjectReplayEvidence,
+): BattleAcceptedSubjectReplayEvidence {
+  const frozen = acceptedSubjectReplayEvidence(continuation);
+  return {
+    ...frozen,
+    ...optionalProperty(
+      "acceptedHeroicInspirationRerolls",
+      rollsWithLaterSpends(
+        frozen.acceptedHeroicInspirationRerolls,
+        owner.acceptedHeroicInspirationRerolls,
+      ),
+    ),
+    ...optionalProperty(
+      "acceptedFailedSavingThrowRerolls",
+      rollsWithLaterSpends(
+        frozen.acceptedFailedSavingThrowRerolls,
+        owner.acceptedFailedSavingThrowRerolls,
+      ),
+    ),
+    ...optionalProperty(
+      "acceptedBardicInspirationDice",
+      rollsWithLaterSpends(
+        frozen.acceptedBardicInspirationDice,
+        owner.acceptedBardicInspirationDice,
+      ),
+    ),
+    ...optionalProperty(
+      "acceptedFailedAbilityCheckResourceBoosts",
+      rollsWithLaterSpends(
+        frozen.acceptedFailedAbilityCheckResourceBoosts,
+        owner.acceptedFailedAbilityCheckResourceBoosts,
+      ),
+    ),
+  };
+}
+
+/**
+ * Restore the owner's witnesses, never a nested subject's: the checkpoint's,
+ * plus the costed rolls the owner decided after the checkpoint froze.
+ */
 export function stateForSubjectContinuation(
   state: BattleState,
   continuation: BattleInterruptedProcedure,
 ): BattleState {
+  const ownerPhase = subjectContinuationPhaseFor(
+    state,
+    interruptedProcedureSubject(continuation),
+  );
   const {
     acceptedHeroicInspirationRerolls: _previousHeroicInspiration,
     acceptedFailedSavingThrowRerolls: _previousFailedSavingThrowRerolls,
     acceptedBardicInspirationDice: _previousBardicInspirationDice,
     acceptedFailedAbilityCheckResourceBoosts:
       _previousFailedAbilityCheckResourceBoosts,
+    grantedFailedSaveReactionRerolls: _previousFailedSaveReactionRerolls,
     acceptedAttackAmmunitionSpend: _previousAmmunition,
     acceptedThrownWeaponRelease: _previousThrow,
     ...phase
-  } = subjectContinuationPhaseFor(
-    state,
-    interruptedProcedureSubject(continuation),
-  );
+  } = ownerPhase;
   return {
     ...state,
     subjectResolutionPhase: {
       ...phase,
-      ...acceptedSubjectReplayEvidence(continuation),
+      ...continuationReplayEvidence(continuation, ownerPhase),
     },
   };
 }

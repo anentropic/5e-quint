@@ -218,6 +218,11 @@ export const CHATGPT_BATTLE_TOOLS = {
     description:
       "Use when the table confirms that a prepared action's trigger occurred. Record the trigger and offer the eligible readied response.",
   },
+  reroll_failed_save: {
+    family: "reactions",
+    description:
+      "Use an admitted Reaction procedure to cause a failed saving throw to be rerolled. Then supply the new roll through provide_battle_input.",
+  },
   search: {
     family: "battleActions",
     description: "Take the supported Search action.",

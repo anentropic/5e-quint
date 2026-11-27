@@ -28,6 +28,10 @@
       "unitId": "bard_font_of_inspiration"
     },
     {
+      "level": 7,
+      "unitId": "bard_countercharm"
+    },
+    {
       "level": 8,
       "unitId": "bard_ability_score_improvement_l4"
     },

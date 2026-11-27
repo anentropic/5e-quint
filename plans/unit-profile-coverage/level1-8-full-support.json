@@ -8044,7 +8044,7 @@
   "generatedBy": "scripts/unit-profile-coverage-check.cjs",
   "groups": [
     {
-      "count": 192,
+      "count": 193,
       "description": "An executable Unit profile exists for this strict accounting scope.",
       "status": "supported-profile",
       "unitIds": [
@@ -8069,6 +8069,7 @@
         "bard_ability_score_improvement_l4",
         "bard_bardic_inspiration",
         "bard_bonus_proficiencies",
+        "bard_countercharm",
         "bard_cutting_words",
         "bard_expertise",
         "bard_font_of_inspiration",
@@ -8399,8 +8400,8 @@
       "numerator": 954,
       "percent": "100%",
       "rowsByStatus": {
-        "accepted": 537,
-        "accepted-no-battle-effect": 417
+        "accepted": 538,
+        "accepted-no-battle-effect": 416
       }
     },
     "rulesKernelCoveredProfileJoin": {
@@ -8424,13 +8425,13 @@
       "percent": "100%"
     },
     "strictRuntimeProfileSupport": {
-      "denominator": 307,
-      "numerator": 192,
-      "percent": "62.5%"
+      "denominator": 308,
+      "numerator": 193,
+      "percent": "62.7%"
     },
     "strictTargetClosure": {
-      "denominator": 307,
-      "numerator": 307,
+      "denominator": 308,
+      "numerator": 308,
       "percent": "100%"
     }
   },
@@ -8504,49 +8505,6 @@
           }
         ],
         "unitId": "barbarian_mindless_rage"
-      },
-      {
-        "inventoryAccounting": [
-          {
-            "battleReadinessClosure": {
-              "kind": "outside-battle-runtime",
-              "owner": "future class-feature triggered-Reaction save-failure reroll owner plus condition-application and range-witness owners",
-              "reason": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-              "source": "unit-claim",
-              "state": "recorded"
-            },
-            "battleReadinessStatus": "accepted-no-battle-effect",
-            "catalogAdmissionState": "not-installed",
-            "concept": "Bard Countercharm",
-            "finalDisposition": "catalog-only/dead-for-now",
-            "levelBand": "level-7",
-            "nextAction": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-            "rowId": "srd521:classes:level-7:class-feature-grant:bard_countercharm",
-            "rowKind": "class-feature-grant",
-            "unitProfileDisposition": "unsupported-profile"
-          }
-        ],
-        "reason": "The SRD row has level-7 class-feature pressure, but no Unit matrix row exists yet.",
-        "sourceRows": [
-          {
-            "battleReadinessStatus": "accepted-no-battle-effect",
-            "catalogAdmissionState": "not-installed",
-            "category": "class feature",
-            "concept": "Bard Countercharm",
-            "finalDisposition": "catalog-only/dead-for-now",
-            "id": "srd521:classes:level-7:class-feature-grant:bard_countercharm",
-            "levelBand": "level-7",
-            "nextAction": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-            "rowKind": "class-feature-grant",
-            "source": {
-              "lineEnd": 917,
-              "lineStart": 914,
-              "path": ".references/srd-5.2.1/classes.md"
-            },
-            "unitProfileDisposition": "unsupported-profile"
-          }
-        ],
-        "unitId": "bard_countercharm"
       },
       {
         "inventoryAccounting": [
@@ -15090,7 +15048,7 @@
                 "obligationId": "BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE",
                 "runtime": "battle",
                 "status": "covered",
-                "title": "A creature that fails a D20 Test other than an attack roll can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
+                "title": "A creature that fails a D20 Test can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
               },
               {
                 "obligationId": "BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS",
@@ -16467,7 +16425,7 @@
                 "obligationId": "BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE",
                 "runtime": "battle",
                 "status": "covered",
-                "title": "A creature that fails a D20 Test other than an attack roll can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
+                "title": "A creature that fails a D20 Test can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
               },
               {
                 "obligationId": "BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS",
@@ -20078,18 +20036,18 @@
     "blockingRows": [],
     "blockingRowsByStatus": {},
     "metrics": {
-      "denominator": 218,
-      "numerator": 218,
+      "denominator": 219,
+      "numerator": 219,
       "percent": "100%"
     },
     "readyRowsByStatus": {
       "not-applicable": 23,
-      "witness-present": 195
+      "witness-present": 196
     },
     "rowsByStatus": {
       "not-applicable": 23,
       "not-required": 89,
-      "witness-present": 195
+      "witness-present": 196
     }
   },
   "sourceArtifacts": {
@@ -20610,8 +20568,8 @@
         "group": "level-scoped-class-feature-grants",
         "label": "SRD class feature grants through level 8",
         "metrics": {
-          "denominator": 89,
-          "numerator": 89,
+          "denominator": 90,
+          "numerator": 90,
           "percent": "100%"
         },
         "rows": [
@@ -20749,6 +20707,15 @@
             "sourceRecordPath": "packages/surface/content/bard_font_of_inspiration.json",
             "status": "installed",
             "unitId": "bard_font_of_inspiration"
+          },
+          {
+            "kind": "class_feature",
+            "ownerUnitId": "class_bard",
+            "ready": true,
+            "relation": "class.featureGrants.level-7",
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "status": "installed",
+            "unitId": "bard_countercharm"
           },
           {
             "kind": "class_feature",
@@ -21418,7 +21385,7 @@
           }
         ],
         "rowsByStatus": {
-          "installed": 89
+          "installed": 90
         }
       },
       {
@@ -21609,8 +21576,8 @@
       }
     ],
     "metrics": {
-      "denominator": 147,
-      "numerator": 147,
+      "denominator": 148,
+      "numerator": 148,
       "percent": "100%"
     },
     "openBlockerCount": 0
@@ -21620,7 +21587,7 @@
     "candidateUnitIdsBeforeExclusions": 354,
     "groupsByClaimTag": {
       "profile-subset-supported": 26,
-      "supported-profile": 192,
+      "supported-profile": 193,
       "unsupported-profile": 89
     },
     "groupsByStatus": {
@@ -21629,9 +21596,9 @@
       "closed-companion-control-boundary": 4,
       "closed-outside-battle-runtime-boundary": 39,
       "closed-runtime-detached-table-adjudication": 58,
-      "supported-profile": 192
+      "supported-profile": 193
     },
     "nonSupportedFrontier": 115,
-    "strictDenominator": 307
+    "strictDenominator": 308
   }
 }
