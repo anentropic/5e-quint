@@ -3720,7 +3720,7 @@ export const OPERATION_ACCOUNTING = {
       "d20TestNaturalOneReroll",
       at(
         "packages/battle-runtime/src/battle-reducer/d20-test-reroll-fills.ts",
-        "resolveD20TestRerollFills",
+        "d20TestRerollFillCheck",
       ),
       REASONS.unitContinuation,
     ),
@@ -4230,7 +4230,7 @@ export const OPERATION_ACCOUNTING = {
       "d20TestNaturalOneReroll",
       at(
         "packages/battle-runtime/src/battle-reducer/d20-test-reroll-fills.ts",
-        "resolveD20TestRerollFills",
+        "d20TestRerollFillCheck",
       ),
       REASONS.unitContinuation,
     ),
