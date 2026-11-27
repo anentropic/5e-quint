@@ -178,8 +178,8 @@ This metric is a separate seed for spell-level-6 pressure only. It belongs to th
 
 ### Level-7 Class/Subclass Mining Rows by Disposition
 
-- catalog-installed-owner-evidence-present: 7
-- catalog-only/dead-for-now: 5
+- catalog-installed-owner-evidence-present: 8
+- catalog-only/dead-for-now: 4
 - non-runtime: 12
 
 ### Level-8 Class/Subclass Mining Rows by Disposition

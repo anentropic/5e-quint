@@ -461,8 +461,8 @@
       "non-runtime": 12
     },
     "levelSevenClassRowsByDisposition": {
-      "catalog-installed-owner-evidence-present": 7,
-      "catalog-only/dead-for-now": 5,
+      "catalog-installed-owner-evidence-present": 8,
+      "catalog-only/dead-for-now": 4,
       "non-runtime": 12
     },
     "levelEightClassRowsByDisposition": {
@@ -523,10 +523,10 @@
       "character-creation or progression mechanic": 12
     },
     "allRowsByDisposition": {
-      "catalog-installed-owner-evidence-present": 664,
+      "catalog-installed-owner-evidence-present": 665,
       "non-runtime": 240,
       "class-progression-follow-up-required": 87,
-      "catalog-only/dead-for-now": 351,
+      "catalog-only/dead-for-now": 350,
       "missing-authored-runtime-closed": 23,
       "missing-authored-record": 82,
       "catalog-authored-review-required": 64

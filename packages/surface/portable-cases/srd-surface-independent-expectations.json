@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "schemaSha256": "50bdc8a42e0c7b63bc7224c7d8bfb0f7d4c1054d88b41140d5f824692ae37163",
+  "schemaSha256": "9fab65597435a74c77f5b1e09a429cb6eec863c98e5a55f73581e4d3a13ce335",
   "dependencyContractSha256": "f00b3d6d5a86a90ac0ba1ac6c1c5edd380d2d5e8a5ed394bae3fa19cb3c1de25",
   "cases": [
     {
       "name": "valid published aggregate",
-      "inputSha256": "c0c823341181c287e0336eafe82e99b8e3609719299917c065ba7312838b2f0a",
+      "inputSha256": "e4811744982b55827ac9435a8f0c7ab7df4a69774623752d5264b2dd9162d469",
       "expected": {
         "tag": "accepted"
       }
@@ -367,7 +367,7 @@
     },
     {
       "name": "all canonical dependency fields are checked",
-      "inputSha256": "69352af6aebdb257305265fed4b7ab3712cff9010f6a0ed23eebb38b041b5689",
+      "inputSha256": "f3d1831740b88f9421e6e38a28dcd131f2d0fab8e1d54640903a9c1d58d37c92",
       "expected": {
         "tag": "rejected",
         "issues": [
@@ -466,19 +466,26 @@
             "code": "dangling-authored-dependency",
             "path": "$.units[1].featureGrants[5].unitId",
             "targetKind": "unit",
-            "targetId": "bard_ability_score_improvement_l4",
+            "targetId": "bard_countercharm",
             "relation": "unit-reference"
           },
           {
             "code": "dangling-authored-dependency",
             "path": "$.units[1].featureGrants[6].unitId",
             "targetKind": "unit",
-            "targetId": "bard_expertise",
+            "targetId": "bard_ability_score_improvement_l4",
             "relation": "unit-reference"
           },
           {
             "code": "dangling-authored-dependency",
             "path": "$.units[1].featureGrants[7].unitId",
+            "targetKind": "unit",
+            "targetId": "bard_expertise",
+            "relation": "unit-reference"
+          },
+          {
+            "code": "dangling-authored-dependency",
+            "path": "$.units[1].featureGrants[8].unitId",
             "targetKind": "unit",
             "targetId": "bard_magical_secrets",
             "relation": "unit-reference"

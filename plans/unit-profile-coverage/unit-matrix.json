@@ -43,14 +43,14 @@
   "generatedBy": "scripts/unit-profile-coverage-check.cjs",
   "metrics": {
     "authoredSurfaceExecutableCatalogAdmissionCoverage": {
-      "denominator": 544,
-      "numerator": 399,
-      "percent": "73.3%"
+      "denominator": 545,
+      "numerator": 400,
+      "percent": "73.4%"
     },
     "authoredSurfaceUnitCatalogAdmissionCoverage": {
-      "denominator": 632,
-      "numerator": 454,
-      "percent": "71.8%"
+      "denominator": 633,
+      "numerator": 455,
+      "percent": "71.9%"
     },
     "classicNonSrdExpressionGate": {
       "denominator": 1,
@@ -59,16 +59,16 @@
     },
     "collectionInventoryCount": {
       "unit": "Units",
-      "value": 455
+      "value": 456
     },
     "deterministicAdmissionProjectionCoverage": {
-      "denominator": 244,
-      "numerator": 236,
+      "denominator": 246,
+      "numerator": 238,
       "percent": "96.7%"
     },
     "profileClassificationCoverage": {
-      "denominator": 455,
-      "numerator": 455,
+      "denominator": 456,
+      "numerator": 456,
       "percent": "100%"
     },
     "qntProfileModelingCoverage": {
@@ -107,14 +107,14 @@
       "percent": "97.1%"
     },
     "selectedIdentityReplayCoverage": {
-      "denominator": 207,
-      "numerator": 202,
+      "denominator": 209,
+      "numerator": 204,
       "percent": "97.6%"
     },
     "supportedProfileCoverage": {
-      "denominator": 400,
-      "numerator": 244,
-      "percent": "61%"
+      "denominator": 401,
+      "numerator": 246,
+      "percent": "61.3%"
     }
   },
   "metricSemantics": [
@@ -648,11 +648,13 @@
       ],
       "runtimeOwners": [
         "packages/battle-runtime/src/battle-state-execution.ts",
-        "packages/battle-runtime/src/battle-reducer/unit-features.ts",
         "packages/battle-runtime/src/battle-reducer/bardic-inspiration-failed-d20-test.ts",
-        "packages/battle-runtime/src/battle-reducer/d20-test-added-dice.ts"
+        "packages/battle-runtime/src/battle-reducer/d20-test-added-dice.ts",
+        "packages/battle-runtime/src/battle-reducer/turn-boundary-lifecycle.ts",
+        "packages/battle-runtime/src/battle-reducer/attack-roll-after-roll-decisions.ts",
+        "packages/battle-runtime/src/battle-reducer/reaction-lowered-attack-roll.ts"
       ],
-      "sourceBoundary": "On ability checks and saving throws the die is offered on the battle's D20 Test holes once the test's rerolls are decided and expended when rolled; an attack roll still goes through the separate public helper boundary, which consumes an existing die after the caller supplies an already-failed attack roll.",
+      "sourceBoundary": "On attack rolls, ability checks, saving throws and rolled Death Saving Throws the die is offered on the battle's D20 Test holes once the test's rerolls are decided and while the test as it stands fails, and expended when rolled; an attack roll that a Reaction turns into a miss is offered the die when the attack replays.",
       "taskRefs": [
         "SRDINV72B"
       ],
@@ -663,16 +665,16 @@
           "ownerPath": "packages/battle-runtime/battle-runtime-bardic-inspiration.qnt"
         },
         {
-          "kind": "runtime-test",
-          "ownerPath": "packages/battle-runtime/src/battle-runtime.test-support.ts"
-        },
-        {
           "kind": "qnt-proof",
           "ownerPath": "packages/shared-algebras/proofs/rule-core/d20-test-failed-test-added-dice-core-examples.qnt"
         },
         {
           "kind": "runtime-test",
           "ownerPath": "packages/battle-runtime/src/failed-test-added-dice.test.ts"
+        },
+        {
+          "kind": "runtime-test",
+          "ownerPath": "packages/battle-runtime/src/attack-roll-added-dice.test.ts"
         }
       ]
     },
@@ -6963,6 +6965,33 @@
       ]
     },
     {
+      "id": "unit-feature.failed-save-reaction-reroll",
+      "profileKind": "battle-support-admission",
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core.qnt"
+      ],
+      "runtimeOwners": [
+        "packages/battle-runtime/src/unit-feature-support.ts",
+        "packages/battle-runtime/src/character-execution-admission.ts",
+        "packages/battle-runtime/src/battle-reducer/failed-save-reaction-reroll.ts"
+      ],
+      "sourceBoundary": "Battle Unit admission consumes the authored Surface failed-save Reaction reroll shape: the save-failed trigger, the conditions the effect must apply, the range, and the new roll's roll mode. The runtime projects a typed unit feature procedure without authored-identity dispatch and offers the Reaction in the save-failed window to each creature with the feature that can take a Reaction, for each creature whose rolled save stands failed after its own rerolls and added dice, when that creature is the responder or one the table rules within the range and the effect applies a condition the feature answers. Taking it spends the Reaction and asks the save's new roll on the same hole with the feature's roll mode joined to the save's own sources; the new roll is a fresh D20 Test whose roller may use any source the first roll left unspent, its outcome stands, and the save is not rerolled this way again.",
+      "taskRefs": [
+        "U580-COUNTERCHARM"
+      ],
+      "title": "Unit feature takes a Reaction to reroll a failed Saving Throw against an effect applying an answered condition",
+      "verificationOwners": [
+        {
+          "kind": "runtime-test",
+          "ownerPath": "packages/battle-runtime/src/failed-save-reaction-reroll.test.ts"
+        },
+        {
+          "kind": "runtime-test",
+          "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts"
+        }
+      ]
+    },
+    {
       "id": "unit-feature.failed-saving-throw-reroll",
       "profileKind": "battle-support-admission",
       "qntOwners": [
@@ -6972,9 +7001,10 @@
         "packages/battle-runtime/src/unit-feature-support.ts",
         "packages/battle-runtime/src/character-battle-resources.ts",
         "packages/battle-runtime/src/battle-reducer/failed-saving-throw-reroll.ts",
-        "packages/battle-runtime/src/battle-reducer/d20-test-outcome-rerolls.ts"
+        "packages/battle-runtime/src/battle-reducer/d20-test-outcome-rerolls.ts",
+        "packages/battle-runtime/src/battle-reducer/turn-boundary-lifecycle.ts"
       ],
-      "sourceBoundary": "Battle Unit admission consumes the authored Surface failed_saving_throw_reroll shape: failed Saving Throw trigger, mandatory new roll, class-level bonus, one use, threshold-tier class-level cap, and Long Rest reset cadence. The runtime projects a typed support profile without authored-identity dispatch, binds the same-source use-count resource and the level of the class the bonus names, and offers the reroll on every battle Saving Throw and Concentration save hole while the save as it stands is failed and a use is left. It is taken in turn with the natural-1 reroll and Heroic Inspiration; the replacement rerolls the d20, or one chosen d20 under Advantage or Disadvantage, the table's ruling on the new roll stands whether it succeeds or fails, and one use is spent once per roll across subject replays. Death Saving Throws are not yet offered it.",
+      "sourceBoundary": "Battle Unit admission consumes the authored Surface failed_saving_throw_reroll shape: failed Saving Throw trigger, mandatory new roll, class-level bonus, one use, threshold-tier class-level cap, and Long Rest reset cadence. The runtime projects a typed support profile without authored-identity dispatch, binds the same-source use-count resource and the level of the class the bonus names, and offers the reroll on every battle Saving Throw and Concentration save hole while the save as it stands is failed and a use is left. It is taken in turn with the natural-1 reroll and Heroic Inspiration; the replacement rerolls the d20, or one chosen d20 under Advantage or Disadvantage, the table's ruling on the new roll stands whether it succeeds or fails, and one use is spent once per roll across subject replays. A rolled Death Saving Throw that fails is offered it too, with the class level added to the new d20 toward 10 and a 1 or a 20 on the new d20 deciding first; a failure from damage at 0 Hit Points has no roll and is not offered.",
       "taskRefs": [
         "L19D-04-FIGHTER-INDOMITABLE"
       ],
@@ -8686,7 +8716,7 @@
             "obligationId": "BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE",
             "runtime": "battle",
             "status": "covered",
-            "title": "A creature that fails a D20 Test other than an attack roll can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
+            "title": "A creature that fails a D20 Test can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
           },
           {
             "obligationId": "BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS",
@@ -8758,7 +8788,7 @@
             "obligationId": "BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE",
             "runtime": "battle",
             "status": "covered",
-            "title": "A creature that fails a D20 Test other than an attack roll can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
+            "title": "A creature that fails a D20 Test can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
           },
           {
             "obligationId": "BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS",
@@ -12850,7 +12880,7 @@
                   "obligationId": "BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE",
                   "runtime": "battle",
                   "status": "covered",
-                  "title": "A creature that fails a D20 Test other than an attack roll can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
+                  "title": "A creature that fails a D20 Test can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
                 },
                 {
                   "obligationId": "BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS",
@@ -14558,7 +14588,7 @@
                   "obligationId": "BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE",
                   "runtime": "battle",
                   "status": "covered",
-                  "title": "A creature that fails a D20 Test other than an attack roll can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
+                  "title": "A creature that fails a D20 Test can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
                 },
                 {
                   "obligationId": "BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS",
@@ -22852,11 +22882,19 @@
     },
     {
       "claimKind": "completed-runtime-parity",
-      "note": "Focused battle-runtime tests cover shape-based failed Saving Throw reroll profile admission, Long Rest use-count resource admission with class-level threshold tiers, and binding of the same-source resource and the bonus class's level. Battle tests cover the offer with the class-level bonus on a failed save, no offer on a success, the new roll standing whether it succeeds or fails, the use spend, decline, no offer without a use, the roll-mode check, and Heroic Inspiration then the failed-save reroll on one save. A real-catalog Fighter 9 under Burning Hands is offered and spends the reroll; a Fighter 8 is not offered it. Death Saving Throws remain a follow-up.",
+      "note": "Focused battle-runtime tests cover shape-based failed Saving Throw reroll profile admission, Long Rest use-count resource admission with class-level threshold tiers, and binding of the same-source resource and the bonus class's level. Battle tests cover the offer with the class-level bonus on a failed save, no offer on a success, the new roll standing whether it succeeds or fails, the use spend, decline, no offer without a use, the roll-mode check, and Heroic Inspiration then the failed-save reroll on one save. A real-catalog Fighter 9 under Burning Hands is offered and spends the reroll; a Fighter 8 is not offered it. Battle tests on a dying Fighter 9 cover the death save offer, a reroll whose bonus turns the save, a 1 and a 20 on the new d20, decline, no offer on a success or without a use, and the order with Heroic Inspiration both ways.",
       "profileIds": [
         "unit-feature.failed-saving-throw-reroll"
       ],
       "taskId": "L19D-04-FIGHTER-INDOMITABLE"
+    },
+    {
+      "claimKind": "completed-runtime-parity",
+      "note": "Focused battle-runtime tests on a Bard 7 with Countercharm cover the offer on the Bard's own failed save against Charm Person, taking the Reaction and the new roll with Advantage, a succeeding and a failing new roll standing, no reopening of the window, the roll mode check, a new roll without a grant, another creature ruled within 30 feet, no offer against an effect applying neither Charmed nor Frightened, an unspent Heroic Inspiration used on the new roll and a spent one staying spent, the new roll's own decisions re-asked with the reroll marker, an empty fills, and the roll mode table. A real-catalog Bard 7 under Charm Person is offered Countercharm and its succeeding new roll with Advantage stands, spending the Reaction; a Bard 6 is not offered it.",
+      "profileIds": [
+        "unit-feature.failed-save-reaction-reroll"
+      ],
+      "taskId": "U580-COUNTERCHARM"
     },
     {
       "claimKind": "completed-runtime-parity",
@@ -23754,17 +23792,17 @@
         "unsupportedOrOtherUnits": 75
       },
       {
-        "executableUnitDenominator": 129,
-        "installedUnitDenominator": 129,
+        "executableUnitDenominator": 130,
+        "installedUnitDenominator": 130,
         "kind": "class_feature",
         "label": "Class-feature Units",
-        "profileFactDenominator": 181,
-        "profileSubsetSupportedUnits": 11,
+        "profileFactDenominator": 182,
+        "profileSubsetSupportedUnits": 10,
         "selectedIdentityDeferredNonApplicableUnits": 0,
-        "selectedIdentityReplayDenominator": 92,
+        "selectedIdentityReplayDenominator": 93,
         "selectedIdentityReplayGapUnits": 0,
-        "selectedIdentityReplayWitnessUnits": 92,
-        "supportedProfileUnits": 116,
+        "selectedIdentityReplayWitnessUnits": 93,
+        "supportedProfileUnits": 118,
         "unsupportedOrOtherUnits": 2
       }
     ]
@@ -25035,21 +25073,6 @@
         "status": "installed"
       },
       "claim": {
-        "battleReadinessClosure": {
-          "kind": "outside-battle-runtime",
-          "owner": "battle failed Saving Throw reroll profile/resource/reroll fold plus the follow-up Death Saving Throw owner",
-          "reason": "Indomitable is offered and spent on every battle Saving Throw and Concentration save hole. Death Saving Throws remain with the follow-up owner."
-        },
-        "deferredMechanics": [
-          {
-            "battleReadinessClosure": {
-              "kind": "outside-battle-runtime",
-              "owner": "follow-up Death Saving Throw failed-save reroll owner",
-              "reason": "A Death Saving Throw is a saving throw, so a rolled one can be rerolled; its natural 1 and natural 20 effects and its fixed DC need their own decision shape on the death save hole. A failure taken without a roll has no roll to reroll."
-            },
-            "mechanic": "the reroll on a rolled Death Saving Throw"
-          }
-        ],
         "profileIds": [
           "unit-feature.failed-saving-throw-reroll"
         ],
@@ -25062,9 +25085,10 @@
           "battle resource projection admits the existing Indomitable use-count resource and derives max uses from the existing Fighter class level",
           "every battle Saving Throw and Concentration save hole offers the reroll with the Fighter-level bonus while the save as it stands is failed and a use is left, in turn with the natural-1 reroll and Heroic Inspiration",
           "the reroll replaces the d20, or one chosen d20 under Advantage or Disadvantage; the table's ruling on the new roll stands whether it succeeds or fails, and one use is spent once per roll across subject replays",
-          "the reroll is refused on a successful save, without a use left, and under the wrong roll mode"
+          "a rolled Death Saving Throw that fails is offered the reroll; the Fighter level is added to the new d20 toward 10, a 1 on it is two failures and a 20 regains 1 Hit Point whatever the bonus, and a later reroll of the d20 keeps the bonus",
+          "the reroll is refused on a successful save or death save, without a use left, and under the wrong roll mode; a Death Saving Throw failure from damage has no roll and is not offered"
         ],
-        "tag": "profile-subset-supported"
+        "tag": "supported-profile"
       },
       "collectionId": "srd-5.2.1",
       "evidence": [
@@ -25092,9 +25116,10 @@
             "packages/battle-runtime/src/unit-feature-support.ts",
             "packages/battle-runtime/src/character-battle-resources.ts",
             "packages/battle-runtime/src/battle-reducer/failed-saving-throw-reroll.ts",
-            "packages/battle-runtime/src/battle-reducer/d20-test-outcome-rerolls.ts"
+            "packages/battle-runtime/src/battle-reducer/d20-test-outcome-rerolls.ts",
+            "packages/battle-runtime/src/battle-reducer/turn-boundary-lifecycle.ts"
           ],
-          "sourceBoundary": "Battle Unit admission consumes the authored Surface failed_saving_throw_reroll shape: failed Saving Throw trigger, mandatory new roll, class-level bonus, one use, threshold-tier class-level cap, and Long Rest reset cadence. The runtime projects a typed support profile without authored-identity dispatch, binds the same-source use-count resource and the level of the class the bonus names, and offers the reroll on every battle Saving Throw and Concentration save hole while the save as it stands is failed and a use is left. It is taken in turn with the natural-1 reroll and Heroic Inspiration; the replacement rerolls the d20, or one chosen d20 under Advantage or Disadvantage, the table's ruling on the new roll stands whether it succeeds or fails, and one use is spent once per roll across subject replays. Death Saving Throws are not yet offered it.",
+          "sourceBoundary": "Battle Unit admission consumes the authored Surface failed_saving_throw_reroll shape: failed Saving Throw trigger, mandatory new roll, class-level bonus, one use, threshold-tier class-level cap, and Long Rest reset cadence. The runtime projects a typed support profile without authored-identity dispatch, binds the same-source use-count resource and the level of the class the bonus names, and offers the reroll on every battle Saving Throw and Concentration save hole while the save as it stands is failed and a use is left. It is taken in turn with the natural-1 reroll and Heroic Inspiration; the replacement rerolls the d20, or one chosen d20 under Advantage or Disadvantage, the table's ruling on the new roll stands whether it succeeds or fails, and one use is spent once per roll across subject replays. A rolled Death Saving Throw that fails is offered it too, with the class level added to the new d20 toward 10 and a 1 or a 20 on the new d20 deciding first; a failure from damage at 0 Hit Points has no roll and is not offered.",
           "taskRefs": [
             "L19D-04-FIGHTER-INDOMITABLE"
           ],
@@ -26564,11 +26589,13 @@
           ],
           "runtimeOwners": [
             "packages/battle-runtime/src/battle-state-execution.ts",
-            "packages/battle-runtime/src/battle-reducer/unit-features.ts",
             "packages/battle-runtime/src/battle-reducer/bardic-inspiration-failed-d20-test.ts",
-            "packages/battle-runtime/src/battle-reducer/d20-test-added-dice.ts"
+            "packages/battle-runtime/src/battle-reducer/d20-test-added-dice.ts",
+            "packages/battle-runtime/src/battle-reducer/turn-boundary-lifecycle.ts",
+            "packages/battle-runtime/src/battle-reducer/attack-roll-after-roll-decisions.ts",
+            "packages/battle-runtime/src/battle-reducer/reaction-lowered-attack-roll.ts"
           ],
-          "sourceBoundary": "On ability checks and saving throws the die is offered on the battle's D20 Test holes once the test's rerolls are decided and expended when rolled; an attack roll still goes through the separate public helper boundary, which consumes an existing die after the caller supplies an already-failed attack roll.",
+          "sourceBoundary": "On attack rolls, ability checks, saving throws and rolled Death Saving Throws the die is offered on the battle's D20 Test holes once the test's rerolls are decided and while the test as it stands fails, and expended when rolled; an attack roll that a Reaction turns into a miss is offered the die when the attack replays.",
           "taskRefs": [
             "SRDINV72B"
           ],
@@ -26579,16 +26606,16 @@
               "ownerPath": "packages/battle-runtime/battle-runtime-bardic-inspiration.qnt"
             },
             {
-              "kind": "runtime-test",
-              "ownerPath": "packages/battle-runtime/src/battle-runtime.test-support.ts"
-            },
-            {
               "kind": "qnt-proof",
               "ownerPath": "packages/shared-algebras/proofs/rule-core/d20-test-failed-test-added-dice-core-examples.qnt"
             },
             {
               "kind": "runtime-test",
               "ownerPath": "packages/battle-runtime/src/failed-test-added-dice.test.ts"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/battle-runtime/src/attack-roll-added-dice.test.ts"
             }
           ]
         }
@@ -26744,6 +26771,76 @@
       ],
       "sourceRecordPath": "packages/surface/content/bard_font_of_inspiration.json",
       "unitId": "bard_font_of_inspiration"
+    },
+    {
+      "authoredSurfaceDuplicateIdCount": 1,
+      "catalogAdmission": {
+        "collectionId": "srd-5.2.1",
+        "status": "installed"
+      },
+      "claim": {
+        "profileIds": [
+          "unit-feature.failed-save-reaction-reroll"
+        ],
+        "rawRequirementIds": [
+          "RAW-QCORE9-UNIT-FEATURE-PROFILES-001"
+        ],
+        "supportedMechanics": [
+          "Battle Unit admission consumes the authored failed-save Reaction reroll Surface shape without dispatching on Bard Countercharm authored identity",
+          "the save-failed Reaction window offers the Reaction to a Bard with the feature who can take a Reaction, for the Bard's own failed save or another creature's that the table rules within 30 feet, when the effect applies the Charmed or Frightened condition",
+          "the window opens once the rolled save stands failed after its roller's own rerolls and added dice; a save that failed without a roll, or that succeeded, is not offered",
+          "taking the Reaction spends it and asks the save's new roll on the same hole with Advantage joined to the save's own roll mode, so a save rolled with Disadvantage gets a new roll with neither",
+          "the new roll is a fresh D20 Test: a source the first roll left unspent can be used on it and a spent one stays spent, and its own decisions are asked on the save's hole marked as the new roll",
+          "the new roll stands whether it succeeds or fails, and the save is not rerolled this way again by any responder"
+        ],
+        "tag": "supported-profile"
+      },
+      "collectionId": "srd-5.2.1",
+      "evidence": [
+        {
+          "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts",
+          "tag": "selected-identity-replay",
+          "taskId": "U580-COUNTERCHARM"
+        },
+        {
+          "ownerPath": "packages/battle-runtime/src/failed-save-reaction-reroll.test.ts",
+          "tag": "deterministic-admission-projection",
+          "taskId": "U580-COUNTERCHARM"
+        }
+      ],
+      "executableMechanics": true,
+      "kind": "class_feature",
+      "profiles": [
+        {
+          "id": "unit-feature.failed-save-reaction-reroll",
+          "profileKind": "battle-support-admission",
+          "qntOwners": [
+            "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core.qnt"
+          ],
+          "runtimeOwners": [
+            "packages/battle-runtime/src/unit-feature-support.ts",
+            "packages/battle-runtime/src/character-execution-admission.ts",
+            "packages/battle-runtime/src/battle-reducer/failed-save-reaction-reroll.ts"
+          ],
+          "sourceBoundary": "Battle Unit admission consumes the authored Surface failed-save Reaction reroll shape: the save-failed trigger, the conditions the effect must apply, the range, and the new roll's roll mode. The runtime projects a typed unit feature procedure without authored-identity dispatch and offers the Reaction in the save-failed window to each creature with the feature that can take a Reaction, for each creature whose rolled save stands failed after its own rerolls and added dice, when that creature is the responder or one the table rules within the range and the effect applies a condition the feature answers. Taking it spends the Reaction and asks the save's new roll on the same hole with the feature's roll mode joined to the save's own sources; the new roll is a fresh D20 Test whose roller may use any source the first roll left unspent, its outcome stands, and the save is not rerolled this way again.",
+          "taskRefs": [
+            "U580-COUNTERCHARM"
+          ],
+          "title": "Unit feature takes a Reaction to reroll a failed Saving Throw against an effect applying an answered condition",
+          "verificationOwners": [
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/battle-runtime/src/failed-save-reaction-reroll.test.ts"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts"
+            }
+          ]
+        }
+      ],
+      "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+      "unitId": "bard_countercharm"
     },
     {
       "authoredSurfaceDuplicateIdCount": 1,

@@ -45,8 +45,8 @@ These counts describe the current runtime/catalog state of mined rows. They are 
 
 | Disposition | Rows |
 | --- | ---: |
-| catalog-installed-owner-evidence-present | 638 |
-| catalog-only/dead-for-now | 287 |
+| catalog-installed-owner-evidence-present | 639 |
+| catalog-only/dead-for-now | 286 |
 | missing-authored-runtime-closed | 21 |
 | non-runtime | 108 |
 
@@ -54,24 +54,24 @@ These counts describe the current runtime/catalog state of mined rows. They are 
 
 | Catalog state | Rows |
 | --- | ---: |
-| installed | 938 |
-| not-installed | 116 |
+| installed | 939 |
+| not-installed | 115 |
 
 ### Unit Profile Disposition
 
 | Unit profile disposition | Rows |
 | --- | ---: |
 | not-recorded | 14 |
-| profile-subset-supported | 138 |
-| supported-profile | 367 |
-| unsupported-profile | 535 |
+| profile-subset-supported | 137 |
+| supported-profile | 369 |
+| unsupported-profile | 534 |
 
 ### Battle Readiness Snapshot
 
 | Battle readiness status | Rows |
 | --- | ---: |
-| accepted | 634 |
-| accepted-no-battle-effect | 420 |
+| accepted | 635 |
+| accepted-no-battle-effect | 419 |
 
 ## Later-Frontier Spell Pressure Summary
 
@@ -653,7 +653,7 @@ These counts separate class-list rows from unique Spell Definition identities. A
 | Wizard Sculpt Spells | level-6 | character-level | subclass feature | `wizard_sculpt_spells` | `.references/srd-5.2.1/classes.md:11532` |  | present |  |  | not-installed | unsupported-profile | catalog-only/dead-for-now | accepted-no-battle-effect | table-spatial-derivation: future-owner-before-SDK battle-runtime selected area spell save-damage exemption owner plus table/sight affected-creature witness owner | SRD Sculpt Spells lets the caster choose up to 1 plus the spell's level creatures the caster can see among the other creatures affected by an Evocation spell the caster casts. The chosen creatures automatically succeed on their Saving Throws against that spell and take no damage if they would normally take half damage on a successful save. Existing spell invocation owners can represent spell School of Magic, effective spell level for a casting, affected-creature or area witnesses, Saving Throw outcomes, half-damage success branches, and damage application, but they do not admit a selected class-feature pre-save exemption choice over visible affected creatures. A future owner must consume typed Surface facts for the selected Sculpt Spells feature, the existing Spell Definition school fact, the spell invocation's effective spell level for that casting, the existing spell affected-creature or area membership witnesses, caster sight witnesses, and the shared Saving Throw/save-damage boundary without duplicating spell identity, effective spell level, area membership, line-of-sight, target selection, Saving Throw result, damage state, subclass selection state, or dispatching on Wizard, Evoker, Sculpt Spells, or selected spell authored identity. |
 | Barbarian Feral Instinct | level-7 | character-level | class feature | `barbarian_feral_instinct` | `.references/srd-5.2.1/classes.md:298` |  | present |  |  | installed | supported-profile | catalog-installed-owner-evidence-present | accepted | not-recorded | Owner-specific operational evidence is classified and present. |
 | Barbarian Instinctive Pounce | level-7 | character-level | class feature | `barbarian_instinctive_pounce` | `.references/srd-5.2.1/classes.md:302` |  | present |  |  | installed | supported-profile | catalog-installed-owner-evidence-present | accepted | not-recorded | Owner-specific operational evidence is classified and present. |
-| Bard Countercharm | level-7 | character-level | class feature | `bard_countercharm` | `.references/srd-5.2.1/classes.md:914` |  | present |  |  | not-installed | unsupported-profile | catalog-only/dead-for-now | accepted-no-battle-effect | outside-battle-runtime: future class-feature triggered-Reaction save-failure reroll owner plus condition-application and range-witness owners | A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity. |
+| Bard Countercharm | level-7 | character-level | class feature | `bard_countercharm` | `.references/srd-5.2.1/classes.md:914` |  | present |  |  | installed | supported-profile | catalog-installed-owner-evidence-present | accepted | not-recorded | Owner-specific operational evidence is classified and present. |
 | Cleric Blessed Strikes | level-7 | character-level | class feature | `cleric_blessed_strikes` | `.references/srd-5.2.1/classes.md:2239` |  | present |  |  | not-installed | unsupported-profile | catalog-only/dead-for-now | accepted-no-battle-effect | outside-battle-runtime: future Blessed Strikes selected-option owner plus unit-feature weapon-hit damage rider and cantrip damage ability-modifier owners | A future owner must represent the character's Blessed Strikes option choice as a durable selected feature fact, admit Divine Strike through a generic optional once-per-turn weapon-hit damage rider with caller-chosen Necrotic or Radiant damage, and admit Potent Spellcasting through a generic Cleric-cantrip damage ability-modifier owner. The closure must not store both options as simultaneously executable, collapse the option into inert metadata, copy selected cantrip or weapon damage state, or dispatch on Cleric, Blessed Strikes, Divine Strike, Potent Spellcasting, spell names, or class names in reducers. |
 | Druid Elemental Fury | level-7 | character-level | class feature | `druid_elemental_fury` | `.references/srd-5.2.1/classes.md:3606` |  | present |  |  | not-installed | unsupported-profile | catalog-only/dead-for-now | accepted-no-battle-effect | outside-battle-runtime: future Elemental Fury selected-option owner plus cantrip damage ability-modifier, weapon-hit damage rider, and Wild Shape active-form attack rider owners | A future owner must represent the character's Elemental Fury option choice as a durable selected feature fact, admit Potent Spellcasting through a generic Druid-cantrip damage ability-modifier owner, and admit Primal Strike through a generic optional once-per-turn attack-hit damage rider that consumes either existing weapon-hit facts or existing active Wild Shape Beast form attack facts with caller-chosen Cold, Fire, Lightning, or Thunder damage. The closure must not store both options as simultaneously executable, collapse the option into inert metadata, copy Wild Shape form or attack identity state, reimplement Wild Shape attack projection, or dispatch on Druid, Elemental Fury, Potent Spellcasting, Primal Strike, Beast form, spell names, or class names in reducers. |
 | Monk Evasion | level-7 | character-level | class feature | `monk_evasion` | `.references/srd-5.2.1/classes.md:5206` |  | present |  |  | installed | supported-profile | catalog-installed-owner-evidence-present | accepted | not-recorded | Owner-specific operational evidence is classified and present. |
@@ -701,7 +701,7 @@ These counts separate class-list rows from unique Spell Definition identities. A
 | Wizard level 8 feature table row | level-8 | character-level | character-creation or progression mechanic | `class_wizard` | `.references/srd-5.2.1/classes.md:9998` |  | present | Prepared Spells: 11 -> 12 (.references/srd-5.2.1/classes.md:9982 -> .references/srd-5.2.1/classes.md:9998); Spell slot level 4: 1 -> 2 (.references/srd-5.2.1/classes.md:9982 -> .references/srd-5.2.1/classes.md:9998) |  | installed | unsupported-profile | non-runtime | accepted-no-battle-effect | outside-battle-runtime: class-progression-accounting | No runtime work; keep classification as explicit closure. |
 | Barbarian Brutal Strike | level-9 | character-level | class feature | `barbarian_brutal_strike` | `.references/srd-5.2.1/classes.md:306` |  | present |  |  | installed | supported-profile | catalog-installed-owner-evidence-present | accepted | table-spatial-derivation: battle-runtime Brutal Strike attack-rider owner plus table/spatial push and movement owner | Owner-specific operational evidence is classified and present. |
 | Bard Expertise | level-9 | character-level | class feature | `bard_expertise` | `.references/srd-5.2.1/classes.md:621` | dedicated-rule-text: .references/srd-5.2.1/classes.md:888 | present |  |  | installed | supported-profile | catalog-installed-owner-evidence-present | accepted | not-recorded | Owner-specific operational evidence is classified and present. |
-| Fighter Indomitable | level-9 | character-level | class feature | `fighter_indomitable` | `.references/srd-5.2.1/classes.md:4834` |  | present |  |  | installed | profile-subset-supported | catalog-installed-owner-evidence-present | accepted | profile-subset-remaining-mechanics-closed: follow-up Death Saving Throw failed-save reroll owner | Owner-specific operational evidence is classified and present. |
+| Fighter Indomitable | level-9 | character-level | class feature | `fighter_indomitable` | `.references/srd-5.2.1/classes.md:4834` |  | present |  |  | installed | supported-profile | catalog-installed-owner-evidence-present | accepted | not-recorded | Owner-specific operational evidence is classified and present. |
 | Fighter Tactical Master | level-9 | character-level | class feature | `fighter_tactical_master` | `.references/srd-5.2.1/classes.md:4840` |  | present |  |  | installed | supported-profile | catalog-installed-owner-evidence-present | accepted | not-recorded | Owner-specific operational evidence is classified and present. |
 | Monk Acrobatic Movement | level-9 | character-level | class feature | `monk_acrobatic_movement` | `.references/srd-5.2.1/classes.md:5212` |  | present |  |  | installed | profile-subset-supported | catalog-installed-owner-evidence-present | accepted | profile-subset-remaining-mechanics-closed: table/spatial movement and falling owner | Owner-specific operational evidence is classified and present. |
 | Paladin Abjure Foes | level-9 | character-level | class feature | `paladin_abjure_foes` | `.references/srd-5.2.1/classes.md:5704` |  | present |  |  | installed | supported-profile | catalog-installed-owner-evidence-present | accepted | outside-battle-runtime: battle-runtime magic-action save-gated condition feature owner plus table/spatial target visibility owner | Owner-specific operational evidence is classified and present. |
