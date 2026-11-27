@@ -23,6 +23,10 @@ import type {
   BattleHole,
   BattleOrdinaryHole,
   BattleResolutionResult,
+  BattleD20TestRollKey,
+  BattleFailedSaveReactionReroll,
+  BattleFailedSaveReactionRerollOption,
+  BattleGrantedFailedSaveReactionReroll,
   BattleSavingThrowOutcome,
   BattleState,
 } from "../battle-state-execution.ts";
@@ -47,6 +51,15 @@ import {
   type SavingThrowAfterRollUses,
 } from "./d20-test-after-roll-decisions.ts";
 import { invalidResult } from "./result-helpers.ts";
+import type { D20TestSpendScope } from "./d20-test-source-spend.ts";
+import {
+  FAILED_SAVE_REACTION_REROLL_BEFORE_SAVE_STANDS_MESSAGE,
+  FAILED_SAVE_REACTION_REROLL_WITHOUT_GRANT_MESSAGE,
+  failedSaveReactionRerollIssue,
+  failedSaveReactionRerollOption,
+  failedSaveReactionRerollRollKey,
+  grantedFailedSaveReactionRerollForRoll,
+} from "./failed-save-reaction-reroll.ts";
 
 export const D20_TEST_REROLL_ROLLER_REQUIRED_MESSAGE =
   "Concentration Saving Throw after-roll decisions need the discovered hole that names the concentrating creature.";
@@ -78,15 +91,29 @@ function d20TestRerollDecisionHoleAskedAgain(
   if (
     reask.holeKind === "savingThrowOutcome" ||
     reask.holeKind === "concentrationSavingThrow"
-  ) {
-    return hole.kind === "savingThrowOutcome" ||
-      hole.kind === "concentrationSavingThrow"
-      ? savingThrowHoleAskedAfterRoll(hole, reask.ask)
-      : undefined;
-  }
+  )
+    return savingThrowHoleAskedAgain(hole, reask.ask);
   return hole.kind === "abilityCheck" ||
     hole.kind === "spellcastingAbilityCheck"
     ? abilityCheckHoleAskedAfterRoll(hole, reask.ask)
+    : undefined;
+}
+
+/** A saving throw hole asked again: for its roller's own decisions, or for a Reaction's new roll. */
+function savingThrowHoleAskedAgain(
+  hole: D20TestRerollDecisionHole,
+  ask: Extract<
+    D20TestAfterRollReask,
+    { readonly holeKind: "savingThrowOutcome" | "concentrationSavingThrow" }
+  >["ask"],
+): BattleOrdinaryHole | undefined {
+  if (ask.stage === "failedSaveReactionReroll")
+    return hole.kind === "savingThrowOutcome"
+      ? { ...hole, failedSaveReactionRerolls: [ask.option] }
+      : undefined;
+  return hole.kind === "savingThrowOutcome" ||
+    hole.kind === "concentrationSavingThrow"
+    ? savingThrowHoleAskedAfterRoll(hole, ask)
     : undefined;
 }
 
@@ -109,6 +136,13 @@ type D20TestAfterRollReask =
   | {
       readonly holeKind: "savingThrowOutcome" | "concentrationSavingThrow";
       readonly ask: SavingThrowAfterRollAsk;
+    }
+  | {
+      readonly holeKind: "savingThrowOutcome";
+      readonly ask: {
+        readonly stage: "failedSaveReactionReroll";
+        readonly option: BattleFailedSaveReactionRerollOption;
+      };
     };
 
 type D20TestRerollFillValidation =
@@ -358,32 +392,121 @@ function savingThrowOutcomeRollChecks(
   const scope = { kind: "subject", subject } as const;
   const fill = input.fill;
   const hole = savingThrowOutcomeHoleForFill({ ...input, fill });
-  return fill.value.outcomes.map((outcome) => {
+  const holeRef = {
+    fillIndex: input.fillIndex,
+    holeId: fill.holeId,
+    holeKind: "savingThrowOutcome",
+  } as const;
+  return fill.value.outcomes.flatMap((outcome): readonly D20TestRollCheck[] => {
+    const saveRollMode = savingThrowOutcomeRollModeForTarget(
+      hole,
+      outcome.targetId,
+    );
     const rollModeIssue = savingThrowOutcomeRollModeIssue({
       d20TestRoll: outcome.d20TestRoll,
-      requiredRollMode: savingThrowOutcomeRollModeForTarget(
-        hole,
-        outcome.targetId,
-      ),
+      requiredRollMode: saveRollMode,
     });
     /* v8 ignore start -- @preserve -- Malformed resolution input: a saving-throw roll whose mode contradicts the discovered target's D20 Test mode. */
     if (rollModeIssue !== null)
-      return { tag: "invalid", message: rollModeIssue };
+      return [{ tag: "invalid", message: rollModeIssue }];
     /* v8 ignore stop -- @preserve */
-    return savingThrowRollCheck(
-      savingThrowAfterRollDecisions({
-        state,
-        scope,
-        roll: { rollerId: outcome.targetId, holeId: fill.holeId },
-        outcome,
-      }),
-      {
-        fillIndex: input.fillIndex,
-        holeId: fill.holeId,
-        holeKind: "savingThrowOutcome",
-      },
-    );
+    const roll = { rollerId: outcome.targetId, holeId: fill.holeId };
+    const first = savingThrowAfterRollDecisions({
+      state,
+      scope,
+      roll,
+      outcome,
+    });
+    const grant = grantedFailedSaveReactionRerollForRoll(state, scope, roll);
+    const reroll = outcome.failedSaveReactionReroll;
+    const standsFailed = first.tag === "resolved" && !first.roll.succeeded;
+    if (reroll === undefined && (grant === undefined || !standsFailed))
+      return [savingThrowRollCheck(first, holeRef)];
+    return failedSaveReactionRerollRollChecks({
+      state,
+      scope,
+      roll,
+      first,
+      grant,
+      reroll,
+      saveRollMode,
+      holeRef,
+    });
   });
+}
+
+/**
+ * The checks on a saving throw that a Reaction caused to be rerolled: the
+ * first roll, which has to stand failed after its roller's own decisions,
+ * then the new roll, asked for until the fill gives it. The new roll is a
+ * roll of its own (its own key), decided on from the state after the first
+ * roll's decisions spent what they cost, so a source spent on the first roll
+ * is spent.
+ */
+function failedSaveReactionRerollRollChecks(input: {
+  readonly state: BattleState;
+  readonly scope: D20TestSpendScope;
+  readonly roll: BattleD20TestRollKey;
+  readonly first: ReturnType<
+    typeof savingThrowAfterRollDecisions<BattleSavingThrowOutcome>
+  >;
+  readonly grant: BattleGrantedFailedSaveReactionReroll | undefined;
+  readonly reroll: BattleFailedSaveReactionReroll | undefined;
+  readonly saveRollMode: AttackRollMode | undefined;
+  readonly holeRef: D20TestRollCheckHole & {
+    readonly holeKind: "savingThrowOutcome";
+  };
+}): readonly D20TestRollCheck[] {
+  const { first, grant, reroll } = input;
+  if (grant === undefined)
+    return [
+      {
+        tag: "invalid",
+        message: FAILED_SAVE_REACTION_REROLL_WITHOUT_GRANT_MESSAGE,
+      },
+    ];
+  /* v8 ignore start -- @preserve -- Malformed resolution input: a new roll that comes before the first roll stands failed. */
+  if (first.tag === "invalid")
+    return [savingThrowRollCheck(first, input.holeRef)];
+  if (first.tag !== "resolved" || first.roll.succeeded)
+    return [
+      {
+        tag: "invalid",
+        message: FAILED_SAVE_REACTION_REROLL_BEFORE_SAVE_STANDS_MESSAGE,
+      },
+    ];
+  /* v8 ignore stop -- @preserve */
+  if (reroll === undefined)
+    return [
+      {
+        tag: "decisionsRequired",
+        fillIndex: input.holeRef.fillIndex,
+        holeId: input.holeRef.holeId,
+        reask: {
+          holeKind: "savingThrowOutcome",
+          ask: {
+            stage: "failedSaveReactionReroll",
+            option: failedSaveReactionRerollOption(grant, input.saveRollMode),
+          },
+        },
+      },
+    ];
+  const issue = failedSaveReactionRerollIssue({
+    grant,
+    reroll,
+    saveRollMode: input.saveRollMode,
+  });
+  if (issue !== null) return [{ tag: "invalid", message: issue }];
+  const newRoll = savingThrowAfterRollDecisions({
+    state: battleStateAfterSavingThrowAfterRollUses(input.state, [first.uses]),
+    scope: input.scope,
+    roll: failedSaveReactionRerollRollKey(input.roll),
+    outcome: reroll.newRoll,
+  });
+  return [
+    savingThrowRollCheck(first, input.holeRef),
+    savingThrowRollCheck(newRoll, input.holeRef),
+  ];
 }
 
 function concentrationSavingThrowRollChecks(

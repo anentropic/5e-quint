@@ -555,6 +555,24 @@ export const RemarkableAthleteProcedureExecutionSchema = Schema.Struct({
   }),
 });
 
+export const FailedSavingThrowRerollReactionProcedureExecutionSchema =
+  Schema.Struct({
+    kind: Schema.Literal("failedSavingThrowRerollReaction"),
+    reaction: Schema.Struct({
+      trigger: Schema.Struct({
+        kind: Schema.Literal("selfOrCreatureWithinRangeFailsSavingThrow"),
+        rangeFeet: MovementFeet,
+        againstEffectApplyingAnyOf: Schema.NonEmptyArray(
+          Schema.Literals(CONDITIONS),
+        ),
+      }),
+      reroll: Schema.Struct({
+        use: Schema.Literal("newRoll"),
+        rollMode: Schema.Literal("advantage"),
+      }),
+    }),
+  });
+
 export const HuntersPreyProcedureExecutionSchema = Schema.Struct({
   kind: Schema.Literal("huntersPrey"),
   huntersPrey: Schema.Union([
@@ -1355,6 +1373,7 @@ export const UnitSupportProcedureExecutionSchema = Schema.Union([
   DruidWildShapeKnownFormProcedureExecutionSchema,
   BonusActionDelegatedStandardActionsProcedureExecutionSchema,
   RemarkableAthleteProcedureExecutionSchema,
+  FailedSavingThrowRerollReactionProcedureExecutionSchema,
   HuntersPreyProcedureExecutionSchema,
   Schema.Struct({
     kind: Schema.Literal("attackRollDefense"),
@@ -1412,6 +1431,7 @@ export const UnitFeatureProcedureExecutionSchema = Schema.Union([
   EnemyZeroHitPointTemporaryHitPointsProcedureExecutionSchema,
   UnitFeatureBonusActionDelegatedStandardActionsProcedureExecutionSchema,
   RemarkableAthleteProcedureExecutionSchema,
+  FailedSavingThrowRerollReactionProcedureExecutionSchema,
   OpenHandTechniqueProcedureExecutionSchema,
   StunningStrikeProcedureExecutionSchema,
   PaladinSacredWeaponProcedureExecutionSchema,

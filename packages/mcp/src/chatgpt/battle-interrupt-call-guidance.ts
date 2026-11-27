@@ -7,6 +7,7 @@ import {
 import { Match, Result, Schema } from "effect";
 import type { battleMechanicsEnvelopeForSession } from "../battle-tool-payloads.ts";
 import { chatGptInterruptDecisionExposure } from "./battle-operation-routing.ts";
+import { CHATGPT_OPERATION_EXPOSURE } from "./operation-tool-plan.ts";
 import {
   CHATGPT_TOOL_NAMES,
   isChatGptInterruptResolutionToolName,
@@ -142,6 +143,33 @@ function readyNestedSelection(
   );
 }
 
+/** The ready call that takes a Reaction rerolling a failed save; the table then supplies the new roll. */
+function readyFailedSaveReactionRerollCalls(
+  frontier: InterruptFrontier,
+  choice: Extract<
+    InterruptFrontier["choices"][number],
+    { readonly kind: "failedSaveReactionReroll" }
+  >,
+): readonly ReadyBattleInterruptCall[] {
+  const decision = {
+    kind: "resolve",
+    responderId: choice.responderId,
+    choice: { kind: choice.kind, ...choice.reroll, fills: [] as const },
+  } as const;
+  return CHATGPT_OPERATION_EXPOSURE.interruptSelections.failedSaveReactionReroll.tools.map(
+    (tool) => ({
+      tool,
+      arguments: {
+        fill: {
+          kind: "interruptDecision",
+          holeId: frontier.decisionHole.holeId,
+          value: decision,
+        },
+      },
+    }),
+  );
+}
+
 type InterruptFrontier = Extract<
   ReturnType<typeof battleMechanicsEnvelopeForSession>["frontier"],
   { readonly kind: "interruptDecision" }
@@ -163,6 +191,10 @@ export function readyBattleInterruptCalls(
       },
     }));
   for (const choice of frontier.choices) {
+    if (choice.kind === "failedSaveReactionReroll") {
+      calls.push(...readyFailedSaveReactionRerollCalls(frontier, choice));
+      continue;
+    }
     if (choice.kind !== "nestedProcedure") continue;
     const decision = {
       kind: "resolve",

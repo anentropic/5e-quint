@@ -14,6 +14,7 @@ import type {
   BattleAbilityCheckAddedDieHoleOptions,
   BattleD20TestAddedDieHoleOptions,
   BattleSavingThrowRerollHoleOptions,
+  BattleFailedSaveReactionRerollHoleOptions,
   BattleHole,
   BattleInputFrontier,
   BattleInterruptProcedureChoice,
@@ -390,6 +391,19 @@ function mechanicalFailedAbilityCheckResourceBoostOptions(
       };
 }
 
+/** A saving throw outcome hole's failed save reaction reroll option, without its label. */
+function mechanicalFailedSaveReactionRerollOptions(
+  options: BattleFailedSaveReactionRerollHoleOptions,
+) {
+  return options.failedSaveReactionRerolls === undefined
+    ? {}
+    : {
+        failedSaveReactionRerolls: [
+          projectNestedPresentationLabel(options.failedSaveReactionRerolls[0]),
+        ] as const,
+      };
+}
+
 /** A saving throw hole's failed saving throw reroll option, without its label. */
 function mechanicalFailedSavingThrowRerollOptions(
   options: BattleSavingThrowRerollHoleOptions,
@@ -516,6 +530,9 @@ function projectMechanicalSavingThrowHole(
     ...withoutLabel,
     ...mechanicalFailedSavingThrowRerollOptions(hole),
     ...mechanicalBardicInspirationDieOptions(hole),
+    ...("failedSaveReactionRerolls" in hole
+      ? mechanicalFailedSaveReactionRerollOptions(hole)
+      : {}),
   };
   if (
     "d20TestNaturalOneRerolls" in hole &&
@@ -538,6 +555,8 @@ function projectMechanicalInterruptChoice(
     Match.discriminatorsExhaustive("kind")({
       nestedProcedure: (value) => projectChoiceWithMechanicalHoles(value),
       reactionModifier: (value) => projectChoiceWithMechanicalHoles(value),
+      failedSaveReactionReroll: (value) =>
+        projectChoiceWithMechanicalHoles(value),
     }),
   );
 }

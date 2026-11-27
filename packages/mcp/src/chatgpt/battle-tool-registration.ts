@@ -45,6 +45,7 @@ export const CHATGPT_BATTLE_EXECUTION_TOOLS = {
     "report_possession_attempt",
   ),
   report_ready_trigger: defineChatGptBattleTool("report_ready_trigger"),
+  reroll_failed_save: defineChatGptBattleTool("reroll_failed_save"),
   search: defineChatGptBattleTool("search"),
   shake_awake: defineChatGptBattleTool("shake_awake"),
   shove: defineChatGptBattleTool("shove"),

@@ -190,6 +190,8 @@ export const FAILED_SAVING_THROW_REROLL_SUPPORT_PROFILE =
   "failedSavingThrowReroll";
 export const BARDIC_INSPIRATION_GRANT_SUPPORT_PROFILE =
   "bardicInspirationGrant";
+export const FAILED_SAVING_THROW_REROLL_REACTION_SUPPORT_PROFILE =
+  "failedSavingThrowRerollReaction";
 export {
   DRUID_WILD_SHAPE_KNOWN_FORM_SUPPORT_PROFILE,
   type BattleDruidWildShapeKnownFormSupportProfile,
@@ -282,6 +284,7 @@ export const BATTLE_UNIT_SUPPORT_PROFILES = [
   BONUS_ACTION_DASH_TEMPORARY_HIT_POINTS_SUPPORT_PROFILE,
   FAILED_ABILITY_CHECK_RESOURCE_BOOST_SUPPORT_PROFILE,
   FAILED_SAVING_THROW_REROLL_SUPPORT_PROFILE,
+  FAILED_SAVING_THROW_REROLL_REACTION_SUPPORT_PROFILE,
   MONK_FOCUS_BATTLE_OPTIONS_SUPPORT_PROFILE,
   SPELL_SLOT_HEALING_MODIFIER_SUPPORT_PROFILE,
   MAGIC_ACTION_HEALING_POOL_SUPPORT_PROFILE,
@@ -732,6 +735,26 @@ export type BattleRemarkableAthleteSupportProfile = {
   readonly kind: typeof REMARKABLE_ATHLETE_SUPPORT_PROFILE;
   readonly remarkableAthlete: RemarkableAthleteProfile;
 };
+/**
+ * A Reaction that has a failed saving throw rerolled: the reactor's own, or a
+ * creature's within range, against an effect that applies one of the named
+ * conditions. The new roll has the roll mode and stands.
+ */
+export type FailedSavingThrowRerollReactionProfile = {
+  readonly trigger: {
+    readonly kind: "selfOrCreatureWithinRangeFailsSavingThrow";
+    readonly rangeFeet: MovementFeet;
+    readonly againstEffectApplyingAnyOf: ReadonlyNonEmptyArray<Condition>;
+  };
+  readonly reroll: {
+    readonly use: "newRoll";
+    readonly rollMode: "advantage";
+  };
+};
+export type BattleFailedSavingThrowRerollReactionSupportProfile = {
+  readonly kind: typeof FAILED_SAVING_THROW_REROLL_REACTION_SUPPORT_PROFILE;
+  readonly reaction: FailedSavingThrowRerollReactionProfile;
+};
 export type OpenHandTechniqueProfile = {
   readonly trigger: {
     readonly kind: "hitWithAttackGrantedBy";
@@ -1115,6 +1138,7 @@ export type BattleUnitSupportProfile =
   | BattleEnemyZeroHitPointTemporaryHitPointsSupportProfile
   | BattleDruidWildShapeKnownFormSupportProfile
   | BattleRemarkableAthleteSupportProfile
+  | BattleFailedSavingThrowRerollReactionSupportProfile
   | BattleOpenHandTechniqueSupportProfile
   | BattleStunningStrikeSupportProfile
   | BattleCunningStrikeSupportProfile
@@ -1159,6 +1183,7 @@ export type BattleUnitSupportProfile =
       | "enemyZeroHitPointTemporaryHitPoints"
       | "druidWildShapeKnownForm"
       | "remarkableAthlete"
+      | "failedSavingThrowRerollReaction"
       | "openHandTechnique"
       | "stunningStrike"
       | "cunningStrike"
@@ -1203,6 +1228,21 @@ function battleUnitSupportProfileIssue(
   message: string,
 ): Result.Result<never, BattleUnitSupportProfileIssue> {
   return Result.fail({ tag: "battleUnitSupportProfileIssue", message });
+}
+
+/**
+ * A focused hook reader's support as the profiles it adds, or the aggregate
+ * typed issue for its unsupported sentinel; none when the Unit has no such hook.
+ */
+function focusedUnitHookSupportProfiles<Profile>(
+  support: Profile | "unsupported" | null,
+  unsupportedMessage: string,
+): Result.Result<readonly Profile[], BattleUnitSupportProfileIssue> {
+  /* v8 ignore start -- @preserve -- Each focused hook reader owns malformed-shape conformance; this branch only translates its unsupported sentinel into the aggregate typed issue. */
+  if (support === "unsupported")
+    return battleUnitSupportProfileIssue(unsupportedMessage);
+  /* v8 ignore stop -- @preserve */
+  return Result.succeed(support === null ? [] : [support]);
 }
 
 type BattleUnitSupportProfilesInput = {
@@ -1869,19 +1909,21 @@ function battleUnitSupportProfilesForInputWithHuntersPreyAdmission(
     supportProfiles.push(enemyZeroHitPointTemporaryHitPointsSupport);
   }
 
-  const remarkableAthleteSupport = battleRemarkableAthleteSupportForUnit(
-    input.unit,
+  const remarkableAthleteSupport = focusedUnitHookSupportProfiles(
+    battleRemarkableAthleteSupportForUnit(input.unit),
+    `Unsupported battle Remarkable Athlete Unit hook: ${input.unit.id}.`,
   );
-  /* v8 ignore start -- @preserve -- Each focused hook reader owns malformed-shape conformance; this branch only translates its unsupported sentinel into the aggregate typed issue. */
-  if (remarkableAthleteSupport === "unsupported") {
-    return battleUnitSupportProfileIssue(
-      `Unsupported battle Remarkable Athlete Unit hook: ${input.unit.id}.`,
-    );
-  }
-  /* v8 ignore stop -- @preserve */
-  if (remarkableAthleteSupport !== null) {
-    supportProfiles.push(remarkableAthleteSupport);
-  }
+  if (Result.isFailure(remarkableAthleteSupport))
+    return Result.fail(remarkableAthleteSupport.failure);
+  supportProfiles.push(...remarkableAthleteSupport.success);
+
+  const failedSavingThrowRerollReactionSupport = focusedUnitHookSupportProfiles(
+    battleFailedSavingThrowRerollReactionSupportForUnit(input.unit),
+    `Unsupported battle failed saving throw reroll Reaction Unit hook: ${input.unit.id}.`,
+  );
+  if (Result.isFailure(failedSavingThrowRerollReactionSupport))
+    return Result.fail(failedSavingThrowRerollReactionSupport.failure);
+  supportProfiles.push(...failedSavingThrowRerollReactionSupport.success);
 
   const openHandTechniqueSupport = battleOpenHandTechniqueSupportForUnit(
     input.unit,
@@ -2649,6 +2691,10 @@ export type SupportedUnitFeatureFacts =
       readonly remarkableAthlete: RemarkableAthleteProfile;
     }
   | {
+      readonly kind: "failedSavingThrowRerollReaction";
+      readonly reaction: FailedSavingThrowRerollReactionProfile;
+    }
+  | {
       readonly kind: "openHandTechnique";
       readonly technique: OpenHandTechniqueProfile;
     }
@@ -2724,6 +2770,10 @@ export type BattleMonkFocusBattleOptionsSupport =
   | null;
 export type BattleRemarkableAthleteSupport =
   | BattleRemarkableAthleteSupportProfile
+  | "unsupported"
+  | null;
+export type BattleFailedSavingThrowRerollReactionSupport =
+  | BattleFailedSavingThrowRerollReactionSupportProfile
   | "unsupported"
   | null;
 export type BattleOpenHandTechniqueSupport =
@@ -3614,6 +3664,23 @@ export function battleRemarkableAthleteSupportForUnit(
     : {
         kind: REMARKABLE_ATHLETE_SUPPORT_PROFILE,
         remarkableAthlete: profile.remarkableAthlete,
+      };
+}
+
+export function battleFailedSavingThrowRerollReactionSupportForUnit(
+  unit: AuthoredUnitSource,
+): BattleFailedSavingThrowRerollReactionSupport {
+  if (
+    !hasClassFeatureMechanicsFamily(unit, "failed_saving_throw_reroll_reaction")
+  ) {
+    return null;
+  }
+  const profile = failedSavingThrowRerollReactionProfileForUnit(unit);
+  return profile === null
+    ? "unsupported"
+    : {
+        kind: FAILED_SAVING_THROW_REROLL_REACTION_SUPPORT_PROFILE,
+        reaction: profile.reaction,
       };
 }
 
@@ -5755,7 +5822,7 @@ export function parseSupportedUnitFeatureProfile(
     zeroHitPointReplacementProfileForUnit(unit) ??
     bonusActionDashTemporaryHitPointsProfileForUnit(unit) ??
     failedAbilityCheckResourceBoostProfileForUnit(unit) ??
-    failedSavingThrowRerollProfileForUnit(unit) ??
+    failedSavingThrowRerollProfilesForUnit(unit) ??
     spellSlotHealingModifierProfileForUnit(unit) ??
     magicActionHealingPoolProfileForUnit(unit) ??
     magicActionAreaSaveDamageHealingProfileForUnit(unit, classLevels) ??
@@ -5801,6 +5868,76 @@ function bonusActionDelegatedStandardActionsProfileForUnit(
         unit,
         actionEconomy: support,
       };
+}
+
+type FailedSavingThrowRerollReactionMechanics = Extract<
+  Extract<AuthoredUnitSource, { readonly kind: "class_feature" }>["mechanics"],
+  { readonly family: "failed_saving_throw_reroll_reaction" }
+>;
+
+/** Whether the battle runs this Reaction's shape: a Reaction that rerolls a failed save as a new roll with Advantage. */
+function failedSavingThrowRerollReactionMechanicsSupported(
+  mechanics: FailedSavingThrowRerollReactionMechanics,
+): boolean {
+  return (
+    mechanics.activationCost.kind === "reaction" &&
+    mechanics.trigger.kind === "creature_fails_saving_throw" &&
+    mechanics.trigger.creatures === "self_or_creature_within_range" &&
+    mechanics.reroll.mustUseNewRoll &&
+    mechanics.reroll.rollMode === "advantage"
+  );
+}
+
+/** A Unit feature that rerolls a failed saving throw: by a use of its own, or as a Reaction. */
+function failedSavingThrowRerollProfilesForUnit(
+  unit: AuthoredUnitSource,
+): Extract<
+  SupportedUnitFeatureProfile,
+  {
+    readonly kind:
+      | "failedSavingThrowReroll"
+      | "failedSavingThrowRerollReaction";
+  }
+> | null {
+  return (
+    failedSavingThrowRerollProfileForUnit(unit) ??
+    failedSavingThrowRerollReactionProfileForUnit(unit)
+  );
+}
+
+function failedSavingThrowRerollReactionProfileForUnit(
+  unit: AuthoredUnitSource,
+): Extract<
+  SupportedUnitFeatureProfile,
+  { readonly kind: "failedSavingThrowRerollReaction" }
+> | null {
+  if (
+    unit.kind !== "class_feature" ||
+    unit.mechanics.family !== "failed_saving_throw_reroll_reaction"
+  ) {
+    return null;
+  }
+  const mechanics = unit.mechanics;
+  const [firstCondition, ...otherConditions] =
+    parseBattleConditions(mechanics.trigger.againstEffectApplyingAnyOf) ?? [];
+  if (
+    firstCondition === undefined ||
+    !failedSavingThrowRerollReactionMechanicsSupported(mechanics)
+  ) {
+    return null;
+  }
+  return {
+    kind: "failedSavingThrowRerollReaction",
+    unit,
+    reaction: {
+      trigger: {
+        kind: "selfOrCreatureWithinRangeFailsSavingThrow",
+        rangeFeet: movementFeet(mechanics.trigger.rangeFeet),
+        againstEffectApplyingAnyOf: [firstCondition, ...otherConditions],
+      },
+      reroll: { use: "newRoll", rollMode: "advantage" },
+    },
+  };
 }
 
 function remarkableAthleteProfileForUnit(
@@ -7966,7 +8103,7 @@ function parseOngoingFeatureLifecycle(
 ): OngoingFeatureLifecycleProfile | null {
   return Match.value(lifecycle).pipe(
     Match.when({ kind: "turn_boundary" }, (turnBoundary) => {
-      const earlyEndConditions = parseOngoingFeatureEarlyEndConditions(
+      const earlyEndConditions = parseBattleConditions(
         turnBoundary.earlyEndConditions ?? [],
       );
       const earlyEndArmorCategories = parseOngoingFeatureArmorCategories(
@@ -7988,7 +8125,7 @@ function parseOngoingFeatureLifecycle(
       const maximumDurationRounds = durationToRounds(
         roundExtended.maximumDuration,
       );
-      const earlyEndConditions = parseOngoingFeatureEarlyEndConditions(
+      const earlyEndConditions = parseBattleConditions(
         roundExtended.earlyEndConditions ?? [],
       );
       const earlyEndArmorCategories = parseOngoingFeatureArmorCategories(
@@ -8019,7 +8156,7 @@ function parseOngoingFeatureLifecycle(
     }),
     Match.when({ kind: "fixed_duration" }, (fixedDuration) => {
       const maximumDurationRounds = durationToRounds(fixedDuration.duration);
-      const earlyEndConditions = parseOngoingFeatureEarlyEndConditions(
+      const earlyEndConditions = parseBattleConditions(
         fixedDuration.earlyEndConditions ?? [],
       );
       const earlyEndArmorCategories = parseOngoingFeatureArmorCategories(
@@ -8049,7 +8186,8 @@ function parseOngoingFeatureExtensionTrigger(
   return "enemySavingThrow";
 }
 
-function parseOngoingFeatureEarlyEndConditions(
+/** The authored conditions as battle conditions, or null when one isn't a battle condition. */
+function parseBattleConditions(
   conditions: readonly string[],
 ): readonly Condition[] | null {
   const parsed: Condition[] = [];
