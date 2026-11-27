@@ -32,7 +32,7 @@ module unitFeatureFailedSaveReactionRerollCore {
   // (rerolls, added dice) belong to their own cores, and this core takes the
   // table's ruling on it as it stands after them. A decision answers an offer,
   // so a decline is invalid too when nothing was offered.
-  import d20TestCircumstanceCore.* from "./d20-test-circumstance-core"
+  import d20TestRollMode.* from "./d20-test-roll-mode"
   import actionTurnProcedures.* from "./action-turn-procedures"
 
   // The conditions an effect applies to a creature that fails its save, or,

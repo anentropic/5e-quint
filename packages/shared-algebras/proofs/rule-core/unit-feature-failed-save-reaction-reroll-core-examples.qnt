@@ -1,7 +1,7 @@
 // -*- mode: Bluespec; -*-
 
 module unitFeatureFailedSaveReactionRerollCoreExamples {
-  import d20TestCircumstanceCore.* from "./d20-test-circumstance-core"
+  import d20TestRollMode.* from "./d20-test-roll-mode"
   import actionTurnProcedures.* from "./action-turn-procedures"
   import unitFeatureFailedSaveReactionRerollCore.* from "./unit-feature-failed-save-reaction-reroll-core"
 
