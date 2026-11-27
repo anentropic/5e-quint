@@ -1,3 +1,6 @@
+// UNIT-PROFILE-COVERAGE: verification-owner:runtime-test unit-feature.failed-save-reaction-reroll
+// KERNEL-COVERAGE: parity-witness BATTLE.D20_TEST.FAILED_SAVE_REACTION_REROLL
+// UNIT-IDENTITY-EVIDENCE: deterministic-admission-projection U580-COUNTERCHARM bard_countercharm
 // Countercharm (SRD 5.2.1 classes.md, Bard, Level 7: Countercharm): "If you
 // or a creature within 30 feet of you fails a saving throw against an effect
 // that applies the Charmed or Frightened condition, you can take a Reaction

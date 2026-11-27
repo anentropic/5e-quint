@@ -1,6 +1,7 @@
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_SAVING_THROW_REROLL
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE
+// KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_SAVE_REACTION_REROLL
 // UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.d20-test-natural-one-reroll
 // Checks the after-roll decisions on a subject's rolled D20 Test outcomes
 // (ability checks, saving throws and Concentration saves) before the subject

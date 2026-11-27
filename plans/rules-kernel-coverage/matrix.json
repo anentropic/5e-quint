@@ -1,18 +1,18 @@
 {
   "summary": {
-    "total": 191,
-    "covered": 180,
+    "total": 192,
+    "covered": 181,
     "open": 5,
     "nonSemantic": 6,
     "byRuntime": {
       "shared-algebras": 1,
-      "battle": 151,
+      "battle": 152,
       "character-creation": 20,
       "character-sheet": 15,
       "character-battle": 4
     },
     "byStatus": {
-      "covered": 180,
+      "covered": 181,
       "needs-qnt-owner": 5,
       "needs-parity-witness": 0,
       "needs-surface-evidence": 0,
@@ -6564,6 +6564,42 @@
         "ASSUMPTIONS.md#A68-A-bonus-to-a-Death-Saving-Throw-counts-toward-10-after-the-d20s-1-or-20"
       ],
       "title": "A creature with a failed saving throw reroll feature can reroll a saving throw that stands failed, a rolled Death Saving Throw included, with a bonus equal to its class level, must use the new roll, and spends a use"
+    },
+    {
+      "id": "BATTLE.D20_TEST.FAILED_SAVE_REACTION_REROLL",
+      "kind": "boundary-protocol",
+      "parityWitnesses": [
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/failed-save-reaction-reroll.test.ts"
+        },
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts"
+        }
+      ],
+      "profiles": [],
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core.qnt"
+      ],
+      "reason": "The QNT owner offers the Reaction only while the responder has the feature and its Reaction and can react, the creature whose save failed is the responder or one the table rules within range, the effect applies a condition the feature answers, and the save was rolled, stands failed after its roller's own rerolls and added dice, and was not rerolled this way before; the new roll's mode joins the feature's source to the save's own sources before they cancel, an admitted reroll spends the Reaction, the table's ruling on the new roll stands whether it succeeds or fails, and the save is marked rerolled so no responder is offered it again; a decline keeps the save and the Reaction, and a decision is refused where nothing was offered. failed-save-reaction-reroll owns the offer in the save-failed window, the grant, the roll mode and the issue checks; interrupt-lifecycle takes the Reaction and keeps the grant on the interrupted subject; d20-test-reroll-fills asks and checks the new roll on the save's own hole, re-asking it with the reroll marker when the new roll needs its roller's own decisions; and subject-continuation-phase keeps a source the new roll spends when the replay restores the checkpoint's witnesses. The executable parity witness covers the Bard's own failed save against Charm Person, taking the Reaction, a succeeding and a failing new roll standing, no reopening, the roll mode check, a new roll without a grant, another creature ruled within range, an effect applying neither condition, an unspent and a spent Heroic Inspiration on the new roll, the re-ask of the new roll's decisions, empty fills, and the roll mode table, and a real-catalog Bard 7 under Charm Person offered Countercharm with its new roll standing against a Bard 6 offered nothing.",
+      "runtime": "battle",
+      "runtimeOwners": [
+        "packages/battle-runtime/src/battle-reducer/failed-save-reaction-reroll.ts",
+        "packages/battle-runtime/src/battle-reducer/interrupt-lifecycle.ts",
+        "packages/battle-runtime/src/battle-reducer/d20-test-reroll-fills.ts",
+        "packages/battle-runtime/src/battle-reducer/subject-continuation-phase.ts"
+      ],
+      "status": "covered",
+      "surfaceEvidence": [
+        ".references/srd-5.2.1/classes.md#Level-7-Countercharm",
+        ".references/srd-5.2.1/playing-the-game.md#Advantage/Disadvantage",
+        ".references/srd-5.2.1/rules-glossary.md#Reaction",
+        "UBIQUITOUS_LANGUAGE.md#D20-Rolls",
+        "ASSUMPTIONS.md#A67-Dice-added-to-a-failed-D20-Test-come-after-its-rerolls",
+        "ASSUMPTIONS.md#A70-A-Reaction-that-rerolls-a-failed-save-asks-one-fresh-roll-once-the-save-stands-failed"
+      ],
+      "title": "A creature with a failed save Reaction reroll feature can take its Reaction when it, or a creature the table rules within range, fails a saving throw against an effect that applies a condition the feature answers, causing the save to be rerolled once with the feature's roll mode, and the new roll stands"
     },
     {
       "id": "BATTLE.FEATURE.WEAPON_MASTERY_GRAZE",
@@ -13976,6 +14012,18 @@
       "role": "proof-only"
     },
     {
+      "evidence": "Owns the failed save Reaction reroll offer on a rolled saving throw that stands failed against an effect applying a condition the feature answers, for the responder or a creature the table rules within range, its roll mode joining the feature's source to the save's own before cancellation, the Reaction spend, the new roll standing whether it succeeds or fails, and one such reroll per save, independently of battle or authored identity.",
+      "obligationIds": ["BATTLE.D20_TEST.FAILED_SAVE_REACTION_REROLL"],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "evidence": "Executable closed examples cover the offer with Advantage, a successful and a failed new roll standing, no reopening and no second responder, the wrong roll mode, decline, range, the effect's conditions, no Reaction or barred from reacting, a succeeded or unrolled save, a decision without an offer, and the save's Disadvantage, cancelled sources and Advantage meeting the feature's Advantage.",
+      "obligationIds": [],
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
       "evidence": "Owns when Weapon Mastery Graze is offered after an attack roll and the miss damage it deals, independently of battle or authored identity.",
       "obligationIds": ["BATTLE.FEATURE.WEAPON_MASTERY_GRAZE"],
       "ownerPath": "packages/shared-algebras/proofs/rule-core/weapon-mastery-graze-core.qnt",
@@ -16262,6 +16310,16 @@
     {
       "classification": "qnt-owner-role",
       "ownerPath": "packages/shared-algebras/proofs/rule-core/unit-feature-disciple-of-life-core.qnt",
+      "role": "semantic-core"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core-examples.qnt",
+      "role": "proof-only"
+    },
+    {
+      "classification": "qnt-owner-role",
+      "ownerPath": "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core.qnt",
       "role": "semantic-core"
     },
     {
@@ -21687,6 +21745,33 @@
     {
       "blockedBy": [],
       "generatorSubset": [
+        "import",
+        "variant",
+        "record",
+        "record-update",
+        "pure-def",
+        "bool",
+        "set",
+        "set-operators",
+        "if-expression",
+        "let-binding",
+        "comparison",
+        "boolean-connective",
+        "pattern-match",
+        "all-block"
+      ],
+      "obligationId": "BATTLE.D20_TEST.FAILED_SAVE_REACTION_REROLL",
+      "proofOnly": [
+        "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core-examples.qnt"
+      ],
+      "semanticCore": [
+        "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core.qnt"
+      ],
+      "status": "generation-subset-clean"
+    },
+    {
+      "blockedBy": [],
+      "generatorSubset": [
         "record",
         "pure-def",
         "int",
@@ -22341,6 +22426,7 @@
     "unit-feature.druid-wild-shape-known-form",
     "unit-feature.enemy-zero-hit-point-temporary-hit-points",
     "unit-feature.failed-ability-check-resource-boost",
+    "unit-feature.failed-save-reaction-reroll",
     "unit-feature.failed-saving-throw-reroll",
     "unit-feature.fighter-tactical-master",
     "unit-feature.first-attack-roll-reckless-advantage",

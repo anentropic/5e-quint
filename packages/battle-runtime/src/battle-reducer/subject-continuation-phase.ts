@@ -1,6 +1,6 @@
 import { copyInterruptCheckpointIdentity } from "./interrupt-checkpoint-identity.ts";
 import { Match } from "effect";
-// KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE BATTLE.EQUIPMENT.AMMUNITION_LIFECYCLE BATTLE.ATTACK.THROWN_WEAPON_ATTACK
+// KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE BATTLE.EQUIPMENT.AMMUNITION_LIFECYCLE BATTLE.ATTACK.THROWN_WEAPON_ATTACK BATTLE.D20_TEST.FAILED_SAVE_REACTION_REROLL
 import type { ReadonlyNonEmptyArray } from "@dnd/shared/types";
 import { isReadonlyArrayNonEmpty } from "effect/Array";
 import type {
