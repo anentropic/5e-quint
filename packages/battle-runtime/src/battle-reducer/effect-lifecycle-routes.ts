@@ -1,7 +1,6 @@
 // KERNEL-COVERAGE: runtime-owner BATTLE.COMPOSITION.REDUCER_ROUTE_CONNECTOR
 
-import { nextInitiative } from "@dnd/shared-algebras/initiative-algebra";
-
+import { Match } from "effect";
 import type {
   BattleActDiscoveryCandidate,
   BattleActiveEffect,
@@ -48,6 +47,7 @@ import {
   hitPointBudgetConditionRepeatSaveSavingThrowHoleIds,
   spellTurnStartSavingThrowOutcomeHoleId,
 } from "./turn-boundary-lifecycle.ts";
+import { endTurnAdvance } from "./turn-order-advance.ts";
 
 export function rollModifierRouteForDiscoveredAct(
   state: BattleState,
@@ -965,6 +965,24 @@ function isTurnBoundaryEffectLifecycleSavingThrowFill(
   state: BattleState,
   fill: Extract<BattleFill, { readonly kind: "savingThrowOutcome" }>,
 ): boolean {
+  return Match.value(endTurnAdvance(state)).pipe(
+    Match.when({ tag: "living" }, (nextTurn) =>
+      isSpellTurnStartSavingThrowFillFor(
+        state,
+        fill,
+        nextTurn.initiative.round,
+      ),
+    ),
+    Match.when({ tag: "noLivingParticipant" }, () => false),
+    Match.exhaustive,
+  );
+}
+
+function isSpellTurnStartSavingThrowFillFor(
+  state: BattleState,
+  fill: Extract<BattleFill, { readonly kind: "savingThrowOutcome" }>,
+  round: BattleState["initiative"]["round"],
+): boolean {
   return [...state.combatants.values()].some((combatant) =>
     combatant.activeEffects.some(
       (effect) =>
@@ -973,7 +991,7 @@ function isTurnBoundaryEffectLifecycleSavingThrowFill(
           spellTurnStartSavingThrowOutcomeHoleId(
             {
               actorId: combatant.combatantId,
-              round: nextInitiative(state.initiative).round,
+              round,
             },
             effect,
           ),
