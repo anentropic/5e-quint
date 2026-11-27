@@ -29,6 +29,7 @@ import {
 } from "./d20-test-roll-reroll.ts";
 import {
   battleStateWithD20TestSourceTaken,
+  d20TestSourceTakenInScope,
   d20TestSourceTakenOnRoll,
   d20TestSpendAvailability,
   d20TestSpendGate,
@@ -78,6 +79,24 @@ export function combatantHasHeroicInspiration(
     actor?.origin.kind === "character" &&
     actor.origin.heroicInspiration.tag === "available"
   );
+}
+
+/**
+ * Whether a roll of the subject could be offered Heroic Inspiration or keep
+ * a reroll it took: a combatant has it, or a roll of the subject took it.
+ */
+export function heroicInspirationInPlay(
+  state: BattleState,
+  scope: D20TestSpendScope,
+): boolean {
+  for (const combatant of state.combatants.values()) {
+    if (combatantHasHeroicInspiration(combatant)) return true;
+  }
+  return d20TestSourceTakenInScope({
+    state,
+    scope,
+    record: HEROIC_INSPIRATION_SPEND_RECORD,
+  });
 }
 
 /** Whether a decision takes a reroll (as opposed to declining it). */

@@ -23,6 +23,7 @@ import { resolveLongCastingCommand } from "./long-casting-lifecycle.ts";
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.DRAGONS_BREATH_GRANTED_ACTION
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.FLAMING_SPHERE_HAZARD_LIFECYCLE BATTLE.SPELL.FEATHER_FALL_MITIGATION_LIFECYCLE BATTLE.SPELL.REACTION_CASTING_TIME BATTLE.PROTOCOL.INTERRUPT_STACK_RESUME_REPLAY
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.AFTER_HIT_DAMAGE_RIDERS
+// KERNEL-COVERAGE: runtime-owner BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 // KERNEL-COVERAGE: runtime-owner BATTLE.PROTOCOL.CONCENTRATION_BREAK_TEARDOWN
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.CLOUDKILL_AREA_HAZARD_LIFECYCLE
 // KERNEL-COVERAGE: runtime-owner CHARACTER.LIFECYCLE.LAYER_PROJECTION BATTLE.COMPOSITION.REDUCER_SPINE_CONTRACT BATTLE.COMPOSITION.REDUCER_ROUTE_CONNECTOR
@@ -122,8 +123,7 @@ import {
   resolveProtectionRelevantEffectSaveCommand,
 } from "./protection-charm-procedures.ts";
 import { resolveCastAttackHitBonusActionSpellCommand } from "./attack-hit-bonus-action-spell-procedures.ts";
-import { resolveD20TestRerollFills } from "./d20-test-reroll-fills.ts";
-import { resolveRolledDiceHeroicInspirationRerollFills } from "./rolled-dice-heroic-inspiration-reroll.ts";
+import { resolveRollRerollFills } from "./roll-reroll-fills.ts";
 import { invalidResult } from "./result-helpers.ts";
 import { battleReducerRouteForInterrupt } from "./interrupt-route-projection.ts";
 import { battleReducerRouteForResolution } from "./reducer-route.ts";
@@ -422,45 +422,29 @@ function resolveBattleSubjectInternal(
 }
 
 /**
- * Checks the subject's reroll decisions, its D20 Tests first and then the
- * dice it rolls, and resolves it from the state after what they spend.
+ * Checks the after-roll decisions on the subject's rolls, in the order they
+ * were made, and resolves it from the state after what they spend.
  */
 function resolveBattleSubjectThroughRerollFills(
   input: AdmittedBattleResolutionInput,
   options: ResolveBattleSubjectInternalOptions,
 ): BattleResolutionResult {
-  const resolvePrefix = (prefixInput: AdmittedBattleResolutionInput) =>
-    resolveBattleSubjectAfterD20TestRerolls(prefixInput, options);
-  const d20TestRerolls = resolveD20TestRerollFills({
+  // A subject an interrupt checkpoint holds resolves in the interrupt's
+  // continuation, which replays its fills and checks their decisions there;
+  // a prefix of the fills resolved here would replay past them.
+  if (interruptSubjectRequiresCheckpoint(input, options))
+    return resolveBattleSubjectAfterD20TestRerolls(input, options);
+  const rollRerolls = resolveRollRerollFills({
     resolutionInput: input,
-    resolvePrefix,
+    resolvePrefix: (prefixInput) =>
+      resolveBattleSubjectAfterD20TestRerolls(prefixInput, options),
   });
-  if (d20TestRerolls.tag === "settled") {
-    return d20TestRerolls.result;
+  if (rollRerolls.tag === "settled") {
+    return rollRerolls.result;
   }
-  const afterD20TestRerolls = admittedInputAfterRerollSpends(
-    input,
-    d20TestRerolls.state,
-  );
-  if (afterD20TestRerolls.tag === "invalid") return afterD20TestRerolls;
-  // The dice a subject rolls (damage, healing) are checked after its D20
-  // Tests, so their Heroic Inspiration reads what the D20 Tests spent.
-  const rolledDiceRerolls = resolveRolledDiceHeroicInspirationRerollFills({
-    resolutionInput: afterD20TestRerolls.input,
-    resolvePrefix,
-  });
-  if (rolledDiceRerolls.tag === "settled") {
-    return rolledDiceRerolls.result;
-  }
-  const afterRolledDiceRerolls = admittedInputAfterRerollSpends(
-    afterD20TestRerolls.input,
-    rolledDiceRerolls.state,
-  );
-  if (afterRolledDiceRerolls.tag === "invalid") return afterRolledDiceRerolls;
-  return resolveBattleSubjectAfterD20TestRerolls(
-    afterRolledDiceRerolls.input,
-    options,
-  );
+  const afterRerolls = admittedInputAfterRerollSpends(input, rollRerolls.state);
+  if (afterRerolls.tag === "invalid") return afterRerolls;
+  return resolveBattleSubjectAfterD20TestRerolls(afterRerolls.input, options);
 }
 
 /** The input admitted again for the state after its rolls' reroll costs. */

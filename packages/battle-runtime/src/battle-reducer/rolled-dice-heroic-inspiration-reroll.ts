@@ -36,10 +36,20 @@ import {
   battleStateAfterHeroicInspirationReroll,
   d20TestHoleWithHeroicInspirationRerollOption,
   HEROIC_INSPIRATION_REROLL_UNAVAILABLE_MESSAGE,
+  heroicInspirationInPlay,
   heroicInspirationRerollAvailabilityForRoll,
   heroicInspirationUseForRoll,
 } from "./heroic-inspiration-reroll.ts";
+import {
+  WEAPON_DAMAGE_DICE_GROUP_INDEX,
+  weaponDamageDiceRollCandidate,
+} from "./attack-resolution.ts";
 import { invalidResult } from "./result-helpers.ts";
+import type {
+  RollRerollFillCheck,
+  RollRerollFillCheckInput,
+  RollRerollPrefixResolver,
+} from "./roll-reroll-fills.ts";
 
 export const ROLLED_DICE_HEROIC_INSPIRATION_NOT_OFFERED_MESSAGE =
   "Heroic Inspiration reroll is not offered on this roll.";
@@ -54,66 +64,43 @@ export const ROLLED_DICE_HEROIC_INSPIRATION_EMPOWERED_SPELL_MESSAGE =
 export const ROLLED_DICE_HEROIC_INSPIRATION_REPLACEMENT_MESSAGE =
   "The die Heroic Inspiration rerolled must show its replacement face where the decision names it.";
 
-type RolledDiceHeroicInspirationHole = Extract<
+type RolledDiceHoleWithRoller = Extract<
   BattleHole,
   { readonly kind: "rolledDice" }
 > &
   BattleRolledDiceHeroicInspirationHoleFields;
 
-/** Whether a rolled-dice hole names whose dice it asks for. */
-function isRolledDiceHeroicInspirationHole(
+/**
+ * Whether a rolled-dice hole names whose dice it asks for. Any roller may be
+ * offered Heroic Inspiration on their dice: whether they can take it is the
+ * roller's own fact (a player character who has it), read at the offer.
+ */
+function rolledDiceHoleNamesRoller(
   hole: BattleHole,
-): hole is RolledDiceHeroicInspirationHole {
+): hole is RolledDiceHoleWithRoller {
   return hole.kind === "rolledDice" && "rollerId" in hole;
 }
 
-type RolledDiceRerollPrefixResolver = (
-  input: AdmittedBattleResolutionInput,
-) => BattleResolutionResult;
-
-/** Where a subject's rolled dice stand before it resolves. */
-export type RolledDiceHeroicInspirationRerollFills =
-  | { readonly tag: "settled"; readonly result: BattleResolutionResult }
-  | {
-      readonly tag: "admitted";
-      /** The input state after the Heroic Inspiration the admitted rerolls spend. */
-      readonly state: BattleState;
-    };
-
-/** One rolled-dice fill's check, in the shape the fill fold takes. */
-type RolledDiceFillCheck =
-  | { readonly tag: "admitted"; readonly state: BattleState }
-  | { readonly tag: "settled"; readonly result: BattleResolutionResult };
+type RolledDiceRerollPrefixResolver = RollRerollPrefixResolver;
+type RolledDiceFillCheck = RollRerollFillCheck;
 
 /**
- * Checks the Heroic Inspiration decision on every rolled-dice fill whose
- * hole names its roller. Settles with the hole asked again while its roller
- * has Heroic Inspiration to decide on, or with an invalid result; otherwise
- * admits the fills and gives the state after what their rerolls spend.
+ * Checks the Heroic Inspiration decision on one rolled-dice fill, from the
+ * state after what the earlier fills' decisions spend. Settles with the hole
+ * asked again while its roller has Heroic Inspiration to decide on, or with
+ * an invalid result; otherwise admits the fill and gives the state after
+ * what its reroll spends.
  */
-export function resolveRolledDiceHeroicInspirationRerollFills(input: {
-  readonly resolutionInput: AdmittedBattleResolutionInput;
-  readonly resolvePrefix: RolledDiceRerollPrefixResolver;
-}): RolledDiceHeroicInspirationRerollFills {
-  // Each fill is checked against the state after the rerolls the earlier
-  // fills spend, so a later roll is not offered a spent Heroic Inspiration.
-  let state = input.resolutionInput.state;
-  for (const [fillIndex, fill] of input.resolutionInput.fills.entries()) {
-    if (fill.kind !== "rolledDice") continue;
-    const check = rolledDiceFillCheck({ ...input, state, fillIndex, fill });
-    if (check.tag === "settled") return check;
-    state = check.state;
-  }
-  return { tag: "admitted", state };
-}
-
-function rolledDiceFillCheck(input: {
-  readonly resolutionInput: AdmittedBattleResolutionInput;
-  readonly resolvePrefix: RolledDiceRerollPrefixResolver;
-  readonly state: BattleState;
-  readonly fillIndex: number;
-  readonly fill: BattleRolledDiceFill;
-}): RolledDiceFillCheck {
+export function rolledDiceHeroicInspirationRerollFillCheck(
+  input: RollRerollFillCheckInput & { readonly fill: BattleRolledDiceFill },
+): RolledDiceFillCheck {
+  // With no decision to check and no Heroic Inspiration anyone could take or
+  // has taken in the subject, nothing is asked, so the hole isn't looked up.
+  if (
+    input.fill.heroicInspirationReroll === undefined &&
+    !heroicInspirationInPlay(input.state, subjectScope(input.resolutionInput))
+  )
+    return { tag: "admitted", state: input.state };
   const prefixFills = input.resolutionInput.fills.slice(0, input.fillIndex);
   const pending = input.resolvePrefix({
     ...input.resolutionInput,
@@ -121,15 +108,21 @@ function rolledDiceFillCheck(input: {
     fills: prefixFills,
   });
   const hole = pendingRolledDiceHole(pending, input.fill);
-  if (hole === undefined || !isRolledDiceHeroicInspirationHole(hole)) {
+  if (hole === undefined || !rolledDiceHoleNamesRoller(hole)) {
     return input.fill.heroicInspirationReroll === undefined
       ? { tag: "admitted", state: input.state }
       : invalidCheck(
-          input.state,
+          input.resolutionInput,
           ROLLED_DICE_HEROIC_INSPIRATION_NOT_OFFERED_MESSAGE,
         );
   }
   return offeredRolledDiceFillCheck({ ...input, prefixFills, pending, hole });
+}
+
+function subjectScope(
+  resolutionInput: AdmittedBattleResolutionInput,
+): D20TestSpendScope {
+  return { kind: "subject", subject: resolutionInput.subject };
 }
 
 /** The check of a fill whose hole names its roller. */
@@ -139,13 +132,10 @@ function offeredRolledDiceFillCheck(input: {
   readonly state: BattleState;
   readonly prefixFills: readonly BattleFill[];
   readonly pending: BattleResolutionResult;
-  readonly hole: RolledDiceHeroicInspirationHole;
+  readonly hole: RolledDiceHoleWithRoller;
   readonly fill: BattleRolledDiceFill;
 }): RolledDiceFillCheck {
-  const scope: D20TestSpendScope = {
-    kind: "subject",
-    subject: input.resolutionInput.subject,
-  };
+  const scope = subjectScope(input.resolutionInput);
   const roll: BattleD20TestRollKey = {
     rollerId: input.hole.rollerId,
     holeId: input.fill.holeId,
@@ -172,7 +162,7 @@ function offeredRolledDiceFillCheck(input: {
   if (gate.tag === "finished")
     return gate.issue === null
       ? { tag: "admitted", state: input.state }
-      : invalidCheck(input.state, gate.issue);
+      : invalidCheck(input.resolutionInput, gate.issue);
   if (decision.kind === "decline")
     return { tag: "admitted", state: input.state };
   return rolledDieRerollCheck({ ...input, decision, scope, roll });
@@ -192,7 +182,7 @@ function rolledDieRerollCheck(input: {
   const issue =
     rolledDieRerollIssue(input.fill, input.decision) ??
     asRolledDiceIssue(input);
-  if (issue !== null) return invalidCheck(input.state, issue);
+  if (issue !== null) return invalidCheck(input.resolutionInput, issue);
   return {
     tag: "admitted",
     state: battleStateAfterHeroicInspirationReroll(
@@ -207,13 +197,14 @@ function rolledDieRerollCheck(input: {
   };
 }
 
+/** An invalid result for the input, which leaves its state unchanged. */
 function invalidCheck(
-  state: BattleState,
+  resolutionInput: AdmittedBattleResolutionInput,
   message: string,
 ): RolledDiceFillCheck {
   return {
     tag: "settled",
-    result: invalidResult(state, "invalidFill", message),
+    result: invalidResult(resolutionInput.state, "invalidFill", message),
   };
 }
 
@@ -232,7 +223,7 @@ function pendingRolledDiceHole(
 /** The pending frontier with the hole asked again with the Heroic Inspiration option. */
 function holeAskedAgain(
   pending: BattleResolutionResult,
-  asked: RolledDiceHeroicInspirationHole,
+  asked: RolledDiceHoleWithRoller,
 ): BattleResolutionResult {
   /* v8 ignore next -- @preserve -- pendingRolledDiceHole found the hole on this frontier. */
   if (pending.tag !== "needsHoles" || pending.frontier.kind !== "holes")
@@ -278,7 +269,10 @@ function rolledDieFaces(
       rolledDiceGroup: ({ groupIndex }) => {
         // Group 0 holds the Savage Attacker roll the roller picked, so a
         // reroll of its dice names the roll it belongs to.
-        if (fill.weaponDamageDiceRollChoice !== undefined && groupIndex === 0)
+        if (
+          fill.weaponDamageDiceRollChoice !== undefined &&
+          groupIndex === WEAPON_DAMAGE_DICE_GROUP_INDEX
+        )
           return ROLLED_DICE_HEROIC_INSPIRATION_SAVAGE_ATTACKER_MESSAGE;
         return (
           fill.value[groupIndex]?.results ??
@@ -289,7 +283,7 @@ function rolledDieFaces(
         const choice = fill.weaponDamageDiceRollChoice;
         if (choice === undefined)
           return ROLLED_DICE_HEROIC_INSPIRATION_CANDIDATE_MESSAGE;
-        return choice.candidates[candidate === "first" ? 0 : 1].results;
+        return weaponDamageDiceRollCandidate(choice, candidate).results;
       },
       spellDamageReroll: () =>
         fill.spellDamageReroll?.dice.map((die) => die.replacement) ??
@@ -359,7 +353,11 @@ function rolledDiceFillAsRolled(
           },
           value:
             choice.selection === candidate
-              ? valueWithGroupReplaced(fill.value, 0, asRolled)
+              ? valueWithGroupReplaced(
+                  fill.value,
+                  WEAPON_DAMAGE_DICE_GROUP_INDEX,
+                  asRolled,
+                )
               : fill.value,
         };
       },

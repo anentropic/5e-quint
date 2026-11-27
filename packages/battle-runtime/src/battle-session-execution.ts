@@ -1,5 +1,5 @@
 import { resolveMoveAfterMovement } from "./battle-reducer/movement-procedures.ts";
-import { resolveD20TestRerollFills } from "./battle-reducer/d20-test-reroll-fills.ts";
+import { resolveRollRerollFills } from "./battle-reducer/roll-reroll-fills.ts";
 // KERNEL-COVERAGE: runtime-owner BATTLE.MOVEMENT.FRONTIER_AND_RESOURCE_SPEND
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.TABLE_CIRCUMSTANCE_DECISION
 import { optionalProperty } from "./optional-property.ts";
@@ -927,16 +927,16 @@ function resolveSubjectMechanicalContinuation(input: {
         )
       : result;
   };
-  // The fills after an admitted movement skip the dispatcher, so their rolled
-  // D20 Test outcomes are checked, and their Heroic Inspiration spent, here.
-  const d20TestRerolls = resolveD20TestRerollFills({
+  // The fills after an admitted movement skip the dispatcher, so their rolls'
+  // after-roll decisions are checked, and their Heroic Inspiration spent, here.
+  const rollRerolls = resolveRollRerollFills({
     resolutionInput: input.input,
     resolvePrefix: resolveAfterMovement,
   });
-  return d20TestRerolls.tag === "settled"
-    ? d20TestRerolls.result
+  return rollRerolls.tag === "settled"
+    ? rollRerolls.result
     : resolveAfterMovement({
-        state: d20TestRerolls.state,
+        state: rollRerolls.state,
         fills: input.input.fills,
       });
 }

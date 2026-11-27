@@ -1,3 +1,4 @@
+// KERNEL-COVERAGE: runtime-owner BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 import type {
   BattleAttackRollResult,
   BattleD20TestAddedDieDecision,

@@ -24,19 +24,23 @@ import {
 } from "./battle-reducer/rolled-dice-heroic-inspiration-reroll.ts";
 import {
   attackRollFill,
+  battleFrontierInterruptDecisionForState,
   characterSeed,
   damageRollFillWithGroups,
   fighterAttackSubject,
   fighterId,
   goblinId,
+  interruptDecisionFill,
   requireCharacterUnitProcedureRefForTest,
   requireHole,
   requireOrdinaryFrontier,
   requireResolved,
+  resolveBattleInterrupt,
   resolveBattleSubject,
   startBattleRight,
   statBlockCreatureInit,
   targetFill,
+  wizardSpellcasting,
   type BattleState,
 } from "./battle-runtime.test-support.ts";
 import type { BattleRuntimeSession } from "./battle-runtime-context.ts";
@@ -52,6 +56,7 @@ import {
 import { battleObjectId, type CombatantId } from "./identity.ts";
 import {
   cureWoundsUnitId,
+  falseLifeUnitId,
   greatWeaponFightingUnitId,
   savageAttackerUnitId,
   spellCasterId,
@@ -425,6 +430,49 @@ describe("Heroic Inspiration with Savage Attacker and Great Weapon Fighting (A71
     });
   });
 
+  test("Heroic Inspiration may reroll a die of the Savage Attacker roll the roller doesn't use", () => {
+    const session = withHeroicInspiration(
+      savageAttackerBattle({
+        attack: zeroAbilityWeaponAttack("weapon_longsword"),
+      }),
+      spellCasterId,
+    );
+    const hit = admissionWeaponHit(session, "Longsword");
+    // The second roll showed a 1, rerolled to a 3; the roller uses the
+    // first roll's 6 all the same.
+    const fill: RolledDiceFill = {
+      ...admissionDamageRollFill(hit.damage, [[6]], undefined, {
+        procedureRef: requireCharacterUnitProcedureRefForTest(
+          session,
+          spellCasterId,
+          savageAttackerUnitId,
+        ),
+        selection: "first",
+        candidates: [
+          { results: [DieRollResult(6)] },
+          { results: [DieRollResult(3)] },
+        ],
+      }),
+      heroicInspirationReroll: rerolled(
+        { source: "weaponDamageDiceRollCandidate", candidate: "second" },
+        1,
+        3,
+      ),
+    };
+
+    const resolved = requireResolved(
+      resolveBattleSubject({
+        state: session.state,
+        subject: hit.subject,
+        fills: [...hit.fills, fill],
+      }),
+    ).state;
+    expect(Number(resolved.combatants.get(spellTargetId)?.hp)).toBe(12 - 6);
+    expect(heroicInspiration(resolved, spellCasterId)).toEqual(
+      NO_HEROIC_INSPIRATION,
+    );
+  });
+
   test("Great Weapon Fighting's floor applies to the die that stands after the reroll", () => {
     const session = withHeroicInspiration(
       greatWeaponFightingBattle({
@@ -525,6 +573,170 @@ describe("Heroic Inspiration reroll on spell healing (A71)", () => {
     expect(Number(resolved.combatants.get(spellTargetId)?.hp)).toBe(
       hpBefore + 3 + 1 + 3,
     );
+    expect(heroicInspiration(resolved, spellCasterId)).toEqual(
+      NO_HEROIC_INSPIRATION,
+    );
+  });
+});
+
+describe("Heroic Inspiration reroll replayed after a reaction (A71)", () => {
+  test("a damage reroll made after a declined Shield spends Heroic Inspiration once", () => {
+    const scorchingRay = spellRecord("scorching_ray");
+    const session = withHeroicInspiration(
+      spellBattle({
+        preparedSpells: [scorchingRay],
+        spellSlots: [{ spellLevel: 2, count: 1 }],
+        targetHp: 30,
+        targetMaxHp: 30,
+        targetSpellcasting: wizardSpellcasting({
+          cantrips: [],
+          preparedSpells: [spellRecord("shield")],
+          spellSlots: [{ spellLevel: 1, count: 1 }],
+        }),
+      }),
+      spellCasterId,
+    );
+    const act = spellAct({ session, spellId: scorchingRay.id, slotLevel: 2 });
+    const targets = act.initialHoles.flatMap((hole) =>
+      hole.kind === "targetChoice"
+        ? [spellTargetFill(hole, scorchingRay.id, spellCasterId, spellTargetId)]
+        : [],
+    );
+    const firstRay = admissionAttackRollFill(
+      requireHole(
+        resolveBattleSubject({
+          state: session.state,
+          subject: act.subject,
+          fills: targets,
+        }),
+        "attackRoll",
+      ),
+      {
+        total: 15,
+        naturalD20: 10,
+        d20TestRerolls: [
+          {
+            kind: "decline",
+            effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+          },
+        ],
+      },
+    );
+    // The first ray's hit opens Shield, which its target declines; the
+    // subject then replays from the state after the reaction.
+    const awaitingShield = requireNeedsHoles(
+      resolveBattleSubject({
+        state: session.state,
+        subject: act.subject,
+        fills: [...targets, firstRay],
+      }),
+    );
+    const decision = battleFrontierInterruptDecisionForState(
+      awaitingShield.state,
+    );
+    if (decision === null || decision === undefined) {
+      throw new Error("Expected the first ray's hit to open Shield.");
+    }
+    const afterShield = requireNeedsHoles(
+      resolveBattleInterrupt({
+        state: awaitingShield.state,
+        fill: interruptDecisionFill(decision.decisionHole, {
+          kind: "decline",
+          responderId: spellTargetId,
+        }),
+      }),
+    );
+    const replay = (fills: readonly BattleFill[]) =>
+      resolveBattleSubject({
+        state: afterShield.state,
+        subject: requireOrdinaryFrontier(afterShield).replaySubject,
+        fills: [...targets, firstRay, ...fills],
+      });
+    const firstRayDamage = requireHole(afterShield, "rolledDice");
+    // The first ray's 1 was rerolled to a 4.
+    const rerolledDamage = damageFill(
+      firstRayDamage,
+      [[4, 2]],
+      rerolled({ source: "rolledDiceGroup", groupIndex: 0 }, 1, 4),
+    );
+    const secondRayRoll = requireHole(replay([rerolledDamage]), "attackRoll");
+    // Heroic Inspiration is spent, so the second ray's roll doesn't offer it.
+    expect(secondRayRoll).not.toHaveProperty("heroicInspirationRerolls");
+    const secondRay = admissionAttackRollFill(secondRayRoll, {
+      total: 15,
+      naturalD20: 10,
+    });
+    const secondRayDamage = requireHole(
+      replay([rerolledDamage, secondRay]),
+      "rolledDice",
+    );
+    expect(
+      replay([
+        rerolledDamage,
+        secondRay,
+        damageFill(
+          secondRayDamage,
+          [[4, 2]],
+          rerolled({ source: "rolledDiceGroup", groupIndex: 0 }, 1, 4),
+        ),
+      ]),
+    ).toMatchObject({
+      tag: "invalid",
+      message: HEROIC_INSPIRATION_REROLL_UNAVAILABLE_MESSAGE,
+    });
+    const afterSecondRay = requireNeedsHoles(
+      replay([
+        rerolledDamage,
+        secondRay,
+        damageRollFillWithGroups(secondRayDamage, [[3, 3]]),
+      ]),
+    );
+    expect(heroicInspiration(afterSecondRay.state, spellCasterId)).toEqual(
+      NO_HEROIC_INSPIRATION,
+    );
+  });
+});
+
+describe("Heroic Inspiration reroll on a Temporary Hit Points roll (A71)", () => {
+  test("the caster may reroll one die of the roll, and gains the new total", () => {
+    const session = withHeroicInspiration(
+      spellBattle({
+        preparedSpells: [spellRecord(falseLifeUnitId)],
+        spellSlots: [{ spellLevel: 2, count: 1 }],
+      }),
+      spellCasterId,
+    );
+    const act = spellAct({ session, spellId: falseLifeUnitId, slotLevel: 2 });
+    const roll = requireListedHole(act.initialHoles, "rolledDice");
+    expect(roll).toMatchObject({ rollerId: spellCasterId });
+    const resolve = (fill: RolledDiceFill) =>
+      resolveBattleSubject({
+        state: session.state,
+        subject: act.subject,
+        fills: [fill],
+      });
+
+    expect(
+      requireHole(
+        resolve(damageRollFillWithGroups(roll, [[4, 1]])),
+        "rolledDice",
+      ),
+    ).toMatchObject({
+      heroicInspirationRerolls: [
+        { effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND },
+      ],
+    });
+    // The 1 was rerolled to a 3: 2d4 + 9 at slot level 2 gives 4 + 3 + 9.
+    const resolved = requireResolved(
+      resolve(
+        damageFill(
+          roll,
+          [[4, 3]],
+          rerolled({ source: "rolledDiceGroup", groupIndex: 0 }, 1, 3),
+        ),
+      ),
+    ).state;
+    expect(Number(resolved.combatants.get(spellCasterId)?.tempHp)).toBe(16);
     expect(heroicInspiration(resolved, spellCasterId)).toEqual(
       NO_HEROIC_INSPIRATION,
     );

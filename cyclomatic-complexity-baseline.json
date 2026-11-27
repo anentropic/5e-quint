@@ -83,7 +83,7 @@
       "module/binding:spendAttackAction": 11,
       "module/binding:spendAttackTurnResources": 10,
       "module/binding:validateAttackDamageFill": 15,
-      "module/binding:validateRolledDiceForWeaponAttack": 11
+      "module/binding:validateRolledDiceForWeaponAttack": 10
     },
     "packages/battle-runtime/src/battle-reducer/attack-roll-mode-collector.ts": {
       "module/binding:activeEffectGrantsAttackRollMode": 9,

@@ -52,6 +52,11 @@ import {
   type SavingThrowAfterRollUses,
 } from "./d20-test-after-roll-decisions.ts";
 import { invalidResult } from "./result-helpers.ts";
+import type {
+  RollRerollFillCheck,
+  RollRerollFillCheckInput,
+  RollRerollPrefixResolver,
+} from "./roll-reroll-fills.ts";
 import type { D20TestSpendScope } from "./d20-test-source-spend.ts";
 import {
   FAILED_SAVE_REACTION_REROLL_BEFORE_SAVE_STANDS_MESSAGE,
@@ -65,9 +70,7 @@ import {
 export const D20_TEST_REROLL_ROLLER_REQUIRED_MESSAGE =
   "Concentration Saving Throw after-roll decisions need the discovered hole that names the concentrating creature.";
 
-type D20TestRerollPrefixResolver = (
-  input: AdmittedBattleResolutionInput,
-) => BattleResolutionResult;
+type D20TestRerollPrefixResolver = RollRerollPrefixResolver;
 
 const D20_TEST_REROLL_DECISION_HOLE_KINDS = [
   "abilityCheck",
@@ -154,11 +157,6 @@ type D20TestAfterRollReask =
     };
 
 type D20TestRerollFillValidation =
-  | {
-      readonly tag: "ok";
-      /** The state after every cost the fills' decisions spend. */
-      readonly state: BattleState;
-    }
   | { readonly tag: "invalid"; readonly message: string }
   | {
       readonly tag: "decisionsRequired";
@@ -573,36 +571,50 @@ function concentrationSavingThrowRollChecks(
   ];
 }
 
-function validateD20TestRerollFills(input: {
-  readonly resolutionInput: AdmittedBattleResolutionInput;
-  readonly resolvePrefix: D20TestRerollPrefixResolver;
-}): D20TestRerollFillValidation {
-  // Each fill is checked against the state after the decision costs the
-  // earlier fills spend, so a later roll is not offered a spent source.
-  let resolutionInput = input.resolutionInput;
-  for (const [fillIndex, fill] of input.resolutionInput.fills.entries()) {
-    const fillUses: D20TestRollCheckUses[] = [];
-    for (const check of d20TestRollChecksForFill({
-      resolutionInput,
-      resolvePrefix: input.resolvePrefix,
-      fillIndex,
-      fill,
-    })) {
-      if (check.tag === "decisionsRequired") {
-        return { ...check, state: resolutionInput.state };
-      }
-      if (check.tag !== "admitted") return check;
-      fillUses.push(check.uses);
+/**
+ * Checks the after-roll decisions on one fill's rolled D20 Test outcome,
+ * from the state after the costs the earlier fills' decisions spend.
+ * Settles with the hole asked again while a roller has a source to decide
+ * on, or with an invalid result; otherwise admits the fill and gives the
+ * state after what its decisions spend.
+ */
+export function d20TestRerollFillCheck(
+  input: RollRerollFillCheckInput,
+): RollRerollFillCheck {
+  const resolutionInput = { ...input.resolutionInput, state: input.state };
+  const fillUses: D20TestRollCheckUses[] = [];
+  for (const check of d20TestRollChecksForFill({
+    resolutionInput,
+    resolvePrefix: input.resolvePrefix,
+    fillIndex: input.fillIndex,
+    fill: input.fill,
+  })) {
+    if (check.tag === "decisionsRequired") {
+      return {
+        tag: "settled",
+        result: resolveD20TestRerollDecisionHole({
+          resolutionInput: input.resolutionInput,
+          resolvePrefix: input.resolvePrefix,
+          decision: { ...check, state: input.state },
+        }),
+      };
     }
-    resolutionInput = {
-      ...resolutionInput,
-      state: fillUses.reduce(
-        battleStateAfterRollCheckUses,
-        resolutionInput.state,
-      ),
-    };
+    if (check.tag !== "admitted") {
+      return {
+        tag: "settled",
+        result: invalidResult(
+          input.resolutionInput.state,
+          "invalidFill",
+          check.message,
+        ),
+      };
+    }
+    fillUses.push(check.uses);
   }
-  return { tag: "ok", state: resolutionInput.state };
+  return {
+    tag: "admitted",
+    state: fillUses.reduce(battleStateAfterRollCheckUses, input.state),
+  };
 }
 
 function resolveD20TestRerollDecisionHole(input: {
@@ -655,46 +667,4 @@ function resolveD20TestRerollDecisionHole(input: {
       holes: [holes[0], ...holes.slice(1)],
     },
   };
-}
-
-/** Where a subject's rolled D20 Test outcomes stand before it resolves. */
-export type D20TestRerollFills =
-  | { readonly tag: "settled"; readonly result: BattleResolutionResult }
-  | {
-      readonly tag: "admitted";
-      /** The input state after the costs of the admitted rolls' decisions. */
-      readonly state: BattleState;
-    };
-
-/**
- * Checks the after-roll decisions on every rolled D20 Test outcome in the
- * fills. Settles with the hole asked again while a roller has a source to
- * decide on, or with an invalid result; otherwise admits the fills and gives
- * the state after what their decisions spend.
- */
-export function resolveD20TestRerollFills(input: {
-  readonly resolutionInput: AdmittedBattleResolutionInput;
-  readonly resolvePrefix: D20TestRerollPrefixResolver;
-}): D20TestRerollFills {
-  const validation = validateD20TestRerollFills(input);
-  if (validation.tag === "invalid") {
-    return {
-      tag: "settled",
-      result: invalidResult(
-        input.resolutionInput.state,
-        "invalidFill",
-        validation.message,
-      ),
-    };
-  }
-  if (validation.tag === "decisionsRequired") {
-    return {
-      tag: "settled",
-      result: resolveD20TestRerollDecisionHole({
-        ...input,
-        decision: validation,
-      }),
-    };
-  }
-  return { tag: "admitted", state: validation.state };
 }

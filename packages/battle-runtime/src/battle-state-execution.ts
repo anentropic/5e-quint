@@ -6110,9 +6110,10 @@ export type BattleCunningStrikeOption = BattleCunningStrikeOptionSelection & {
   };
 };
 /**
- * What a rolled-dice hole whose dice a player character may reroll with
- * Heroic Inspiration states: whose dice they are, and, once the dice are
- * rolled and the roller has Heroic Inspiration, the option to reroll one.
+ * What a rolled-dice hole states about whose dice it asks for: the roller,
+ * any creature, and, once the dice are rolled and the roller is a player
+ * character who has Heroic Inspiration, the option to reroll one (A71). A
+ * hole without these fields asks for dice nobody may reroll this way yet.
  */
 export type BattleRolledDiceHeroicInspirationHoleFields = {
   /** The creature that rolls the dice: the attacker, the caster or the healer. */

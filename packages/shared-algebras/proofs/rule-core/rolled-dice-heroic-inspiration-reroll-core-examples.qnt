@@ -226,4 +226,22 @@ module rolledDiceHeroicInspirationRerollCoreExamples {
       assert(result.inspirationAfter == NoHeroicInspiration),
     }
   }
+
+  run test_heroic_inspiration_after_empowered_spell_takes_a_die_it_rerolled = {
+    // After Empowered Spell, only the die it just rerolled was rolled
+    // immediately before; the other die stands as rolled.
+    val result = resolveEmpoweredSpellRerolls({
+      ...empoweredBolt,
+      empoweredSpell: [{ dieIndex: 0, replacement: 1 }],
+      afterEmpoweredSpell: RolledDieRerollSelected({
+        dieIndex: 1,
+        replacement: 8,
+      }),
+    })
+    all {
+      assert(result.invalid),
+      assert(result.effective == [1, 1]),
+      assert(result.inspirationAfter == HeroicInspirationAvailable),
+    }
+  }
 }

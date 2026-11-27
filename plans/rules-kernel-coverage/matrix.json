@@ -6538,18 +6538,30 @@
         {
           "kind": "contract-test",
           "ownerPath": "packages/battle-runtime/src/battle-runtime-metamagic-resource.test.ts"
+        },
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/heroic-inspiration-reroll.test.ts"
+        },
+        {
+          "kind": "contract-test",
+          "ownerPath": "packages/battle-runtime/src/battle-runtime-triggered-reaction-interrupt-boundaries.test.ts"
         }
       ],
       "profiles": [],
       "qntOwners": [
         "packages/shared-algebras/proofs/rule-core/rolled-dice-heroic-inspiration-reroll-core.qnt"
       ],
-      "reason": "The QNT owner admits a Heroic Inspiration reroll of one die of a pool only for a player character who has it, with a face the die can show; the new roll is used and Heroic Inspiration is spent, while a decline keeps both. Great Weapon Fighting's floor reads the die that stands; under Savage Attacker either pool may take the one reroll before the roller picks a pool; with Empowered Spell the reroll comes before it or, if not taken, after it. rolled-dice-heroic-inspiration-reroll offers it on every rolled-dice hole that names its roller (weapon attack damage, spell damage, healing and Temporary Hit Points), checks where the decision names its die, checks the roll as it was before the reroll through the roll's own owner, and spends through the Heroic Inspiration record shared with D20 Tests. The executable parity witnesses cover the offer, decline, reroll and spend on weapon damage, the refusals, Heroic Inspiration already spent on the attack roll, Savage Attacker, Great Weapon Fighting, Cure Wounds healing, Empowered Spell before and after, and the codec.",
+      "reason": "The QNT owner admits a Heroic Inspiration reroll of one die of a pool only for a player character who has it, with a face the die can show; the new roll is used and Heroic Inspiration is spent, while a decline keeps both. Great Weapon Fighting's floor reads the die that stands; under Savage Attacker either pool may take the one reroll before the roller picks a pool; with Empowered Spell the reroll comes before it or, if not taken, after it on a die Empowered Spell just rerolled. rolled-dice-heroic-inspiration-reroll offers it on every rolled-dice hole that names its roller (weapon attack damage, spell damage including a Reaction spell's, healing and Temporary Hit Points), checks where the decision names its die, checks the roll as it was before the reroll through the roll's own owner, and spends through the Heroic Inspiration record shared with D20 Tests; roll-reroll-fills checks every roll's decision of a subject in the order the rolls were made, so an earlier roll keeps its claim on Heroic Inspiration, and the dispatcher leaves a subject an interrupt checkpoint holds to the continuation that replays it. The executable parity witnesses cover the offer, decline, reroll and spend on weapon damage, the refusals, Heroic Inspiration already spent on the attack roll, a reroll replayed after a declined Shield, an Opportunity Attack's and Hellish Rebuke's reactor, Savage Attacker on either roll, Great Weapon Fighting, Cure Wounds healing, False Life's Temporary Hit Points, Empowered Spell before and after, and the codec.",
       "runtime": "battle",
       "runtimeOwners": [
         "packages/battle-runtime/src/battle-reducer/rolled-dice-heroic-inspiration-reroll.ts",
         "packages/battle-runtime/src/battle-reducer/heroic-inspiration-reroll.ts",
-        "packages/battle-runtime/src/battle-reducer/d20-test-source-spend.ts"
+        "packages/battle-runtime/src/battle-reducer/d20-test-source-spend.ts",
+        "packages/battle-runtime/src/battle-reducer/roll-reroll-fills.ts",
+        "packages/battle-runtime/src/battle-reducer/dispatcher.ts",
+        "packages/battle-runtime/src/battle-reducer/battle-codecs.ts",
+        "packages/battle-runtime/src/battle-reducer/battle-fill-equality.ts"
       ],
       "status": "covered",
       "surfaceEvidence": [

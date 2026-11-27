@@ -1,4 +1,5 @@
 // KERNEL-COVERAGE: parity-witness BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL
+// KERNEL-COVERAGE: parity-witness BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 import {
   HEROIC_INSPIRATION_AVAILABLE,
   NO_HEROIC_INSPIRATION,
@@ -28,6 +29,7 @@ import {
   characterBattleFeatureInitForTest,
   characterSeed,
   damageRollFill,
+  damageRollFillWithGroups,
   fighterAttackSubject,
   fighterId,
   goblinId,
@@ -826,6 +828,64 @@ describe("Heroic Inspiration reroll on attack rolls", () => {
       }),
     );
     expect(heroicInspiration(rerolledMiss.state, goblinId)).toEqual(
+      NO_HEROIC_INSPIRATION,
+    );
+  });
+
+  test("an Opportunity Attack's damage dice offer the reactor's Heroic Inspiration (A71)", () => {
+    const state = startBattleRight({
+      battleId: battleId("heroic-inspiration-opportunity-damage"),
+      combatants: [
+        characterSeed({ initiative: 20, attack: testShortswordAttack() }),
+        characterSeed({
+          combatantId: goblinId,
+          displayName: "Synthetic Inspired Reactor",
+          initiative: 10,
+          attack: testShortswordAttack(),
+          heroicInspiration: HEROIC_INSPIRATION_AVAILABLE,
+        }),
+      ],
+    });
+    const opportunity = startOpportunityAttack(state, "Shortsword");
+    const hit = attackRollFill(opportunity.attackRoll, {
+      total: 20,
+      naturalD20: 15,
+      d20TestRerolls: [declineReroll()],
+    });
+    const resolve = (fills: readonly BattleFill[]) =>
+      resolveBattleSubject({
+        state: opportunity.state,
+        subject: opportunity.subject,
+        fills: [hit, ...fills],
+      });
+    const damage = requireHole(resolve([]), "rolledDice");
+    expect(damage).toMatchObject({ rollerId: goblinId });
+
+    expect(
+      requireHole(
+        resolve([damageRollFillWithGroups(damage, [[1]])]),
+        "rolledDice",
+      ),
+    ).toMatchObject({
+      heroicInspirationRerolls: [
+        { effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND },
+      ],
+    });
+    const rerolled = requireResolved(
+      resolve([
+        {
+          ...damageRollFillWithGroups(damage, [[5]]),
+          heroicInspirationReroll: {
+            kind: "rerollRolledDie",
+            effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+            rolledDie: { source: "rolledDiceGroup", groupIndex: 0 },
+            original: DieRollResult(1),
+            replacement: DieRollResult(5),
+          },
+        },
+      ]),
+    );
+    expect(heroicInspiration(rerolled.state, goblinId)).toEqual(
       NO_HEROIC_INSPIRATION,
     );
   });

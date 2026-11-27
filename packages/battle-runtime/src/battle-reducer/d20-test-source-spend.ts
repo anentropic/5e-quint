@@ -89,6 +89,15 @@ export function d20TestSourceTakeOnRoll<
   );
 }
 
+/** Whether an earlier pass of the subject recorded any roll as taking the source. */
+export function d20TestSourceTakenInScope(input: {
+  readonly state: BattleState;
+  readonly scope: D20TestSpendScope;
+  readonly record: D20TestSpendRecord;
+}): boolean {
+  return takenRolls(input.state, input.scope, input.record).length > 0;
+}
+
 /** Whether an earlier pass of the subject recorded this roll as taking its source. */
 export function d20TestSourceTakenOnRoll(input: {
   readonly state: BattleState;

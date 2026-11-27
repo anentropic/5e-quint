@@ -18,7 +18,9 @@ module rolledDiceHeroicInspirationRerollCore {
   //   Fighting treats the die that stands after every reroll. Under Savage
   //   Attacker each of the two pools may take the reroll, at most once in
   //   all, before the roller picks a pool. With Empowered Spell the reroll
-  //   comes before Empowered Spell, or after it if not taken before.
+  //   comes before Empowered Spell, or after it if not taken before; after
+  //   it, only a die Empowered Spell just rerolled was rolled immediately
+  //   before, so only such a die may take the reroll.
   import heroicInspirationRerollCore.* from "./heroic-inspiration-reroll-core"
 
   type RolledDieRerollDecision =
@@ -154,7 +156,8 @@ module rolledDiceHeroicInspirationRerollCore {
 
   // Empowered Spell: after the damage roll, and any Heroic Inspiration on
   // it, the caster rerolls some of the dice and uses the new rolls; Heroic
-  // Inspiration not taken before may then reroll a die as it stands.
+  // Inspiration not taken before may then reroll one of the dice Empowered
+  // Spell just rerolled, as it stands.
   type EmpoweredSpellDieReroll = { dieIndex: int, replacement: int }
 
   type EmpoweredSpellRerollFacts = {
@@ -195,6 +198,19 @@ module rolledDiceHeroicInspirationRerollCore {
     rerolls.foldl(pool, (faces, reroll) =>
       faces.replaceAt(reroll.dieIndex, reroll.replacement))
 
+  // A reroll after Empowered Spell names a die Empowered Spell rerolled:
+  // that is the die just rolled.
+  pure def rerollNamesEmpoweredSpellDie(
+    decision: RolledDieRerollDecision,
+    rerolls: List[EmpoweredSpellDieReroll],
+  ): bool =
+    match decision {
+      | RolledDieRerollDeclined => true
+      | RolledDieRerollSelected(choice) =>
+          rerolls.foldl(false, (named, reroll) =>
+            named or reroll.dieIndex == choice.dieIndex)
+    }
+
   pure def resolveEmpoweredSpellRerolls(
     facts: EmpoweredSpellRerollFacts,
   ): EmpoweredSpellRerollResult = {
@@ -214,15 +230,22 @@ module rolledDiceHeroicInspirationRerollCore {
     val empowered = if (empoweredLegal)
       empoweredSpellApplied(before.effective, facts.empoweredSpell)
     else before.effective
+    val afterNamesEmpoweredDie = rerollNamesEmpoweredSpellDie(
+      facts.afterEmpoweredSpell,
+      facts.empoweredSpell,
+    )
     val after = resolveRolledDicePoolReroll({
       playerCharacter: facts.playerCharacter,
       inspiration: before.inspirationAfter,
       dieSize: facts.dieSize,
       pool: empowered,
-      decision: facts.afterEmpoweredSpell,
+      decision: if (afterNamesEmpoweredDie)
+        facts.afterEmpoweredSpell
+      else RolledDieRerollDeclined,
     })
     {
-      invalid: before.invalid or not(empoweredLegal) or after.invalid,
+      invalid: before.invalid or not(empoweredLegal) or
+        not(afterNamesEmpoweredDie) or after.invalid,
       effective: after.effective,
       inspirationAfter: after.inspirationAfter,
     }
