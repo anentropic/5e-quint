@@ -240,6 +240,22 @@ type SavingThrowOutcomeFill = Extract<
 >;
 
 /**
+ * Whether this outcome is the roller's own saving throw, rolled (not failed
+ * without a roll), and stands failed: the save a failed-save Reaction reroll
+ * may answer.
+ */
+export function rolledSaveStandsFailed(
+  outcome: SavingThrowOutcomeFill["value"]["outcomes"][number],
+  rollerId: CombatantId,
+): boolean {
+  return (
+    outcome.targetId === rollerId &&
+    outcome.withoutRoll !== true &&
+    !savingThrowOutcomeThatStands(outcome).succeeded
+  );
+}
+
+/**
  * The hole of the one saving throw the replay holds for this creature that
  * was rolled and stands failed, with no Reaction reroll granted on it yet,
  * among the holes the window names when it names them. Undefined when there
@@ -254,11 +270,8 @@ export function rerollableFailedSaveHoleId(
   const holeIds = continuation.fills.flatMap((fill) =>
     fill.kind === "savingThrowOutcome" &&
     (frame.failedSaveHoleIds?.includes(fill.holeId) ?? true) &&
-    fill.value.outcomes.some(
-      (outcome) =>
-        outcome.targetId === rollerId &&
-        outcome.withoutRoll !== true &&
-        !savingThrowOutcomeThatStands(outcome).succeeded,
+    fill.value.outcomes.some((outcome) =>
+      rolledSaveStandsFailed(outcome, rollerId),
     )
       ? [fill.holeId]
       : [],

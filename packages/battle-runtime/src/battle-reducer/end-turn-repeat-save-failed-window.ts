@@ -25,6 +25,7 @@ import type {
 } from "../battle-state-execution.ts";
 import type { BattleProcedureExecutionRef, CombatantId } from "../identity.ts";
 import { optionalProperty } from "../optional-property.ts";
+import { rolledSaveStandsFailed } from "./failed-save-reaction-reroll.ts";
 import { maybeOpenInterruptWindow } from "./interrupt-execution.ts";
 
 type SavingThrowOutcomeFill = Extract<
@@ -83,10 +84,7 @@ function rolledAndFailed(
   save: SavingThrowOutcomeFill,
   actorId: CombatantId,
 ): boolean {
-  return save.value.outcomes.some(
-    (outcome) =>
-      outcome.targetId === actorId &&
-      outcome.withoutRoll !== true &&
-      !outcome.succeeded,
+  return save.value.outcomes.some((outcome) =>
+    rolledSaveStandsFailed(outcome, actorId),
   );
 }
