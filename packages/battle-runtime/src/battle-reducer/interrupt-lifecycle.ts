@@ -1372,6 +1372,7 @@ export function handledInterruptOccurrenceForCheckpoint(
       trigger: "saveFailed" as const,
       failedTargetIds: saveFailed.failedTargetIds,
       appliedConditions: saveFailed.appliedConditions,
+      ...optionalProperty("failedSaveHoleIds", saveFailed.failedSaveHoleIds),
       ...optionalProperty("sourceProcedureRef", saveFailed.sourceProcedureRef),
       ...optionalProperty("effectRef", saveFailed.effectRef),
     })),

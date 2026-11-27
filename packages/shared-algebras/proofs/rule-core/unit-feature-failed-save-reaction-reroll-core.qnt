@@ -18,8 +18,10 @@ module unitFeatureFailedSaveReactionRerollCore {
   //   after its roller's own rerolls and added dice; the responder picks one
   //   creature whose save failed; the table rules the range; the new roll
   //   is a roll of its own whose mode combines the Reaction's Advantage with
-  //   the save's own sources; the new roll stands; and a save is rerolled
-  //   this way at most once.
+  //   the save's own sources; the new roll stands; a save is rerolled this
+  //   way at most once; and a save repeated to end a condition is a save
+  //   against the effect that applies it, so its applied conditions are the
+  //   ones it keeps on a failure.
   //
   // The feature is a fact of its profile: the conditions it answers and the
   // roll mode source it gives the new roll. The creature whose save failed is
@@ -33,7 +35,8 @@ module unitFeatureFailedSaveReactionRerollCore {
   import d20TestCircumstanceCore.* from "./d20-test-circumstance-core"
   import actionTurnProcedures.* from "./action-turn-procedures"
 
-  // The conditions an effect applies to a creature that fails its save.
+  // The conditions an effect applies to a creature that fails its save, or,
+  // for a save repeated to end them, keeps on it.
   type SaveEffectCondition =
     | SaveEffectBlindedCondition
     | SaveEffectCharmedCondition
