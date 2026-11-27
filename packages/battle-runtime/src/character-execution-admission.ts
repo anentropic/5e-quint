@@ -1477,6 +1477,10 @@ export function unitFeatureProcedureExecution(
         kind: value.kind,
         remarkableAthlete: value.remarkableAthlete,
       }),
+      failedSavingThrowRerollReaction: (value) => ({
+        kind: value.kind,
+        reaction: value.reaction,
+      }),
       openHandTechnique: (value) => {
         const resourcePoolRef = context.resourcePoolRefsByUnitId.get(
           value.technique.trigger.resourceUnitId,
@@ -1661,6 +1665,10 @@ export function unitSupportProcedureExecution(
       remarkableAthlete: (value) => ({
         kind: value.kind,
         remarkableAthlete: value.remarkableAthlete,
+      }),
+      failedSavingThrowRerollReaction: (value) => ({
+        kind: value.kind,
+        reaction: value.reaction,
       }),
       attackRollDefense: (value) => ({
         kind: value.kind,

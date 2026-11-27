@@ -1,3 +1,4 @@
+import { failedSaveReactionRerollChoices } from "./failed-save-reaction-reroll.ts";
 import { isReadiedWeaponChangeActionSubject } from "../battle-subjects.ts";
 import {
   checkpointWithAcceptedSubjectReplayEvidence,
@@ -842,6 +843,7 @@ export function interruptChoices(
     attackHitBonusActionSpellReactionChoices(state, frame);
   const triggeredSpellChoices = triggeredReactionSpellChoices(state, frame);
   const modifierChoices = reactionRollOrDamageReductionChoices(state, frame);
+  const failedSaveRerollChoices = failedSaveReactionRerollChoices(state, frame);
   const retaliationChoices = retaliationReactionAttackChoices(state, frame);
   return frame.trigger === "opportunityAttack"
     ? [
@@ -860,6 +862,7 @@ export function interruptChoices(
         ...triggeredSpellChoices,
         ...retaliationChoices,
         ...modifierChoices,
+        ...failedSaveRerollChoices,
       ];
 }
 

@@ -63,13 +63,31 @@ export function d20TestOutcomeThatStands<T extends BattleD20TestOutcome>(
   };
 }
 
-/** Every target's saving throw outcome after its reroll decisions and added dice. */
+/**
+ * A target's saving throw outcome after its reroll decisions and added dice;
+ * when a Reaction caused the failed save to be rerolled, the new roll's
+ * outcome after its own decisions.
+ */
+export function savingThrowOutcomeThatStands(
+  outcome: BattleSavingThrowOutcome,
+): BattleSavingThrowOutcome {
+  const reroll = outcome.failedSaveReactionReroll;
+  if (reroll === undefined) return d20TestOutcomeThatStands(outcome);
+  const newRoll = d20TestOutcomeThatStands(reroll.newRoll);
+  return {
+    ...outcome,
+    succeeded: newRoll.succeeded,
+    d20TestRoll: newRoll.d20TestRoll,
+  };
+}
+
+/** Every target's saving throw outcome that stands. */
 export function savingThrowOutcomesThatStand<
   T extends { readonly outcomes: readonly BattleSavingThrowOutcome[] },
 >(value: T): T {
   return {
     ...value,
-    outcomes: value.outcomes.map(d20TestOutcomeThatStands),
+    outcomes: value.outcomes.map(savingThrowOutcomeThatStands),
   };
 }
 

@@ -1,6 +1,7 @@
 import type {
   BattleAttackRollResult,
   BattleD20TestAddedDieDecision,
+  BattleD20TestRolledOutcome,
   BattleD20TestDieRerollDecision,
   BattleD20TestOutcomeAddedDieDecision,
   BattleD20TestOutcomeRerollDecision,
@@ -298,14 +299,9 @@ function resubmittedFillAtAcceptedDecisions(
             ? accepted.value.outcomes
             : undefined;
         const outcomes = fill.value.outcomes.map((outcome, index) =>
-          valueAtAcceptedAddedDice(
-            valueAtAcceptedRerolls(
-              outcome,
-              acceptedOutcomes?.[index]?.d20TestRerolls,
-              d20TestOutcomeRerollDecisionsEqual,
-            ),
-            acceptedOutcomes?.[index]?.d20TestAddedDice,
-            d20TestOutcomeAddedDieDecisionsEqual,
+          savingThrowOutcomeAtAcceptedDecisions(
+            outcome,
+            acceptedOutcomes?.[index],
           ),
         );
         return outcomes.includes(null)
@@ -328,6 +324,52 @@ function resubmittedFillAtAcceptedDecisions(
         ),
     }),
   );
+}
+
+/** A rolled outcome with only the accepted after-roll decisions, when the resubmitted ones extend them. */
+function rolledOutcomeAtAcceptedDecisions(
+  value: Pick<
+    BattleD20TestRolledOutcome,
+    "d20TestRerolls" | "d20TestAddedDice"
+  >,
+  accepted:
+    | Pick<BattleD20TestRolledOutcome, "d20TestRerolls" | "d20TestAddedDice">
+    | undefined,
+): object | null {
+  return valueAtAcceptedAddedDice(
+    valueAtAcceptedRerolls(
+      value,
+      accepted?.d20TestRerolls,
+      d20TestOutcomeRerollDecisionsEqual,
+    ),
+    accepted?.d20TestAddedDice,
+    d20TestOutcomeAddedDieDecisionsEqual,
+  );
+}
+
+/**
+ * A saving throw outcome with only the accepted after-roll decisions, when
+ * the resubmitted ones extend them: its own, then the new roll a Reaction
+ * caused it to take, which a resubmission may add, and whose own decisions
+ * it may extend.
+ */
+function savingThrowOutcomeAtAcceptedDecisions(
+  outcome: BattleSavingThrowOutcome,
+  accepted: BattleSavingThrowOutcome | undefined,
+): object | null {
+  const { failedSaveReactionReroll: reroll, ...withoutReroll } = outcome;
+  const firstRoll = rolledOutcomeAtAcceptedDecisions(withoutReroll, accepted);
+  const acceptedReroll = accepted?.failedSaveReactionReroll;
+  if (firstRoll === null) return null;
+  if (acceptedReroll === undefined) return firstRoll;
+  if (reroll === undefined) return null;
+  const newRoll = rolledOutcomeAtAcceptedDecisions(
+    reroll.newRoll,
+    acceptedReroll.newRoll,
+  );
+  return newRoll === null
+    ? null
+    : { ...firstRoll, failedSaveReactionReroll: { ...reroll, newRoll } };
 }
 
 /**
@@ -558,6 +600,16 @@ function savingThrowOutcomesEqual(
     a.succeeded === b.succeeded &&
     d20TestRollsEqual(a.d20TestRoll, b.d20TestRoll) &&
     a.withoutRoll === b.withoutRoll &&
+    savingThrowAfterRollDecisionsEqual(a, b)
+  );
+}
+
+/** Whether two saving throws carry the same after-roll decisions: rerolls, added dice and a Reaction's new roll. */
+function savingThrowAfterRollDecisionsEqual(
+  a: BattleSavingThrowOutcome,
+  b: BattleSavingThrowOutcome,
+): boolean {
+  return (
     rerollDecisionListsEqual(
       a.d20TestRerolls,
       b.d20TestRerolls,
@@ -567,7 +619,9 @@ function savingThrowOutcomesEqual(
       a.d20TestAddedDice,
       b.d20TestAddedDice,
       d20TestOutcomeAddedDieDecisionsEqual,
-    )
+    ) &&
+    canonicalStructuralKey(a.failedSaveReactionReroll ?? null) ===
+      canonicalStructuralKey(b.failedSaveReactionReroll ?? null)
   );
 }
 

@@ -1213,7 +1213,34 @@ export type BattleInterruptProcedureChoice =
       readonly responderId: CombatantId;
       readonly modifier: BattleReactionModifierChoice;
       readonly initialHoles: readonly BattleHole[];
+    }
+  | {
+      readonly kind: "failedSaveReactionReroll";
+      readonly responderId: CombatantId;
+      readonly reroll: BattleFailedSaveReactionRerollChoice;
+      /** None: the new roll is asked on the save's own hole when the save replays. */
+      readonly initialHoles: readonly [];
     };
+
+/**
+ * A Reaction that causes a creature's failed saving throw to be rerolled
+ * (Countercharm): the creature, and where it has to be.
+ */
+export type BattleFailedSaveReactionRerollChoice = {
+  readonly procedureRef: BattleProcedureExecutionRef;
+  /** The creature whose failed saving throw is rerolled. */
+  readonly rollerId: CombatantId;
+  readonly rollerPosition: BattleFailedSaveReactionRerollRollerPosition;
+};
+
+/**
+ * Where the creature whose save is rerolled is: the responder itself, or
+ * another creature within the range, which the table rules on the board.
+ * Selecting a choice that names a range states the table's ruling.
+ */
+export type BattleFailedSaveReactionRerollRollerPosition =
+  | { readonly kind: "responder" }
+  | { readonly kind: "withinRange"; readonly rangeFeet: MovementFeet };
 
 type BattleInterruptChoiceResponderInput =
   | {
@@ -1222,6 +1249,10 @@ type BattleInterruptChoiceResponderInput =
     }
   | {
       readonly kind: "reactionModifier";
+      readonly responderId: CombatantId;
+    }
+  | {
+      readonly kind: "failedSaveReactionReroll";
       readonly responderId: CombatantId;
     };
 
@@ -1244,6 +1275,7 @@ export function interruptChoiceResponderId(
           }),
         ),
       reactionModifier: ({ responderId }) => responderId,
+      failedSaveReactionReroll: ({ responderId }) => responderId,
     }),
   );
 }
@@ -1293,6 +1325,11 @@ export type BattleInterruptProcedureSelection = {
       readonly procedureRef: BattleProcedureExecutionRef;
       readonly modifierKind: BattleReactionModifierChoice["kind"];
     }
+  | ({
+      readonly kind: "failedSaveReactionReroll";
+      /** None: the new roll is asked on the save's own hole when it replays. */
+      readonly fills: readonly [];
+    } & BattleFailedSaveReactionRerollChoice)
 );
 type BattleActiveInterruptProcedure = {
   readonly responderId: CombatantId;
@@ -4268,6 +4305,12 @@ export type PendingAttackRollMissToHitReplacementContext = {
 export type BattleD20TestRollKey = {
   readonly rollerId: CombatantId;
   readonly holeId: HoleId;
+  /**
+   * Present on the new roll a failed save reaction reroll gave the roller
+   * (`BattleFailedSaveReactionReroll`), which is a roll of its own; absent on
+   * the roll the hole asked for.
+   */
+  readonly attempt?: typeof FAILED_SAVE_REACTION_REROLL_EFFECT_KIND;
 };
 
 type PendingAttackRollMissToHitReplacementSelection = {
@@ -4620,6 +4663,11 @@ export type BattleAcceptedSubjectReplayEvidence = {
    * replay finds the boost decided on it.
    */
   readonly acceptedFailedAbilityCheckResourceBoosts?: ReadonlyNonEmptyArray<BattleTakenFailedAbilityCheckResourceBoost>;
+  /**
+   * The failed saving throws of this subject that a Reaction caused to be
+   * rerolled: the replay asks each one's new roll.
+   */
+  readonly grantedFailedSaveReactionRerolls?: ReadonlyNonEmptyArray<BattleGrantedFailedSaveReactionReroll>;
   readonly acceptedAttackAmmunitionSpend?: BattleAcceptedAttackAmmunitionSpend;
   readonly acceptedThrownWeaponRelease?: BattleAcceptedThrownWeaponRelease;
 };
@@ -5174,6 +5222,17 @@ export type BattleSavingThrowRerollHoleOptions =
       BattleFailedSavingThrowRerollOption,
     ];
   };
+/**
+ * The new roll a saving throw outcome hole asks, on a replay, of a failed
+ * save that a Reaction caused to be rerolled. While it is present, the hole's
+ * other after-roll options are offered on the new roll: answer them in the
+ * outcome's `failedSaveReactionReroll.newRoll`.
+ */
+export type BattleFailedSaveReactionRerollHoleOptions = {
+  readonly failedSaveReactionRerolls?: readonly [
+    BattleFailedSaveReactionRerollOption,
+  ];
+};
 /**
  * The dice a D20 Test hole offers to add to a test that stands failed, once
  * its rerolls are decided (ASSUMPTIONS.md A67).
@@ -5819,6 +5878,52 @@ export type BattleBardicInspirationDieOption = {
   /** The creature that holds the die and rolled the D20 Test. */
   readonly rollerId: CombatantId;
   readonly dieSize: DamageDieSize;
+};
+export const FAILED_SAVE_REACTION_REROLL_EFFECT_KIND =
+  "failed_save_reaction_reroll";
+/**
+ * A failed saving throw that a creature's Reaction caused to be rerolled
+ * (Countercharm), kept on the interrupted subject so that its replay asks the
+ * new roll.
+ */
+export type BattleGrantedFailedSaveReactionReroll = Pick<
+  BattleD20TestRollKey,
+  "rollerId" | "holeId"
+> & {
+  /** The creature that took the Reaction. */
+  readonly responderId: CombatantId;
+  readonly procedureRef: BattleProcedureExecutionRef;
+  /** The roll mode the Reaction gives the new roll. */
+  readonly rollMode: Extract<AttackRollMode, "advantage">;
+};
+/**
+ * The new roll a Reaction caused a failed saving throw to take, offered on
+ * the replay's saving throw hole once the save stands failed after its
+ * roller's own decisions.
+ */
+export type BattleFailedSaveReactionRerollOption = {
+  readonly effectKind: typeof FAILED_SAVE_REACTION_REROLL_EFFECT_KIND;
+  readonly label: string;
+  /** The creature whose failed saving throw is rerolled. */
+  readonly rollerId: CombatantId;
+  /** The creature that took the Reaction. */
+  readonly responderId: CombatantId;
+  /**
+   * The new roll's mode: the Reaction's Advantage with the save's own
+   * Advantage and Disadvantage, which cancel as usual.
+   */
+  readonly rollMode: AttackRollMode;
+};
+/**
+ * The new roll of a failed saving throw that a Reaction caused to be
+ * rerolled: a roll of its own, with its own after-roll decisions, that stands
+ * in place of the failed one.
+ */
+export type BattleFailedSaveReactionReroll = {
+  readonly effectKind: typeof FAILED_SAVE_REACTION_REROLL_EFFECT_KIND;
+  /** The creature that took the Reaction. */
+  readonly responderId: CombatantId;
+  readonly newRoll: BattleD20TestRolledOutcome;
 };
 export const FAILED_ABILITY_CHECK_RESOURCE_BOOST_EFFECT_KIND =
   "failed_ability_check_resource_boost";
@@ -6816,11 +6921,17 @@ export type BattleRolledSavingThrowOutcome = BattleD20TestRolledOutcome & {
    * and the runtime checks the degree against the hole.
    */
   readonly cover?: BonusCoverType;
+  /**
+   * The new roll a Reaction caused this failed save to take. Its outcome
+   * stands in place of this one's.
+   */
+  readonly failedSaveReactionReroll?: BattleFailedSaveReactionReroll;
 };
 export type BattleSavingThrowWithoutRollOutcome =
   BattleD20TestWithoutRollOutcome & {
     readonly targetId: CombatantId;
     readonly cover?: never;
+    readonly failedSaveReactionReroll?: never;
   };
 export type BattleSavingThrowOutcome =
   | BattleRolledSavingThrowOutcome
@@ -6989,6 +7100,9 @@ export type BattleSpellSavingThrowOutcomeHole = {
     BattleFailedSavingThrowRerollOption,
   ];
   readonly bardicInspirationDice?: readonly [BattleBardicInspirationDieOption];
+  readonly failedSaveReactionRerolls?: readonly [
+    BattleFailedSaveReactionRerollOption,
+  ];
   readonly relationshipFactRequest?: BattleSavingThrowRelationshipFactRequest;
 } & (
   | {
@@ -7028,6 +7142,9 @@ export type BattleGrantedAreaSaveDamageActionSavingThrowOutcomeHole = {
     BattleFailedSavingThrowRerollOption,
   ];
   readonly bardicInspirationDice?: readonly [BattleBardicInspirationDieOption];
+  readonly failedSaveReactionRerolls?: readonly [
+    BattleFailedSaveReactionRerollOption,
+  ];
   readonly relationshipFactRequest?: BattleSavingThrowRelationshipFactRequest;
 };
 export type BattleGlyphExplosiveRuneSavingThrowOutcomeHole = {
@@ -7055,6 +7172,9 @@ export type BattleGlyphExplosiveRuneSavingThrowOutcomeHole = {
     BattleFailedSavingThrowRerollOption,
   ];
   readonly bardicInspirationDice?: readonly [BattleBardicInspirationDieOption];
+  readonly failedSaveReactionRerolls?: readonly [
+    BattleFailedSaveReactionRerollOption,
+  ];
 };
 export type BattleUnitFeatureSavingThrowOutcomeHole = {
   readonly holeInstanceKey: HoleInstanceKey;
@@ -7075,6 +7195,9 @@ export type BattleUnitFeatureSavingThrowOutcomeHole = {
     BattleFailedSavingThrowRerollOption,
   ];
   readonly bardicInspirationDice?: readonly [BattleBardicInspirationDieOption];
+  readonly failedSaveReactionRerolls?: readonly [
+    BattleFailedSaveReactionRerollOption,
+  ];
   readonly relationshipFactRequest?: BattleSavingThrowRelationshipFactRequest;
 } & (
   | {
