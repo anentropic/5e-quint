@@ -678,3 +678,23 @@ rolled at once, applies the floor to the die that stands, as a d20 minimum
 applies to the d20 that stands, keeps Savage Attacker a choice between two
 rolls, and lets the roller order Heroic Inspiration and Empowered Spell, as
 A55 does for d20 rerolls.
+
+## A72: Damage that Temporary Hit Points absorb at 0 Hit Points
+
+**Assumption:** A creature at 0 Hit Points that takes damage suffers the Death
+Saving Throw failure (two for a Critical Hit) even when its Temporary Hit
+Points absorb all of that damage, and it dies if the whole damage equals or
+exceeds its Hit Point maximum. The Temporary Hit Points still go first. A
+Stable creature in that case stops being Stable.
+
+**Rules basis / gap:** `.references/srd-5.2.1/playing-the-game.md`, "Damage
+at 0 Hit Points": "If you take any damage while you have 0 Hit Points, you
+suffer a Death Saving Throw failure ... If the damage equals or exceeds your
+Hit Point maximum, you die." "Lose Temporary Hit Points First": "If you have
+Temporary Hit Points and take damage, those points are lost first", with the
+example "if you have 5 Temporary Hit Points and take 7 damage". So damage that
+Temporary Hit Points absorb is still damage taken. "Massive Damage" tests the
+damage that remains, but only when damage reduces a creature to 0; the at-0
+rule tests "the damage". The SRD doesn't state this interaction outright, so
+the model reads the at-0 rule as written. The QNT owner is
+`zero-hit-point-lifecycle.qnt:applyDamageToZeroHitPointCreature`.
