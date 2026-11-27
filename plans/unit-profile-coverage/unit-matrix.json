@@ -62,8 +62,8 @@
       "value": 455
     },
     "deterministicAdmissionProjectionCoverage": {
-      "denominator": 245,
-      "numerator": 237,
+      "denominator": 246,
+      "numerator": 238,
       "percent": "96.7%"
     },
     "profileClassificationCoverage": {
@@ -107,14 +107,14 @@
       "percent": "97.1%"
     },
     "selectedIdentityReplayCoverage": {
-      "denominator": 208,
-      "numerator": 203,
+      "denominator": 209,
+      "numerator": 204,
       "percent": "97.6%"
     },
     "supportedProfileCoverage": {
       "denominator": 400,
-      "numerator": 245,
-      "percent": "61.3%"
+      "numerator": 246,
+      "percent": "61.5%"
     }
   },
   "metricSemantics": [
@@ -6961,6 +6961,33 @@
         {
           "kind": "runtime-test",
           "ownerPath": "packages/character-sheet-runtime/src/heroic-warrior.test.ts"
+        }
+      ]
+    },
+    {
+      "id": "unit-feature.failed-save-reaction-reroll",
+      "profileKind": "battle-support-admission",
+      "qntOwners": [
+        "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core.qnt"
+      ],
+      "runtimeOwners": [
+        "packages/battle-runtime/src/unit-feature-support.ts",
+        "packages/battle-runtime/src/character-execution-admission.ts",
+        "packages/battle-runtime/src/battle-reducer/failed-save-reaction-reroll.ts"
+      ],
+      "sourceBoundary": "Battle Unit admission consumes the authored Surface failed-save Reaction reroll shape: the save-failed trigger, the conditions the effect must apply, the range, and the new roll's roll mode. The runtime projects a typed unit feature procedure without authored-identity dispatch and offers the Reaction in the save-failed window to each creature with the feature that can take a Reaction, for each creature whose rolled save stands failed after its own rerolls and added dice, when that creature is the responder or one the table rules within the range and the effect applies a condition the feature answers. Taking it spends the Reaction and asks the save's new roll on the same hole with the feature's roll mode joined to the save's own sources; the new roll is a fresh D20 Test whose roller may use any source the first roll left unspent, its outcome stands, and the save is not rerolled this way again.",
+      "taskRefs": [
+        "U580-COUNTERCHARM"
+      ],
+      "title": "Unit feature takes a Reaction to reroll a failed Saving Throw against an effect applying an answered condition",
+      "verificationOwners": [
+        {
+          "kind": "runtime-test",
+          "ownerPath": "packages/battle-runtime/src/failed-save-reaction-reroll.test.ts"
+        },
+        {
+          "kind": "runtime-test",
+          "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts"
         }
       ]
     },
@@ -22811,6 +22838,14 @@
     },
     {
       "claimKind": "completed-runtime-parity",
+      "note": "Focused battle-runtime tests on a Bard 7 with Countercharm cover the offer on the Bard's own failed save against Charm Person, taking the Reaction and the new roll with Advantage, a succeeding and a failing new roll standing, no reopening of the window, the roll mode check, a new roll without a grant, another creature ruled within 30 feet, no offer against an effect applying neither Charmed nor Frightened, an unspent Heroic Inspiration used on the new roll and a spent one staying spent, the new roll's own decisions re-asked with the reroll marker, an empty fills, and the roll mode table. A real-catalog Bard 7 under Charm Person is offered Countercharm and its succeeding new roll with Advantage stands, spending the Reaction; a Bard 6 is not offered it.",
+      "profileIds": [
+        "unit-feature.failed-save-reaction-reroll"
+      ],
+      "taskId": "U580-COUNTERCHARM"
+    },
+    {
+      "claimKind": "completed-runtime-parity",
       "note": "Focused Character Sheet runtime tests cover Dream prepared ordinary level-5 Spell Slot invocation, 1-minute casting time, 8-hour duration, Special range, handful-of-sand Material component proof, same-plane known creature target facts, caster or willing-touched-creature messenger trance facts, conversation table contract, nightmare ten-word limit, Wisdom Saving Throw success/failure branches, failed-save no-rest-benefit contract, 3d6 Psychic damage on waking, and selected identity replay. Actual target sleep state and world location, dream-content delivery, remote conversation transcript, Long Rest state mutation, and target damage application remain table/session-owned facts.",
       "profileIds": [
         "character-sheet.dream-session-invocation",
@@ -23693,14 +23728,14 @@
         "installedUnitDenominator": 129,
         "kind": "class_feature",
         "label": "Class-feature Units",
-        "profileFactDenominator": 180,
+        "profileFactDenominator": 181,
         "profileSubsetSupportedUnits": 9,
         "selectedIdentityDeferredNonApplicableUnits": 0,
-        "selectedIdentityReplayDenominator": 91,
+        "selectedIdentityReplayDenominator": 92,
         "selectedIdentityReplayGapUnits": 0,
-        "selectedIdentityReplayWitnessUnits": 91,
-        "supportedProfileUnits": 117,
-        "unsupportedOrOtherUnits": 3
+        "selectedIdentityReplayWitnessUnits": 92,
+        "supportedProfileUnits": 118,
+        "unsupportedOrOtherUnits": 2
       }
     ]
   },
@@ -26676,19 +26711,66 @@
         "status": "installed"
       },
       "claim": {
-        "battleReadinessClosure": {
-          "kind": "outside-battle-runtime",
-          "owner": "future class-feature triggered-Reaction save-failure reroll owner plus condition-application and range-witness owners",
-          "reason": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity."
-        },
-        "reason": "Countercharm is a level-7 Bard class-feature triggered Reaction, not an always-on Saving Throw modifier or Bardic Inspiration die use. It triggers only when the Bard or a creature within 30 feet fails a Saving Throw against an effect that applies Charmed or Frightened, then spends the Bard's Reaction to reroll that save with Advantage. No standalone battle Unit profile is claimed until a generic class-feature triggered-reaction owner can consume that in-flight save-failure event without duplicating condition, range, or Reaction state.",
-        "tag": "unsupported-profile"
+        "profileIds": [
+          "unit-feature.failed-save-reaction-reroll"
+        ],
+        "rawRequirementIds": [
+          "RAW-QCORE9-UNIT-FEATURE-PROFILES-001"
+        ],
+        "supportedMechanics": [
+          "Battle Unit admission consumes the authored failed-save Reaction reroll Surface shape without dispatching on Bard Countercharm authored identity",
+          "the save-failed Reaction window offers the Reaction to a Bard with the feature who can take a Reaction, for the Bard's own failed save or another creature's that the table rules within 30 feet, when the effect applies the Charmed or Frightened condition",
+          "the window opens once the rolled save stands failed after its roller's own rerolls and added dice; a save that failed without a roll, or that succeeded, is not offered",
+          "taking the Reaction spends it and asks the save's new roll on the same hole with Advantage joined to the save's own roll mode, so a save rolled with Disadvantage gets a new roll with neither",
+          "the new roll is a fresh D20 Test: a source the first roll left unspent can be used on it and a spent one stays spent, and its own decisions are asked on the save's hole marked as the new roll",
+          "the new roll stands whether it succeeds or fails, and the save is not rerolled this way again by any responder"
+        ],
+        "tag": "supported-profile"
       },
       "collectionId": "srd-5.2.1",
-      "evidence": [],
+      "evidence": [
+        {
+          "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts",
+          "tag": "selected-identity-replay",
+          "taskId": "U580-COUNTERCHARM"
+        },
+        {
+          "ownerPath": "packages/battle-runtime/src/failed-save-reaction-reroll.test.ts",
+          "tag": "deterministic-admission-projection",
+          "taskId": "U580-COUNTERCHARM"
+        }
+      ],
       "executableMechanics": true,
       "kind": "class_feature",
-      "profiles": [],
+      "profiles": [
+        {
+          "id": "unit-feature.failed-save-reaction-reroll",
+          "profileKind": "battle-support-admission",
+          "qntOwners": [
+            "packages/shared-algebras/proofs/rule-core/unit-feature-failed-save-reaction-reroll-core.qnt"
+          ],
+          "runtimeOwners": [
+            "packages/battle-runtime/src/unit-feature-support.ts",
+            "packages/battle-runtime/src/character-execution-admission.ts",
+            "packages/battle-runtime/src/battle-reducer/failed-save-reaction-reroll.ts"
+          ],
+          "sourceBoundary": "Battle Unit admission consumes the authored Surface failed-save Reaction reroll shape: the save-failed trigger, the conditions the effect must apply, the range, and the new roll's roll mode. The runtime projects a typed unit feature procedure without authored-identity dispatch and offers the Reaction in the save-failed window to each creature with the feature that can take a Reaction, for each creature whose rolled save stands failed after its own rerolls and added dice, when that creature is the responder or one the table rules within the range and the effect applies a condition the feature answers. Taking it spends the Reaction and asks the save's new roll on the same hole with the feature's roll mode joined to the save's own sources; the new roll is a fresh D20 Test whose roller may use any source the first roll left unspent, its outcome stands, and the save is not rerolled this way again.",
+          "taskRefs": [
+            "U580-COUNTERCHARM"
+          ],
+          "title": "Unit feature takes a Reaction to reroll a failed Saving Throw against an effect applying an answered condition",
+          "verificationOwners": [
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/battle-runtime/src/failed-save-reaction-reroll.test.ts"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts"
+            }
+          ]
+        }
+      ],
       "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
       "unitId": "bard_countercharm"
     },

@@ -783,44 +783,6 @@
       "unitId": "banishment"
     },
     {
-      "catalogStatus": "installed",
-      "claimTag": "unsupported-profile",
-      "closureKinds": [
-        "outside-battle-runtime"
-      ],
-      "collectionId": "srd-5.2.1",
-      "executableMechanics": true,
-      "kind": "class_feature",
-      "reason": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-      "selectedIdentity": {
-        "reason": "Selected identity replay evidence is only required for supported profile claims.",
-        "status": "not-required"
-      },
-      "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
-      "sourceRows": [
-        {
-          "battleReadinessStatus": "accepted-no-battle-effect",
-          "catalogAdmissionState": "installed",
-          "category": "class feature",
-          "concept": "Bard Countercharm",
-          "finalDisposition": "catalog-only/dead-for-now",
-          "id": "srd521:classes:level-7:class-feature-grant:bard_countercharm",
-          "levelBand": "level-7",
-          "nextAction": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-          "rowKind": "class-feature-grant",
-          "source": {
-            "lineEnd": 917,
-            "lineStart": 914,
-            "path": ".references/srd-5.2.1/classes.md"
-          },
-          "unitProfileDisposition": "unsupported-profile"
-        }
-      ],
-      "status": "closed-outside-battle-runtime-boundary",
-      "strictTargetClosed": true,
-      "unitId": "bard_countercharm"
-    },
-    {
       "catalogDisposition": {
         "category": "srd-candidate",
         "planningLane": "QMBT14-QMBT16",
@@ -10241,7 +10203,7 @@
   "generatedBy": "scripts/unit-profile-coverage-check.cjs",
   "groups": [
     {
-      "count": 203,
+      "count": 204,
       "description": "An executable Unit profile exists for this strict accounting scope.",
       "status": "supported-profile",
       "unitIds": [
@@ -10267,6 +10229,7 @@
         "bard_ability_score_improvement_l4",
         "bard_bardic_inspiration",
         "bard_bonus_proficiencies",
+        "bard_countercharm",
         "bard_cutting_words",
         "bard_expertise",
         "bard_font_of_inspiration",
@@ -10542,13 +10505,12 @@
       ]
     },
     {
-      "count": 45,
+      "count": 44,
       "description": "The remaining residuals are explicitly outside promoted battle-runtime ownership.",
       "status": "closed-outside-battle-runtime-boundary",
       "unitIds": [
         "aura_of_life",
         "banishment",
-        "bard_countercharm",
         "beacon_of_hope",
         "bestow_curse",
         "blight",
@@ -10642,8 +10604,8 @@
       "numerator": 1070,
       "percent": "100%",
       "rowsByStatus": {
-        "accepted": 640,
-        "accepted-no-battle-effect": 430
+        "accepted": 641,
+        "accepted-no-battle-effect": 429
       }
     },
     "rulesKernelCoveredProfileJoin": {
@@ -10668,8 +10630,8 @@
     },
     "strictRuntimeProfileSupport": {
       "denominator": 353,
-      "numerator": 203,
-      "percent": "57.5%"
+      "numerator": 204,
+      "percent": "57.8%"
     },
     "strictTargetClosure": {
       "denominator": 353,
@@ -22762,18 +22724,18 @@
     "blockingRows": [],
     "blockingRowsByStatus": {},
     "metrics": {
-      "denominator": 263,
-      "numerator": 263,
+      "denominator": 264,
+      "numerator": 264,
       "percent": "100%"
     },
     "readyRowsByStatus": {
       "not-applicable": 32,
-      "witness-present": 231
+      "witness-present": 232
     },
     "rowsByStatus": {
       "not-applicable": 32,
-      "not-required": 90,
-      "witness-present": 231
+      "not-required": 89,
+      "witness-present": 232
     }
   },
   "sourceArtifacts": {
@@ -24385,18 +24347,18 @@
     "candidateUnitIdsBeforeExclusions": 400,
     "groupsByClaimTag": {
       "profile-subset-supported": 60,
-      "supported-profile": 203,
-      "unsupported-profile": 90
+      "supported-profile": 204,
+      "unsupported-profile": 89
     },
     "groupsByStatus": {
       "blocked-follow-up-split": 10,
       "closed-character-fact-and-runtime-detached-split": 4,
       "closed-companion-control-boundary": 7,
-      "closed-outside-battle-runtime-boundary": 45,
+      "closed-outside-battle-runtime-boundary": 44,
       "closed-runtime-detached-table-adjudication": 84,
-      "supported-profile": 203
+      "supported-profile": 204
     },
-    "nonSupportedFrontier": 150,
+    "nonSupportedFrontier": 149,
     "strictDenominator": 353
   }
 }

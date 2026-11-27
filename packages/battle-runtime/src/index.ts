@@ -790,6 +790,13 @@ export {
 } from "./battle-state-execution.ts";
 
 export {
+  FAILED_SAVE_REACTION_REROLL_EFFECT_KIND,
+  type BattleFailedSaveReactionReroll,
+  type BattleFailedSaveReactionRerollChoice,
+  type BattleFailedSaveReactionRerollOption,
+} from "./battle-state-execution.ts";
+
+export {
   BARDIC_INSPIRATION_DIE_EFFECT_KIND,
   FAILED_ABILITY_CHECK_RESOURCE_BOOST_EFFECT_KIND,
   type BattleAbilityCheckAddedDieDecision,

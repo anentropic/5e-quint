@@ -1821,8 +1821,8 @@
               "strictTargetOpenCount": 0
             },
             "selectedIdentityReadiness": {
-              "denominator": 216,
-              "numerator": 216,
+              "denominator": 217,
+              "numerator": 217,
               "percent": "100%"
             },
             "srdAuthoredProductReadiness": {
@@ -2077,8 +2077,8 @@
               "strictTargetOpenCount": 0
             },
             "selectedIdentityReadiness": {
-              "denominator": 217,
-              "numerator": 217,
+              "denominator": 218,
+              "numerator": 218,
               "percent": "100%"
             },
             "srdAuthoredProductReadiness": {
@@ -2333,8 +2333,8 @@
               "strictTargetOpenCount": 0
             },
             "selectedIdentityReadiness": {
-              "denominator": 263,
-              "numerator": 263,
+              "denominator": 264,
+              "numerator": 264,
               "percent": "100%"
             },
             "srdAuthoredProductReadiness": {
@@ -2577,8 +2577,8 @@
               "strictTargetOpenCount": 0
             },
             "selectedIdentityReadiness": {
-              "denominator": 275,
-              "numerator": 275,
+              "denominator": 276,
+              "numerator": 276,
               "percent": "100%"
             },
             "srdAuthoredProductReadiness": {
@@ -2929,58 +2929,138 @@
       {
         "metrics": {
           "auditedEvidenceRows": {
-            "denominator": 179,
-            "numerator": 179
-          },
-          "joinedEvidenceRows": {
-            "denominator": 179,
-            "numerator": 179
-          },
-          "missingJoinRows": {
-            "denominator": 179,
-            "numerator": 0
-          }
-        },
-        "rowCount": 0,
-        "rows": [],
-        "scopeId": "level-1-7"
-      },
-      {
-        "metrics": {
-          "auditedEvidenceRows": {
             "denominator": 180,
             "numerator": 180
           },
           "joinedEvidenceRows": {
             "denominator": 180,
-            "numerator": 180
+            "numerator": 179
           },
           "missingJoinRows": {
             "denominator": 180,
-            "numerator": 0
-          }
-        },
-        "rowCount": 0,
-        "rows": [],
-        "scopeId": "level-1-8"
-      },
-      {
-        "metrics": {
-          "auditedEvidenceRows": {
-            "denominator": 188,
-            "numerator": 188
-          },
-          "joinedEvidenceRows": {
-            "denominator": 188,
-            "numerator": 187
-          },
-          "missingJoinRows": {
-            "denominator": 188,
             "numerator": 1
           }
         },
         "rowCount": 1,
         "rows": [
+          {
+            "collectionId": "srd-5.2.1",
+            "evidence": {
+              "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts",
+              "tag": "selected-identity-replay",
+              "taskId": "U580-COUNTERCHARM"
+            },
+            "kind": "class_feature",
+            "mcpScenarioJoin": {
+              "coveredFlowIds": [],
+              "missingFlowIds": [],
+              "requiredFlowIds": [],
+              "status": "not-applicable"
+            },
+            "parityWitnessJoin": {
+              "joinedRows": [],
+              "status": "missing-unit-profile-join",
+              "unitProfileJoinRowCount": 0,
+              "unitProfileWitnessOwners": []
+            },
+            "profileIds": [
+              "unit-feature.failed-save-reaction-reroll"
+            ],
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "unitId": "bard_countercharm"
+          }
+        ],
+        "scopeId": "level-1-7"
+      },
+      {
+        "metrics": {
+          "auditedEvidenceRows": {
+            "denominator": 181,
+            "numerator": 181
+          },
+          "joinedEvidenceRows": {
+            "denominator": 181,
+            "numerator": 180
+          },
+          "missingJoinRows": {
+            "denominator": 181,
+            "numerator": 1
+          }
+        },
+        "rowCount": 1,
+        "rows": [
+          {
+            "collectionId": "srd-5.2.1",
+            "evidence": {
+              "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts",
+              "tag": "selected-identity-replay",
+              "taskId": "U580-COUNTERCHARM"
+            },
+            "kind": "class_feature",
+            "mcpScenarioJoin": {
+              "coveredFlowIds": [],
+              "missingFlowIds": [],
+              "requiredFlowIds": [],
+              "status": "not-applicable"
+            },
+            "parityWitnessJoin": {
+              "joinedRows": [],
+              "status": "missing-unit-profile-join",
+              "unitProfileJoinRowCount": 0,
+              "unitProfileWitnessOwners": []
+            },
+            "profileIds": [
+              "unit-feature.failed-save-reaction-reroll"
+            ],
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "unitId": "bard_countercharm"
+          }
+        ],
+        "scopeId": "level-1-8"
+      },
+      {
+        "metrics": {
+          "auditedEvidenceRows": {
+            "denominator": 189,
+            "numerator": 189
+          },
+          "joinedEvidenceRows": {
+            "denominator": 189,
+            "numerator": 187
+          },
+          "missingJoinRows": {
+            "denominator": 189,
+            "numerator": 2
+          }
+        },
+        "rowCount": 2,
+        "rows": [
+          {
+            "collectionId": "srd-5.2.1",
+            "evidence": {
+              "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts",
+              "tag": "selected-identity-replay",
+              "taskId": "U580-COUNTERCHARM"
+            },
+            "kind": "class_feature",
+            "mcpScenarioJoin": {
+              "coveredFlowIds": [],
+              "missingFlowIds": [],
+              "requiredFlowIds": [],
+              "status": "not-applicable"
+            },
+            "parityWitnessJoin": {
+              "joinedRows": [],
+              "status": "missing-unit-profile-join",
+              "unitProfileJoinRowCount": 0,
+              "unitProfileWitnessOwners": []
+            },
+            "profileIds": [
+              "unit-feature.failed-save-reaction-reroll"
+            ],
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "unitId": "bard_countercharm"
+          },
           {
             "collectionId": "srd-5.2.1",
             "evidence": {
@@ -3013,20 +3093,46 @@
       {
         "metrics": {
           "auditedEvidenceRows": {
-            "denominator": 193,
-            "numerator": 193
+            "denominator": 194,
+            "numerator": 194
           },
           "joinedEvidenceRows": {
-            "denominator": 193,
+            "denominator": 194,
             "numerator": 192
           },
           "missingJoinRows": {
-            "denominator": 193,
-            "numerator": 1
+            "denominator": 194,
+            "numerator": 2
           }
         },
-        "rowCount": 1,
+        "rowCount": 2,
         "rows": [
+          {
+            "collectionId": "srd-5.2.1",
+            "evidence": {
+              "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts",
+              "tag": "selected-identity-replay",
+              "taskId": "U580-COUNTERCHARM"
+            },
+            "kind": "class_feature",
+            "mcpScenarioJoin": {
+              "coveredFlowIds": [],
+              "missingFlowIds": [],
+              "requiredFlowIds": [],
+              "status": "not-applicable"
+            },
+            "parityWitnessJoin": {
+              "joinedRows": [],
+              "status": "missing-unit-profile-join",
+              "unitProfileJoinRowCount": 0,
+              "unitProfileWitnessOwners": []
+            },
+            "profileIds": [
+              "unit-feature.failed-save-reaction-reroll"
+            ],
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "unitId": "bard_countercharm"
+          },
           {
             "collectionId": "srd-5.2.1",
             "evidence": {

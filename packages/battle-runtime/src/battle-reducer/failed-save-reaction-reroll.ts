@@ -1,3 +1,5 @@
+// UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.failed-save-reaction-reroll
+// KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_SAVE_REACTION_REROLL
 // A Reaction that causes a failed saving throw to be rerolled with a roll
 // mode (Countercharm, SRD 5.2.1 Bard level 7): "If you or a creature within
 // 30 feet of you fails a saving throw against an effect that applies the
