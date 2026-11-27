@@ -1,3 +1,4 @@
+import { PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION } from "../domain-constants.ts";
 import { leveledSpellInvocationOptions } from "./profile.ts";
 
 import type {
@@ -786,7 +787,8 @@ function isPersistentAreaSaveConditionEscapeSaveGate(
     effect.dc.kind === "caster_spell_save_dc" &&
     effect.onSuccess.kind === "none" &&
     effect.onFail.kind === "apply_condition_while_in_area_or_until_escape" &&
-    effect.onFail.condition === "restrained"
+    effect.onFail.condition ===
+      PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION
   );
 }
 
@@ -797,13 +799,15 @@ function isPersistentAreaSaveConditionEscapeEscapeOperation(
     operation?.trigger.kind === "on_affected_creature_spends_action" &&
     operation.trigger.cost.kind === "action" &&
     operation.predicate?.kind === "has_condition" &&
-    operation.predicate.condition === "restrained" &&
+    operation.predicate.condition ===
+      PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION &&
     operation.effect.kind === "ability_check_gate" &&
     operation.effect.ability === "str" &&
     operation.effect.skill === "athletics" &&
     operation.effect.dc.kind === "caster_spell_save_dc" &&
     operation.effect.onPass.kind === "remove_condition" &&
-    operation.effect.onPass.condition === "restrained"
+    operation.effect.onPass.condition ===
+      PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION
   );
 }
 

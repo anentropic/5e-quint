@@ -1,3 +1,4 @@
+import { isReadonlyArrayNonEmpty } from "effect/Array";
 import { leveledSpellInvocationOptions } from "./profile.ts";
 import type { AdmittedSpellFacts } from "./profile.ts";
 import { optionalProperty } from "../../optional-property.ts";
@@ -1209,13 +1210,15 @@ function turnConstraintBundleReactionWindowResult(
   input: SaveGatedTurnConstraintBundleResolveInput,
   failedTargets: readonly CombatantId[],
 ): BattleResolutionResult | undefined {
-  if (failedTargets.length === 0) return undefined;
+  if (!isReadonlyArrayNonEmpty(failedTargets)) return undefined;
   return (
     maybeOpenInterruptWindow(
       input.input.state,
       {
         trigger: "saveFailed",
-        targetId: failedTargets[0]!,
+        failedTargetIds: failedTargets,
+        // The failed save constrains the target's turns; it applies no condition.
+        appliedConditions: [],
         sourceProcedureRef: input.invocation.sourceProcedureRef,
         continuation: spellReplayContinuation(input.input),
       },

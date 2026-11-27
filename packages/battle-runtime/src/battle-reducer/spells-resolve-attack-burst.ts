@@ -938,12 +938,14 @@ function resolveAttackBurstSaveDamageSpellAct(input: {
   const failedTargets = failedSavingThrowTargetIds(
     savingThrowValidation.success.outcomes,
   );
-  if (failedTargets.length > 0) {
+  if (isReadonlyArrayNonEmpty(failedTargets)) {
     const saveFailedReactionWindow = maybeOpenInterruptWindow(
       damagedByAttack,
       {
         trigger: "saveFailed",
-        targetId: failedTargets[0]!,
+        failedTargetIds: failedTargets,
+        // The burst's failed save deals damage and applies no condition.
+        appliedConditions: [],
         sourceProcedureRef: input.invocation.sourceProcedureRef,
         continuation: spellReplayContinuation(input.input),
       },

@@ -980,7 +980,9 @@ function resolvePersistentAreaSaveStage(input: {
       resolution.state,
       {
         trigger: "saveFailed",
-        targetId: resolution.subject.actorId,
+        failedTargetIds: [resolution.subject.actorId],
+        // The area's failed save deals damage and applies no condition.
+        appliedConditions: [],
         sourceProcedureRef: effect.sourceProcedureRef,
         continuation: persistentAreaInterruptContinuation(
           input.context,
@@ -1448,7 +1450,8 @@ function persistentAreaHandledInterruptTrigger(
 ): BattleInterruptTrigger | undefined {
   return Match.value(context).pipe(
     byPersistentAreaResolutionContextKind("standalone", () =>
-      standaloneHandledOccurrence?.targetId === targetId &&
+      standaloneHandledOccurrence?.failedTargetIds.includes(targetId) ===
+        true &&
       standaloneHandledOccurrence.sourceProcedureRef === sourceProcedureRef
         ? "saveFailed"
         : undefined,

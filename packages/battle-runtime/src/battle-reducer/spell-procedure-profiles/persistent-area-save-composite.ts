@@ -1,3 +1,4 @@
+import { PERSISTENT_AREA_SAVE_COMPOSITE_FAILED_SAVE_CONDITION } from "../domain-constants.ts";
 import { leveledSpellInvocationOptions } from "./profile.ts";
 
 import type {
@@ -805,7 +806,8 @@ function isPersistentAreaSaveCompositeSaveGate(
   const appliesProne = effect.onFail.effects.some(
     (failedEffect) =>
       failedEffect.kind === "apply_condition" &&
-      failedEffect.condition === "prone",
+      failedEffect.condition ===
+        PERSISTENT_AREA_SAVE_COMPOSITE_FAILED_SAVE_CONDITION,
   );
   const breaksConcentration = effect.onFail.effects.some(
     (failedEffect) => failedEffect.kind === "break_concentration",

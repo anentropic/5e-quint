@@ -1,3 +1,4 @@
+import { PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION } from "../domain-constants.ts";
 import { leveledSpellInvocationOptions } from "./profile.ts";
 
 import { optionalProperty } from "../../optional-property.ts";
@@ -653,7 +654,8 @@ function isPersistentAreaSaveConditionEffect(
   if (effect.onSuccess.kind !== "none") return false;
   return (
     effect.onFail.kind === "apply_condition" &&
-    effect.onFail.condition === "prone"
+    effect.onFail.condition ===
+      PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION
   );
 }
 

@@ -520,7 +520,7 @@
       "module/binding:resolveDruidWildShapeUnitFeature": 15,
       "module/binding:resolveMagicActionAreaSaveDamageHealingUnitFeature": 12,
       "module/binding:resolveMagicActionHealingPoolUnitFeature": 9,
-      "module/binding:resolveMagicActionSaveGatedConditionUnitFeature": 10,
+      "module/binding:resolveMagicActionSaveGatedConditionUnitFeature": 9,
       "module/binding:resolveSuccessfulAbilityCheckReactionReduction": 20,
       "module/binding:resolveUnitFeature": 15,
       "module/binding:resolveUnitFeatureHeldWeaponActivation": 10,
