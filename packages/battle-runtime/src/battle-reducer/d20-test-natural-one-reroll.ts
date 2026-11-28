@@ -13,6 +13,7 @@ import type {
   BattleD20TestRollReplacement,
 } from "../battle-state-execution.ts";
 import { characterUnitProcedureBindings } from "../character-execution-queries.ts";
+import { D20_TEST_NATURAL_ONE_REROLL_SUPPORT_PROFILE } from "../unit-feature-support.ts";
 import {
   d20TestRolledDieProjectionIssue,
   d20TestRolledDieRollReplacementIssue,
@@ -133,6 +134,10 @@ export function d20TestHoleWithNaturalOneRerollOption<T extends object>(
   };
 }
 
+/**
+ * Whether the actor holds a natural-1 reroll, bound either as a Unit feature
+ * or as a support profile (how a character built from a sheet carries it).
+ */
 export function combatantHasD20TestNaturalOneReroll(
   actor: BattleCreatureState | undefined,
 ): boolean {
@@ -140,8 +145,9 @@ export function combatantHasD20TestNaturalOneReroll(
     actor?.origin.kind === "character" &&
     characterUnitProcedureBindings(actor.origin.execution).some(
       ({ procedure }) =>
-        procedure.kind === "unitFeature" &&
-        procedure.execution.kind === "d20TestNaturalOneReroll",
+        typeof procedure.execution === "object" &&
+        procedure.execution.kind ===
+          D20_TEST_NATURAL_ONE_REROLL_SUPPORT_PROFILE,
     )
   );
 }

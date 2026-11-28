@@ -2,6 +2,10 @@
 
 ## 0.2.0 — unreleased
 
+- Offer Halfling Luck to a Halfling built from a character sheet. The sheet
+  binds Luck as a support profile, and the natural-1 reroll offer now reads
+  either binding.
+
 - Start the battle's opening turn like every other turn, so the first
   participant gets its start-of-turn effects, such as a Death Saving Throw at
   0 Hit Points or Heroic Warrior's Heroic Inspiration. When that start needs a
