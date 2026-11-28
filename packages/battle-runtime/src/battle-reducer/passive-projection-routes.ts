@@ -8,7 +8,7 @@ import type {
   BattleResolutionResult,
   BattleState,
 } from "../battle-state-execution.ts";
-import { characterUnitProcedureBindings } from "../character-execution-queries.ts";
+import { characterUnitProcedureExecutionsOfKind } from "../character-execution-queries.ts";
 import type { BattleRuntimeCommand } from "../battle-subjects.ts";
 import { currentActorId } from "./creature-state-leaves.ts";
 import { isCharacterBattleCreatureState } from "./creature-state-execution.ts";
@@ -120,17 +120,14 @@ function passiveAbilityCheckRollModePhases(
   const hasPassiveAbilityCheckRollMode = [...state.combatants.values()].some(
     (target) =>
       target.origin.kind === "character" &&
-      characterUnitProcedureBindings(target.origin.execution).some(
-        ({ procedure }) => {
-          if (procedure.kind !== "unitFeature") return false;
-          const execution = procedure.execution;
-          return (
-            execution.kind === "passiveAbilityCheckRollMode" &&
-            (condition === undefined ||
-              (execution.abilityCheck.scope.kind === "endingCondition" &&
-                execution.abilityCheck.scope.condition === condition))
-          );
-        },
+      characterUnitProcedureExecutionsOfKind(
+        target.origin.execution,
+        "passiveAbilityCheckRollMode",
+      ).some(
+        ({ abilityCheck }) =>
+          condition === undefined ||
+          (abilityCheck.scope.kind === "endingCondition" &&
+            abilityCheck.scope.condition === condition),
       ),
   );
   if (!hasPassiveAbilityCheckRollMode) return undefined;
@@ -313,13 +310,12 @@ function passiveSavingThrowRollModeDispositionForTarget(
 
   const targetIncapacitated = isIncapacitated(target.conditions);
   let suppressed = false;
-  for (const { procedure } of characterUnitProcedureBindings(
+  for (const { savingThrow } of characterUnitProcedureExecutionsOfKind(
     target.origin.execution,
+    "passiveSavingThrowRollMode",
   )) {
-    if (procedure.kind !== "unitFeature") continue;
-    if (procedure.execution.kind !== "passiveSavingThrowRollMode") continue;
     const disposition = passiveSavingThrowRollModeDisposition(
-      procedure.execution.savingThrow,
+      savingThrow,
       ability,
       condition,
       targetIncapacitated,

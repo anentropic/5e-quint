@@ -59,6 +59,7 @@ import {
 } from "../battle-subjects.ts";
 import {
   characterUnitProcedureBindings,
+  characterUnitProcedureExecutionsOfKind,
   type UnitFeatureProcedureExecution,
   type UnitSupportProcedureExecution,
 } from "../character-execution-queries.ts";
@@ -599,13 +600,14 @@ function passiveConditionEndAbilityCheckRollModeMatches(
   if (actor?.origin.kind !== "character") {
     return false;
   }
-  return characterUnitProcedureBindings(actor.origin.execution).some(
-    ({ procedure }) =>
-      procedure.kind === "unitFeature" &&
-      procedure.execution.kind === "passiveAbilityCheckRollMode" &&
-      procedure.execution.abilityCheck.mode === mode &&
-      procedure.execution.abilityCheck.scope.kind === "endingCondition" &&
-      procedure.execution.abilityCheck.scope.condition === condition,
+  return characterUnitProcedureExecutionsOfKind(
+    actor.origin.execution,
+    "passiveAbilityCheckRollMode",
+  ).some(
+    ({ abilityCheck }) =>
+      abilityCheck.mode === mode &&
+      abilityCheck.scope.kind === "endingCondition" &&
+      abilityCheck.scope.condition === condition,
   );
 }
 

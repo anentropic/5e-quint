@@ -2,6 +2,12 @@
 
 ## 0.2.0 — unreleased
 
+- Apply species traits to a character built from a character sheet. A sheet
+  binds its species traits as support profiles, and Halfling Luck, Brave,
+  Dwarven Resilience's save Advantage, Gnomish Cunning and Goliath Powerful
+  Build read only Unit feature bindings, so a sheet-built character lost them.
+  They now read either binding.
+
 - Start the battle's opening turn like every other turn, so the first
   participant gets its start-of-turn effects, such as a Death Saving Throw at
   0 Hit Points or Heroic Warrior's Heroic Inspiration. When that start needs a

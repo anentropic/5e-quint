@@ -32,7 +32,7 @@ import type {
 } from "../battle-state-execution.ts";
 import type { RuntimeSpellProcedureExecution } from "../character-execution.ts";
 import { passiveSavingThrowRollModeDisposition } from "../unit-feature-execution-constants.ts";
-import { characterUnitProcedureBindings } from "../character-execution-queries.ts";
+import { characterUnitProcedureExecutionsOfKind } from "../character-execution-queries.ts";
 import { hasDodgeBenefit } from "./dodge-benefit.ts";
 import {
   activeCreatureSizeChangeEffect,
@@ -194,22 +194,20 @@ function passiveFeatureContributions(
   avoidsCondition: Condition | undefined,
 ): readonly RollModeContribution[] {
   if (target.origin.kind !== "character") return [];
-  const binding = characterUnitProcedureBindings(target.origin.execution).find(
-    ({ procedure }) =>
-      procedure.kind === "unitFeature" &&
-      procedure.execution.kind === "passiveSavingThrowRollMode" &&
+  const targetIncapacitated = isIncapacitated(target.conditions);
+  const execution = characterUnitProcedureExecutionsOfKind(
+    target.origin.execution,
+    "passiveSavingThrowRollMode",
+  ).find(
+    ({ savingThrow }) =>
       passiveSavingThrowRollModeDisposition(
-        procedure.execution.savingThrow,
+        savingThrow,
         ability,
         avoidsCondition,
-        isIncapacitated(target.conditions),
+        targetIncapacitated,
       ) === "projected",
   );
-  const execution =
-    binding?.procedure.kind === "unitFeature"
-      ? binding.procedure.execution
-      : undefined;
-  return execution?.kind !== "passiveSavingThrowRollMode"
+  return execution === undefined
     ? []
     : rollModeContributions("passiveFeature", execution.savingThrow.mode);
 }

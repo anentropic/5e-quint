@@ -215,6 +215,59 @@ export function characterUnitProcedureBindings(
   );
 }
 
+/** A Unit procedure execution that carries its own kind. */
+type CharacterUnitProcedureKindedExecution = Extract<
+  UnitFeatureProcedureExecution | UnitSupportProcedureExecution,
+  { readonly kind: string }
+>;
+
+/**
+ * An execution kind that both binding forms carry. Restricting the query to
+ * these kinds makes a kind renamed on one side a compile error rather than a
+ * binding the query silently stops reading.
+ */
+type CharacterUnitProcedureSharedKind = Extract<
+  UnitFeatureProcedureExecution,
+  { readonly kind: string }
+>["kind"] &
+  Extract<UnitSupportProcedureExecution, { readonly kind: string }>["kind"];
+
+/**
+ * The character's Unit procedure executions of one kind, whether bound as a
+ * Unit feature or as a support profile. A character built from a sheet binds
+ * its species traits as support profiles, so a rule that reads a trait reads
+ * both bindings.
+ */
+export function characterUnitProcedureExecutionsOfKind<
+  Kind extends CharacterUnitProcedureSharedKind,
+>(
+  execution: CharacterExecutionState,
+  kind: Kind,
+): readonly Extract<
+  CharacterUnitProcedureKindedExecution,
+  { readonly kind: Kind }
+>[] {
+  return characterUnitProcedureBindings(execution).flatMap(({ procedure }) => {
+    const candidate = procedure.execution;
+    return typeof candidate === "object" &&
+      isUnitProcedureExecutionOfKind(candidate, kind)
+      ? [candidate]
+      : [];
+  });
+}
+
+function isUnitProcedureExecutionOfKind<
+  Kind extends CharacterUnitProcedureSharedKind,
+>(
+  candidate: CharacterUnitProcedureKindedExecution,
+  kind: Kind,
+): candidate is Extract<
+  CharacterUnitProcedureKindedExecution,
+  { readonly kind: Kind }
+> {
+  return candidate.kind === kind;
+}
+
 export function characterUnitProcedure(
   execution: CharacterExecutionState,
   procedureRef: BattleProcedureExecutionRef,
