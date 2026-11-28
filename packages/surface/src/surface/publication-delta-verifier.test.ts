@@ -1,4 +1,3 @@
-import { STRICT_OBJECT_PARSE_OPTIONS } from "@dnd/shared/json-schema";
 import {
   mkdirSync,
   mkdtempSync,
@@ -11,16 +10,17 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 
-import { Schema } from "effect";
 import { describe, expect, test } from "vitest";
 
 import {
   SURFACE_PUBLICATION_DELTA_CERTIFICATE_PATH,
   verifySurfacePublicationDelta,
 } from "./publication-delta-verifier.ts";
-import { locateComparisonOngoingMechanicsOwner } from "./publication-delta-verifier-core.ts";
+import {
+  locateComparisonOngoingMechanicsOwner,
+  verifySurfacePublicationDeltaWithAuthority,
+} from "./publication-delta-verifier-core.ts";
 import { verifySurfacePublicationDeltaFixture } from "./publication-delta-verifier.test-support.ts";
-import { PublishedSrdSurfaceSchema } from "./schema.ts";
 
 const repositoryRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -59,6 +59,7 @@ function withFixture(
   options: {
     readonly repoRoot?: string;
     readonly reviewMutatedCertificate?: boolean;
+    readonly holdToCurrentSurfaceContract?: true;
   } = {},
 ): ReturnType<typeof verifySurfacePublicationDelta> {
   const fixtureRoot = mkdtempSync("/tmp/surface-delta-test-");
@@ -83,7 +84,7 @@ function withFixture(
       publicationDir,
       certificatePath: fixtureCertificatePath,
     });
-    return verifySurfacePublicationDeltaFixture({
+    const verification = {
       repoRoot: options.repoRoot ?? repositoryRoot,
       publicationDir,
       reviewedCertificate: {
@@ -92,7 +93,15 @@ function withFixture(
           ? sha256(readFileSync(fixtureCertificatePath))
           : reviewedCertificateSha256,
       },
-    });
+    };
+    return options.holdToCurrentSurfaceContract === true
+      ? verifySurfacePublicationDeltaWithAuthority({
+          repoRoot: verification.repoRoot,
+          publicationDir,
+          certificateAuthority: verification.reviewedCertificate,
+          candidateAggregateContract: "currentSurfaceContract",
+        })
+      : verifySurfacePublicationDeltaFixture(verification);
   } finally {
     rmSync(fixtureRoot, { force: true, recursive: true });
   }
@@ -176,6 +185,36 @@ function fixtureSchemaDocument(
 function fixtureObject(value: unknown, label: string): Record<string, unknown> {
   if (!isFixtureObject(value)) throw new Error(`Expected ${label} object`);
   return value;
+}
+
+type FixtureRecord = Readonly<Record<string, unknown>> & {
+  readonly id: string;
+};
+
+type FixtureAggregate = Readonly<Record<string, unknown>> & {
+  readonly units: readonly FixtureRecord[];
+  readonly statBlocks: readonly FixtureRecord[];
+};
+
+/**
+ * Reads the pinned fixture aggregate by shape only. The fixture predates the
+ * current Surface contract, so decoding it with today's schema would fail on
+ * every later required field rather than on what the test mutates.
+ */
+function historicalFixtureAggregate(text: string): FixtureAggregate {
+  const aggregate = fixtureObject(JSON.parse(text), "aggregate");
+  const records = (key: "units" | "statBlocks"): FixtureRecord[] =>
+    fixtureArrayField(aggregate, key).map((value) => {
+      const record = fixtureObject(value, `${key} record`);
+      const id = record["id"];
+      if (typeof id !== "string") throw new Error(`Expected ${key} record id`);
+      return { ...record, id };
+    });
+  return {
+    ...aggregate,
+    units: records("units"),
+    statBlocks: records("statBlocks"),
+  };
 }
 
 function fixtureObjectField(
@@ -730,10 +769,9 @@ function certifyMembershipDelta(
   kind: "added" | "removed",
 ): void {
   const aggregatePath = join(paths.publicationDir, "srd-surface.json");
-  const aggregate = Schema.decodeUnknownSync(
-    PublishedSrdSurfaceSchema,
-    STRICT_OBJECT_PARSE_OPTIONS,
-  )(JSON.parse(readFileSync(aggregatePath, "utf8")));
+  const aggregate = historicalFixtureAggregate(
+    readFileSync(aggregatePath, "utf8"),
+  );
   const source = aggregate.units.find((record) => record.id === "acid_splash");
   if (source === undefined)
     throw new Error("Expected acid_splash fixture unit");
@@ -985,6 +1023,24 @@ describe("Surface publication delta verifier", () => {
     });
   }, 180_000);
 
+  test("holds a working-tree candidate to the current Surface contract", () => {
+    const result = withFixture(() => undefined, {
+      holdToCurrentSurfaceContract: true,
+    });
+
+    expect(result.tag).toBe("invalid");
+    if (result.tag === "invalid") {
+      expect(result.issues).toEqual([
+        expect.objectContaining({
+          kind: "aggregate-invalid",
+          message: expect.stringContaining(
+            "does not decode under the current Surface contract",
+          ),
+        }),
+      ]);
+    }
+  }, 180_000);
+
   test("reports when the baseline commit is unavailable in checkout history", () => {
     const fixtureRoot = mkdtempSync("/tmp/surface-delta-history-test-");
     try {
@@ -1057,10 +1113,7 @@ describe("Surface publication delta verifier", () => {
   test("rejects aggregate membership mutation", () => {
     const result = withFixture(({ publicationDir }) => {
       const path = join(publicationDir, "srd-surface.json");
-      const aggregate = Schema.decodeUnknownSync(
-        PublishedSrdSurfaceSchema,
-        STRICT_OBJECT_PARSE_OPTIONS,
-      )(JSON.parse(readFileSync(path, "utf8")));
+      const aggregate = historicalFixtureAggregate(readFileSync(path, "utf8"));
       writeFileSync(
         path,
         `${JSON.stringify({
@@ -1082,10 +1135,7 @@ describe("Surface publication delta verifier", () => {
   test("rejects a stale baseline record substituted for a reviewed candidate delta", () => {
     const result = withFixture(({ publicationDir }) => {
       const path = join(publicationDir, "srd-surface.json");
-      const aggregate = Schema.decodeUnknownSync(
-        PublishedSrdSurfaceSchema,
-        STRICT_OBJECT_PARSE_OPTIONS,
-      )(JSON.parse(readFileSync(path, "utf8")));
+      const aggregate = historicalFixtureAggregate(readFileSync(path, "utf8"));
       const staleRecord = recordById(baselineAggregate(), "shining_smite");
       writeFileSync(
         path,
@@ -1174,10 +1224,9 @@ describe("Surface publication delta verifier", () => {
         removeReviewedAcidSplashDelta(paths);
         const { publicationDir } = paths;
         const path = join(publicationDir, "srd-surface.json");
-        const aggregate = Schema.decodeUnknownSync(
-          PublishedSrdSurfaceSchema,
-          STRICT_OBJECT_PARSE_OPTIONS,
-        )(JSON.parse(readFileSync(path, "utf8")));
+        const aggregate = historicalFixtureAggregate(
+          readFileSync(path, "utf8"),
+        );
         writeFileSync(
           path,
           `${JSON.stringify({
@@ -1200,10 +1249,7 @@ describe("Surface publication delta verifier", () => {
   test("rejects an unclassified authored-record addition", () => {
     const result = withFixture(({ publicationDir }) => {
       const path = join(publicationDir, "srd-surface.json");
-      const aggregate = Schema.decodeUnknownSync(
-        PublishedSrdSurfaceSchema,
-        STRICT_OBJECT_PARSE_OPTIONS,
-      )(JSON.parse(readFileSync(path, "utf8")));
+      const aggregate = historicalFixtureAggregate(readFileSync(path, "utf8"));
       const source = aggregate.units.find(
         (record) => record.id === "acid_splash",
       );
@@ -1228,10 +1274,9 @@ describe("Surface publication delta verifier", () => {
         removeReviewedAcidSplashDelta(paths);
         const { publicationDir } = paths;
         const path = join(publicationDir, "srd-surface.json");
-        const aggregate = Schema.decodeUnknownSync(
-          PublishedSrdSurfaceSchema,
-          STRICT_OBJECT_PARSE_OPTIONS,
-        )(JSON.parse(readFileSync(path, "utf8")));
+        const aggregate = historicalFixtureAggregate(
+          readFileSync(path, "utf8"),
+        );
         writeFileSync(
           path,
           `${JSON.stringify({
@@ -1392,10 +1437,7 @@ describe("Surface publication delta verifier", () => {
   test("rejects a copied record substituted for a distinct reviewed delta", () => {
     const result = withFixture(({ publicationDir }) => {
       const path = join(publicationDir, "srd-surface.json");
-      const aggregate = Schema.decodeUnknownSync(
-        PublishedSrdSurfaceSchema,
-        STRICT_OBJECT_PARSE_OPTIONS,
-      )(JSON.parse(readFileSync(path, "utf8")));
+      const aggregate = historicalFixtureAggregate(readFileSync(path, "utf8"));
       const copiedRecord = aggregate.units.find(
         (record) => record.id === "continual_flame",
       );

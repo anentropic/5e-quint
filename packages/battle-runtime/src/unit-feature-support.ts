@@ -116,12 +116,6 @@ export const D20_TEST_NATURAL_ONE_REROLL_SUPPORT_PROFILE =
   "d20TestNaturalOneReroll";
 export const PASSIVE_SAVING_THROW_ROLL_MODE_SUPPORT_PROFILE =
   "passiveSavingThrowRollMode";
-const PASSIVE_CONDITION_SAVING_THROW_ROLL_MODE_CONDITIONS = [
-  "poisoned",
-  "frightened",
-] as const satisfies ReadonlyArray<Condition>;
-type PassiveConditionSavingThrowRollModeCondition =
-  (typeof PASSIVE_CONDITION_SAVING_THROW_ROLL_MODE_CONDITIONS)[number];
 export const PASSIVE_ABILITY_CHECK_ROLL_MODE_SUPPORT_PROFILE =
   "passiveAbilityCheckRollMode";
 export const PASSIVE_DAMAGE_RESISTANCE_SUPPORT_PROFILE =
@@ -144,6 +138,7 @@ import {
   CUNNING_STRIKE_OPTION_GRANT_SUPPORT_PROFILE,
   CUNNING_STRIKE_SUPPORT_PROFILE,
   DRACONIC_ANCESTRY_DAMAGE_TYPE_HOLE_ID,
+  SLEEPLESS_SUPPORT_PROFILE,
   HIDE_ACTION_OBSCUREMENT_PERMISSION_SUPPORT_PROFILE,
   HUNTERS_PREY_SUPPORT_PROFILE,
   LIGHT_EXTRA_ATTACK_DAMAGE_ABILITY_MODIFIER_SUPPORT_PROFILE,
@@ -181,6 +176,8 @@ import {
   type OngoingFeatureExtensionTrigger,
   type OngoingFeatureLifecycleProfile,
   type OngoingFeatureRollModifier,
+  PASSIVE_CONDITION_SAVING_THROW_ROLL_MODE_CONDITIONS,
+  type PassiveConditionSavingThrowRollModeCondition,
   type PassiveSavingThrowRollModeProfile,
   type PassiveSpeedBonusCondition,
   type PassiveSpeedBonusProfile,
@@ -277,6 +274,7 @@ export const BATTLE_UNIT_SUPPORT_PROFILES = [
   D20_TEST_DIE_MINIMUM_SUPPORT_PROFILE,
   CREATURE_SPACE_MOVEMENT_PERMISSION_SUPPORT_PROFILE,
   HIDE_ACTION_OBSCUREMENT_PERMISSION_SUPPORT_PROFILE,
+  SLEEPLESS_SUPPORT_PROFILE,
   WEAPON_DAMAGE_DICE_ROLL_CHOICE_SUPPORT_PROFILE,
   ATTACK_DAMAGE_DIE_FLOOR_SUPPORT_PROFILE,
   LIGHT_EXTRA_ATTACK_DAMAGE_ABILITY_MODIFIER_SUPPORT_PROFILE,
@@ -699,6 +697,9 @@ export type BattleHideActionObscurementPermissionSupportProfile = {
   readonly kind: typeof HIDE_ACTION_OBSCUREMENT_PERMISSION_SUPPORT_PROFILE;
   readonly permission: HideActionObscurementPermissionProfile;
 };
+export type BattleSleeplessSupportProfile = {
+  readonly kind: typeof SLEEPLESS_SUPPORT_PROFILE;
+};
 export type BattleAlternateActionCostSupportProfile = {
   readonly kind: "alternateActionCost";
   readonly from: {
@@ -1120,6 +1121,7 @@ export type BattleUnitSupportProfile =
   | BattleD20TestDieMinimumSupportProfile
   | BattleCreatureSpaceMovementPermissionSupportProfile
   | BattleHideActionObscurementPermissionSupportProfile
+  | BattleSleeplessSupportProfile
   | BattleAttackActionAttackCountScalingSupportProfile
   | BattleBonusActionDashTemporaryHitPointsSupportProfile
   | BattleFailedAbilityCheckResourceBoostSupportProfile
@@ -1167,6 +1169,7 @@ export type BattleUnitSupportProfile =
       | "d20TestDieMinimum"
       | "creatureSpaceMovementPermission"
       | "hideActionObscurementPermission"
+      | "sleepless"
       | "attackActionAttackCountScaling"
       | "bonusActionDashTemporaryHitPoints"
       | "failedAbilityCheckResourceBoost"
@@ -1623,6 +1626,10 @@ function battleUnitSupportProfilesForInputWithHuntersPreyAdmission(
             "hideActionObscurementPermission",
             () =>
               `Unsupported battle Hide action obscurement permission Unit hook: ${input.unit.id}.`,
+          ),
+          Match.when(
+            "sleepless",
+            () => `Unsupported battle sleepless Unit hook: ${input.unit.id}.`,
           ),
           Match.exhaustive,
         ),
@@ -3292,6 +3299,7 @@ export function battleD20TestNaturalOneRerollSupportForUnit(
         Match.when({ kind: "d20TestNaturalOneReroll" }, (facts) => facts),
         Match.when({ kind: "creatureSpaceMovementPermission" }, () => null),
         Match.when({ kind: "hideActionObscurementPermission" }, () => null),
+        Match.when({ kind: "sleepless" }, () => null),
         Match.exhaustive,
       ),
     ),
@@ -3438,6 +3446,7 @@ export function battleCreatureSpaceMovementPermissionSupportForUnit(
         ),
         Match.when({ kind: "d20TestNaturalOneReroll" }, () => null),
         Match.when({ kind: "hideActionObscurementPermission" }, () => null),
+        Match.when({ kind: "sleepless" }, () => null),
         Match.exhaustive,
       ),
     ),
@@ -3463,6 +3472,33 @@ export function battleHideActionObscurementPermissionSupportForUnit(
         ),
         Match.when({ kind: "creatureSpaceMovementPermission" }, () => null),
         Match.when({ kind: "d20TestNaturalOneReroll" }, () => null),
+        Match.when({ kind: "sleepless" }, () => null),
+        Match.exhaustive,
+      ),
+    ),
+    Match.exhaustive,
+  );
+}
+
+export type BattleSleeplessSupport =
+  | BattleSleeplessSupportProfile
+  | "unsupported"
+  | null;
+
+export function battleSleeplessSupportForUnit(
+  unit: AuthoredUnitSource,
+): BattleSleeplessSupport {
+  return Match.value(admitAtomicSpeciesTraitProcedure(unit)).pipe(
+    Match.when({ tag: "notBattleOwned" }, () => null),
+    Match.when({ tag: "rejected" }, ({ issues }) =>
+      issues[0].procedure === "sleepless" ? ("unsupported" as const) : null,
+    ),
+    Match.when({ tag: "admitted" }, ({ procedure }) =>
+      Match.value(procedure.facts).pipe(
+        Match.when({ kind: "sleepless" }, (facts) => facts),
+        Match.when({ kind: "creatureSpaceMovementPermission" }, () => null),
+        Match.when({ kind: "d20TestNaturalOneReroll" }, () => null),
+        Match.when({ kind: "hideActionObscurementPermission" }, () => null),
         Match.exhaustive,
       ),
     ),

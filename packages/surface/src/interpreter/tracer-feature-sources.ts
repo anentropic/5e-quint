@@ -20,6 +20,7 @@ import type {
   OnHitTriggerMechanics,
   PassiveMechanics,
   RestTriggeredHeroicInspirationMechanics,
+  SleeplessTranceMechanics,
   SpeciesTraitRecord,
   TriggeredReactionAbilityMechanics,
   TriggeredReplacementMechanics,
@@ -420,7 +421,9 @@ export function traceSpeciesTraitUnit(trait: SpeciesTraitRecord): TraceDraft {
                     nodes,
                     ids,
                   )
-                : tracePassiveOrActivated(trait.mechanics, nodes, edges, ids);
+                : trait.mechanics.family === "sleepless_trance"
+                  ? traceSleeplessTranceMechanics(trait.mechanics, nodes, ids)
+                  : tracePassiveOrActivated(trait.mechanics, nodes, edges, ids);
   edges.push({ from: rootId, to: procId, relation: "roots" });
 
   return {
@@ -545,6 +548,25 @@ function traceRestTriggeredHeroicInspirationMechanics(
     label:
       `${mechanics.family}\n${mechanics.trigger.kind}: ${mechanics.trigger.rest}\n` +
       mechanics.grant.kind,
+  });
+  return procId;
+}
+
+function traceSleeplessTranceMechanics(
+  mechanics: SleeplessTranceMechanics,
+  nodes: TraceNode[],
+  ids: IdGen,
+): TraceNodeId {
+  const procId = ids("sleepless-trance");
+  nodes.push({
+    id: procId,
+    category: "procedure",
+    atomKind: mechanics.family,
+    label:
+      `${mechanics.family}\nsleep needed: ${mechanics.sleep.needed}\n` +
+      `magic can impose sleep: ${mechanics.sleep.magicCanImpose}\n` +
+      `long rest: ${mechanics.longRest.kind} ${mechanics.longRest.minimumHours}h, ` +
+      `consciousness ${mechanics.longRest.consciousness}`,
   });
   return procId;
 }

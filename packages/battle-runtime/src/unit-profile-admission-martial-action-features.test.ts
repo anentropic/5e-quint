@@ -121,6 +121,7 @@ import {
 } from "./battle-runtime.test-support.ts";
 import type { UnitRecord } from "./unit-profile-admission.test-support.ts";
 import { battleInitializationIssueMessage } from "./battle-reducer/api-lifecycle.ts";
+import { PASSIVE_CONDITION_SAVING_THROW_ROLL_MODE_CONDITIONS } from "./unit-feature-execution-constants.ts";
 
 function d20RerollMechanics(unit: UnitRecord) {
   if (
@@ -159,7 +160,10 @@ function dangerSenseMechanics(unit: UnitRecord) {
 }
 
 const UNSUPPORTED_PASSIVE_SAVE_CONDITIONS = CONDITIONS.filter(
-  (condition) => condition !== "poisoned" && condition !== "frightened",
+  (condition) =>
+    !PASSIVE_CONDITION_SAVING_THROW_ROLL_MODE_CONDITIONS.some(
+      (supported) => supported === condition,
+    ),
 );
 const speciesGoliathPowerfulBuildUnitId = "species_goliath_powerful_build";
 const speciesHalflingNimblenessUnitId = "species_halfling_nimbleness";

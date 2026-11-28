@@ -256,6 +256,16 @@ export type SurfacePublicationDeltaVerificationResult =
       readonly issues: readonly PublicationDeltaVerificationIssue[];
     };
 
+/**
+ * The contract the candidate aggregate must satisfy. Every candidate must
+ * validate under its own published JSON Schema. A candidate from the working
+ * tree must also decode under the current Surface contract; a pinned
+ * historical snapshot predates that contract, so only its own schema applies.
+ */
+export type SurfacePublicationCandidateAggregateContract =
+  | "currentSurfaceContract"
+  | "ownPublishedSchema";
+
 export type SurfacePublicationDeltaCoreOptions = {
   readonly repoRoot: string;
   readonly publicationDir?: string;
@@ -263,6 +273,7 @@ export type SurfacePublicationDeltaCoreOptions = {
     readonly path: string;
     readonly sha256: string;
   };
+  readonly candidateAggregateContract: SurfacePublicationCandidateAggregateContract;
 };
 
 type ArtifactBytes =
@@ -3110,13 +3121,16 @@ function compareAggregateSnapshots(
   baseline: ParsedArtifact,
   candidate: ParsedArtifact,
   expected: SurfacePublicationDeltaCertificate["artifacts"]["aggregate"]["evidence"],
+  candidateAggregateContract: SurfacePublicationCandidateAggregateContract,
 ): void {
   const artifacts = validAggregateArtifacts(issues, baseline, candidate);
   if (artifacts === undefined) return;
-  appendCandidateAggregateDecodeIssue(
-    issues,
-    candidateAggregateDecode(artifacts.candidate.value),
-  );
+  if (candidateAggregateContract === "currentSurfaceContract") {
+    appendCandidateAggregateDecodeIssue(
+      issues,
+      candidateAggregateDecode(artifacts.candidate.value),
+    );
+  }
   const projections = aggregateSnapshotProjections(
     issues,
     artifacts.baseline.value,
@@ -3729,6 +3743,7 @@ export function verifySurfacePublicationDeltaWithAuthority(
     baselineAggregate,
     candidateAggregate,
     expected.artifacts.aggregate.evidence,
+    options.candidateAggregateContract,
   );
   validateSchemaPair(
     issues,

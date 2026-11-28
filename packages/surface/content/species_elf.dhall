@@ -11,7 +11,12 @@ let elf =
       , size = { kind = "fixed", size = "medium" }
       , species = "elf"
       , speed.walkFeet = 30
-      , traits = { darkvision = "elf_darkvision" }
+      , traits =
+        { darkvision = "elf_darkvision"
+        , feyAncestry = "species_elf_fey_ancestry"
+        , keenSenses = "species_elf_keen_senses"
+        , trance = "species_elf_trance"
+        }
       }
 
 in  elf

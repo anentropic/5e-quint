@@ -44,6 +44,7 @@ const canonicalProcedures = [
       },
     },
   ],
+  ["species_elf_trance", { kind: "sleepless" }],
 ] as const;
 
 describe("atomic species-trait procedure admission", () => {
@@ -106,6 +107,7 @@ describe("atomic species-trait procedure admission", () => {
         action: "search",
       },
     ],
+    ["species_elf_trance", { sleep: { needed: true, magicCanImpose: false } }],
   ] as const)("%s rejects malformed represented mechanics", (unitId, patch) => {
     const unit = unitLibrary.requireUnit(unitId);
     if (unit.kind !== "species_trait") {
@@ -201,6 +203,25 @@ describe("atomic species-trait procedure admission", () => {
     expect(admitAtomicSpeciesTraitProcedure(malformed)).toMatchObject({
       tag: "rejected",
       issues: [{ failedFact: "hideAction" }, { failedFact: "hideObscurement" }],
+    });
+  });
+
+  test("accumulates independent malformed Trance branches", () => {
+    const unit = unitLibrary.requireUnit("species_elf_trance");
+    if (unit.kind !== "species_trait") {
+      throw new Error("Expected a species-trait record.");
+    }
+    const malformed = unitMechanicsVariant(unit, {
+      id: "synthetic_trance_multiple_malformed_branches",
+      mechanics: {
+        ...unit.mechanics,
+        sleep: { needed: true, magicCanImpose: true },
+      },
+    });
+
+    expect(admitAtomicSpeciesTraitProcedure(malformed)).toMatchObject({
+      tag: "rejected",
+      issues: [{ failedFact: "sleepNeed" }, { failedFact: "magicalSleep" }],
     });
   });
 

@@ -33,6 +33,7 @@ const UNIT_PROCEDURE_EXPOSURE = {
   cunningStrikeOptionGrant: boundContinuation(),
   d20TestDieMinimum: boundContinuation(),
   d20TestNaturalOneReroll: boundContinuation(),
+  sleepless: internal(),
   druidWildCompanionSpellCast: tool("cast_spell"),
   druidWildShapeKnownForm: tools("assume_beast_form", "revert_beast_form"),
   enemyZeroHitPointTemporaryHitPoints: internal(),
@@ -112,6 +113,7 @@ const SHARED_UNIT_PROCEDURE_EXPOSURE = {
     UNIT_PROCEDURE_EXPOSURE["creatureSpaceMovementPermission"],
   d20TestDieMinimum: UNIT_PROCEDURE_EXPOSURE["d20TestDieMinimum"],
   d20TestNaturalOneReroll: UNIT_PROCEDURE_EXPOSURE["d20TestNaturalOneReroll"],
+  sleepless: UNIT_PROCEDURE_EXPOSURE["sleepless"],
   druidWildShapeKnownForm: UNIT_PROCEDURE_EXPOSURE["druidWildShapeKnownForm"],
   enemyZeroHitPointTemporaryHitPoints:
     UNIT_PROCEDURE_EXPOSURE["enemyZeroHitPointTemporaryHitPoints"],

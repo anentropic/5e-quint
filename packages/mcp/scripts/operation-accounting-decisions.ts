@@ -3733,6 +3733,15 @@ export const OPERATION_ACCOUNTING = {
       ),
       REASONS.unitContinuation,
     ),
+    sleepless: account(
+      "internal",
+      "sleepless",
+      at(
+        "packages/battle-runtime/src/battle-reducer/spells-resolve-save-gates.ts",
+        "hitPointBudgetConditionTargetIsSleepless",
+      ),
+      REASONS.unitFact,
+    ),
     druidWildShapeKnownForm: account(
       "operation",
       "druidWildShapeKnownForm",
@@ -4251,6 +4260,15 @@ export const OPERATION_ACCOUNTING = {
         "castWildCompanion",
       ),
       REASONS.unitActivation,
+    ),
+    sleepless: account(
+      "internal",
+      "sleepless",
+      at(
+        "packages/battle-runtime/src/battle-reducer/spells-resolve-save-gates.ts",
+        "hitPointBudgetConditionTargetIsSleepless",
+      ),
+      REASONS.unitFact,
     ),
     druidWildShapeKnownForm: account(
       "operation",

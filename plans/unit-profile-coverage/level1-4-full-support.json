@@ -12955,8 +12955,8 @@
         "group": "species-trait-refs",
         "label": "SRD species trait refs",
         "metrics": {
-          "denominator": 22,
-          "numerator": 22,
+          "denominator": 25,
+          "numerator": 25,
           "percent": "100%"
         },
         "rows": [
@@ -13022,6 +13022,33 @@
             "sourceRecordPath": "packages/surface/content/darkvision_elf.json",
             "status": "installed",
             "unitId": "elf_darkvision"
+          },
+          {
+            "kind": "species_trait",
+            "ownerUnitId": "species_elf",
+            "ready": true,
+            "relation": "species.traits.feyAncestry",
+            "sourceRecordPath": "packages/surface/content/species_elf_fey_ancestry.json",
+            "status": "installed",
+            "unitId": "species_elf_fey_ancestry"
+          },
+          {
+            "kind": "species_trait",
+            "ownerUnitId": "species_elf",
+            "ready": true,
+            "relation": "species.traits.keenSenses",
+            "sourceRecordPath": "packages/surface/content/species_elf_keen_senses.json",
+            "status": "installed",
+            "unitId": "species_elf_keen_senses"
+          },
+          {
+            "kind": "species_trait",
+            "ownerUnitId": "species_elf",
+            "ready": true,
+            "relation": "species.traits.trance",
+            "sourceRecordPath": "packages/surface/content/species_elf_trance.json",
+            "status": "installed",
+            "unitId": "species_elf_trance"
           },
           {
             "kind": "species_trait",
@@ -13160,7 +13187,7 @@
           }
         ],
         "rowsByStatus": {
-          "installed": 22
+          "installed": 25
         }
       },
       {
@@ -13899,8 +13926,8 @@
       }
     ],
     "metrics": {
-      "denominator": 117,
-      "numerator": 117,
+      "denominator": 120,
+      "numerator": 120,
       "percent": "100%"
     },
     "openBlockerCount": 0

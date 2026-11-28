@@ -1,0 +1,36 @@
+{
+  "id": "species_elf_keen_senses",
+  "kind": "species_trait",
+  "mechanics": {
+    "family": "passive",
+    "grants": [
+      {
+        "kind": "grant_proficiency",
+        "proficiency": {
+          "count": 1,
+          "kind": "choice",
+          "options": [
+            {
+              "kind": "skill",
+              "skill": "insight"
+            },
+            {
+              "kind": "skill",
+              "skill": "perception"
+            },
+            {
+              "kind": "skill",
+              "skill": "survival"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "name": "Keen Senses",
+  "provenance": {
+    "kind": "srd-5.2.1",
+    "section": "character-origins.md#Elf"
+  },
+  "species": "elf"
+}

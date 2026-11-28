@@ -112,7 +112,14 @@ const SPECIES_REACHABILITY_OPTIONS = {
     },
   },
   species_dwarf: {},
-  species_elf: {},
+  species_elf: {
+    preferredOptionIdsBySource: {
+      [testUnitChoiceSourceKey(
+        authoredUnitId("species_elf_keen_senses"),
+        SPECIES_TRAIT_PROFICIENCY_CHOICE_KEY,
+      )]: [creationChoiceOptionId("insight")],
+    },
+  },
   species_halfling: {},
   species_goliath: {},
   species_orc: {},

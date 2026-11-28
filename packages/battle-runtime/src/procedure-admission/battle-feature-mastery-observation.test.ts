@@ -100,6 +100,8 @@ const EXPECTED_OBSERVED_ROOT_IDS = [
   "rogue_uncanny_dodge",
   "species_dragonborn_breath_weapon",
   "species_dragonborn_damage_resistance",
+  "species_elf_fey_ancestry",
+  "species_elf_trance",
   "species_gnome_gnomish_cunning",
   "species_goliath_powerful_build",
   "species_halfling_brave",
@@ -134,6 +136,7 @@ const EXPECTED_CONTEXTUAL_OR_SUPPORT_ONLY_ROOT_IDS = [
   "ranger_hunters_lore",
   "rogue_cunning_action",
   "species_dragonborn_damage_resistance",
+  "species_elf_trance",
 ] as const;
 
 const CANONICAL_BATTLE_VISIBLE_SUBSET_ROOT_IDS = [

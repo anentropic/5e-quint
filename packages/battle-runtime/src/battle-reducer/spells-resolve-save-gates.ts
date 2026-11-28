@@ -35,7 +35,10 @@ import {
   allocateBattleEffectOccurrencesForCreature,
   type BattleSourcedEffectOccurrenceTemplate,
 } from "../effect-execution-ref.ts";
-import { characterUnitProcedureBindings } from "../character-execution-queries.ts";
+import {
+  characterUnitProcedureBindings,
+  characterUnitProcedureExecutionsOfKind,
+} from "../character-execution-queries.ts";
 import { isCantripSpellAccess } from "../procedure-execution/spell-invocation-vocabulary.ts";
 import {
   damageDispositionFillFor,
@@ -4238,7 +4241,21 @@ function hitPointBudgetConditionTargetAutomaticallySucceeds(
 ): boolean {
   return (
     facts.doesNotSleep ||
+    hitPointBudgetConditionTargetIsSleepless(state, targetId) ||
     hitPointBudgetConditionTargetHasExhaustionImmunity(state, targetId)
+  );
+}
+
+/** A character whose own trait says it doesn't sleep, without a table fact. */
+function hitPointBudgetConditionTargetIsSleepless(
+  state: BattleState,
+  targetId: CombatantId,
+): boolean {
+  const target = state.combatants.get(targetId);
+  return (
+    target?.origin.kind === "character" &&
+    characterUnitProcedureExecutionsOfKind(target.origin.execution, "sleepless")
+      .length > 0
   );
 }
 

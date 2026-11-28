@@ -12,6 +12,10 @@ export type SurfacePublicationDeltaFixtureOptions = {
   };
 };
 
+/**
+ * Verifies a fixture publication. Fixtures are pinned historical snapshots, so
+ * their aggregate is held to its own published schema, not today's contract.
+ */
 export function verifySurfacePublicationDeltaFixture(
   options: SurfacePublicationDeltaFixtureOptions,
 ): SurfacePublicationDeltaVerificationResult {
@@ -19,5 +23,6 @@ export function verifySurfacePublicationDeltaFixture(
     repoRoot: options.repoRoot,
     publicationDir: options.publicationDir,
     certificateAuthority: options.reviewedCertificate,
+    candidateAggregateContract: "ownPublishedSchema",
   });
 }

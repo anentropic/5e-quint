@@ -3942,7 +3942,12 @@ describe("character creation finalization", () => {
       },
       {
         speciesUnitId: "species_elf",
-        expectedTraitUnitIds: ["elf_darkvision"],
+        expectedTraitUnitIds: [
+          "elf_darkvision",
+          "species_elf_fey_ancestry",
+          "species_elf_keen_senses",
+          "species_elf_trance",
+        ],
       },
       {
         speciesUnitId: "species_halfling",
@@ -3965,7 +3970,26 @@ describe("character creation finalization", () => {
     ] as const;
 
     for (const testCase of cases) {
-      const draft = completeManifestDraftForSpecies(testCase);
+      const complete = completeManifestDraftForSpecies(testCase);
+      const draft =
+        testCase.speciesUnitId === "species_elf"
+          ? requireAcceptedBatch(
+              fillCreationHoles({
+                draft: complete,
+                unitLibrary,
+                expectedRevision: complete.revision,
+                fills: [
+                  choiceFill(
+                    testUnitHoleId(
+                      "species_elf_keen_senses",
+                      SPECIES_TRAIT_PROFICIENCY_CHOICE_KEY,
+                    ),
+                    "insight",
+                  ),
+                ],
+              }),
+            )
+          : complete;
       const result = finalizeCharacterDraft({ draft, unitLibrary });
 
       expect(result.tag, testCase.speciesUnitId).toBe("ready");

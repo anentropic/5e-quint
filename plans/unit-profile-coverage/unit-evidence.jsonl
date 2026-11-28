@@ -667,6 +667,9 @@
 {"unitId":"barbarian_instinctive_pounce","evidence":{"tag":"deterministic-admission-projection","taskId":"FACTORY-579","ownerPath":"packages/character-battle-runtime/src/barbarian-level7-sdk-handoff.test.ts"}}
 {"unitId":"barbarian_instinctive_pounce","evidence":{"tag":"selected-identity-replay","taskId":"FACTORY-579","ownerPath":"packages/character-battle-runtime/src/barbarian-level7-sdk-handoff.test.ts"}}
 {"unitId":"species_gnome_gnomish_cunning","evidence":{"tag":"deterministic-admission-projection","taskId":"GNOME-GNOMISH-CUNNING","ownerPath":"packages/battle-runtime/src/unit-profile-admission-gnomish-cunning.test.ts"}}
+{"unitId":"species_elf_fey_ancestry","evidence":{"tag":"deterministic-admission-projection","taskId":"SPECIES-ELF-TRAITS","ownerPath":"packages/character-battle-runtime/src/elf-species-traits-sdk-handoff.test.ts"}}
+{"unitId":"species_elf_trance","evidence":{"tag":"deterministic-admission-projection","taskId":"SPECIES-ELF-TRAITS","ownerPath":"packages/character-battle-runtime/src/elf-species-traits-sdk-handoff.test.ts"}}
+{"unitId":"species_elf_trance","evidence":{"tag":"deterministic-admission-projection","taskId":"SPECIES-ELF-TRAITS","ownerPath":"packages/battle-runtime/src/unit-profile-admission-elf-trance.test.ts"}}
 {"unitId":"mastery_graze","evidence":{"tag":"deterministic-admission-projection","taskId":"GH530-WEAPON-MASTERY-GRAZE","ownerPath":"packages/battle-runtime/src/battle-runtime-weapon-mastery-graze.test.ts"}}
 {"unitId":"mastery_graze","evidence":{"tag":"selected-identity-replay","taskId":"GH530-WEAPON-MASTERY-GRAZE","ownerPath":"packages/battle-runtime/src/weapon-mastery-graze-selected-identity.test.ts"}}
 {"unitId":"rogue_reliable_talent","evidence":{"tag":"deterministic-admission-projection","taskId":"GH695-D20-TEST-DIE-MINIMUM","ownerPath":"packages/character-battle-runtime/src/rogue-reliable-talent-sdk-handoff.test.ts"}}
