@@ -1,4 +1,4 @@
-// UNIT-PROFILE-COVERAGE: verification-owner:runtime-test unit-feature.passive-saving-throw-roll-mode
+// UNIT-PROFILE-COVERAGE: verification-owner:runtime-test unit-feature.passive-ability-check-roll-mode unit-feature.passive-saving-throw-roll-mode
 import { savingThrowTargetModifiers } from "../../battle-runtime/src/battle-reducer/saving-throw-modifier-collector.ts";
 import {
   grappleOutcomeFill,
