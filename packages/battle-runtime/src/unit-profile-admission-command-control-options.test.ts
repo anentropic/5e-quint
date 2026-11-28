@@ -1,3 +1,4 @@
+import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
 import { battleRuntimeSessionForTest } from "./battle-runtime-session.test-support.ts";
 // UNIT-IDENTITY-EVIDENCE: deterministic-admission-projection SRDINV50D2 command
 // UNIT-PROFILE-COVERAGE: verification-owner:runtime-test spell.invocation-command-drop-held-object spell.invocation-command-halt-grovel
@@ -1008,69 +1009,84 @@ describe("QMBT14 deterministic Command control option admission", () => {
     });
   });
 
-  test("a failed Command save opens the target's readied-spell Reaction", () => {
-    const spell = spellRecord(commandUnitId);
-    const session = spellBattleWithTargetReadiedRay({
-      preparedSpells: [spell],
-      spellSlots: [{ spellLevel: 1, count: 1 }],
-      casterClassLevels: [{ className: "bard", level: 1 }],
-    });
-    const act = spellAct({
-      session,
-      spellId: commandUnitId,
-      slotLevel: 1,
-    });
-    const targetHole = requireHole(act.initialHoles, "spellTargetList");
-    const commandOption = requireHole(
-      act.initialHoles,
-      "compelledBehaviorOptionChoice",
-    );
-    const targetFill = spellTargetListFill(
-      targetHole,
-      spellCasterId,
-      commandUnitId,
-      [spellTargetId],
-    );
-    const optionFill: Extract<
-      BattleFill,
-      { readonly kind: "compelledBehaviorOptionChoice" }
-    > = {
-      kind: "compelledBehaviorOptionChoice",
-      holeId: commandOption.holeId,
-      value: "grovel",
-    };
-    const needsSave = resolveBattleSubject({
-      state: session.state,
-      subject: act.subject,
-      fills: [targetFill, optionFill],
-    });
-    const savingThrow = requireResultHole(needsSave, "savingThrowOutcome");
-    const awaitingReaction = resolveBattleSubject({
-      state: session.state,
-      subject: act.subject,
-      fills: [
-        targetFill,
-        optionFill,
-        savingThrowOutcomeFill(savingThrow, [
-          {
-            targetId: spellTargetId,
-            succeeded: false,
-            withoutRoll: true as const,
-          },
-        ]),
-      ],
-    });
-    const declined = declineTargetReadiedSpellAfterFailedSave(awaitingReaction);
-    expect(
-      requireCombatant(declined.state, spellTargetId).activeEffects,
-    ).toEqual([
-      expect.objectContaining({
-        kind: "compelledNextTurnBehavior",
-        option: "grovel",
-        sourceCombatantId: spellCasterId,
-      }),
-    ]);
-  });
+  test.each([
+    { option: "grovel", appliedConditions: ["prone"] },
+    { option: "halt", appliedConditions: [] },
+  ] as const)(
+    "a failed Command $option save opens the target's readied-spell Reaction naming $appliedConditions",
+    ({ option, appliedConditions }) => {
+      const spell = spellRecord(commandUnitId);
+      const session = spellBattleWithTargetReadiedRay({
+        preparedSpells: [spell],
+        spellSlots: [{ spellLevel: 1, count: 1 }],
+        casterClassLevels: [{ className: "bard", level: 1 }],
+      });
+      const act = spellAct({
+        session,
+        spellId: commandUnitId,
+        slotLevel: 1,
+      });
+      const targetHole = requireHole(act.initialHoles, "spellTargetList");
+      const commandOption = requireHole(
+        act.initialHoles,
+        "compelledBehaviorOptionChoice",
+      );
+      const targetFill = spellTargetListFill(
+        targetHole,
+        spellCasterId,
+        commandUnitId,
+        [spellTargetId],
+      );
+      const optionFill: Extract<
+        BattleFill,
+        { readonly kind: "compelledBehaviorOptionChoice" }
+      > = {
+        kind: "compelledBehaviorOptionChoice",
+        holeId: commandOption.holeId,
+        value: option,
+      };
+      const needsSave = resolveBattleSubject({
+        state: session.state,
+        subject: act.subject,
+        fills: [targetFill, optionFill],
+      });
+      const savingThrow = requireResultHole(needsSave, "savingThrowOutcome");
+      const awaitingReaction = resolveBattleSubject({
+        state: session.state,
+        subject: act.subject,
+        fills: [
+          targetFill,
+          optionFill,
+          savingThrowOutcomeFill(savingThrow, [
+            {
+              targetId: spellTargetId,
+              succeeded: false,
+              withoutRoll: true as const,
+            },
+          ]),
+        ],
+      });
+      if (awaitingReaction.tag !== "needsHoles") {
+        throw new Error("Expected the failed-save Reaction window.");
+      }
+      expect(currentInterruptCheckpoint(awaitingReaction.state)).toMatchObject({
+        trigger: "saveFailed",
+        failedTargetIds: [spellTargetId],
+        appliedConditions,
+      });
+      const declined =
+        declineTargetReadiedSpellAfterFailedSave(awaitingReaction);
+      expect(
+        requireCombatant(declined.state, spellTargetId).activeEffects,
+      ).toEqual([
+        expect.objectContaining({
+          kind: "compelledNextTurnBehavior",
+          option,
+          sourceCombatantId: spellCasterId,
+        }),
+      ]);
+    },
+  );
 
   test("command Halt suppresses target turn Movement, Action, and Bonus Action until end turn", () => {
     const spell = spellRecord(commandUnitId);

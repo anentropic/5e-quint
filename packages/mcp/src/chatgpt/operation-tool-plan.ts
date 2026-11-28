@@ -204,6 +204,7 @@ export const CHATGPT_OPERATION_EXPOSURE = {
   interruptSelections: {
     castAttackHitBonusActionSpell: tool("cast_spell"),
     castTriggeredReactionSpell: tool("cast_spell"),
+    failedSaveReactionReroll: tool("reroll_failed_save"),
     opportunityAttack: tool("attack"),
     reactionRollOrDamageReduction: refine("reactionModifiers"),
     releaseReadiedAction: refine("readiedActionSubjects"),

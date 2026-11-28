@@ -26,7 +26,7 @@ import {
   type ReadonlyNonEmptyArray,
 } from "@dnd/shared/types";
 import type { DamageType } from "@dnd/surface/surface/types";
-import { Result } from "effect";
+import { Match, Result } from "effect";
 import type { BattleInterruptTrigger } from "../battle-interrupt-triggers.ts";
 import type { BattleSubject } from "../battle-subjects.ts";
 import type { BattleProcedureExecutionRef, CombatantId } from "../identity.ts";
@@ -152,8 +152,17 @@ import {
   type SpellTargeting,
   type BonusActionSpellBattleResolutionInput,
   type SaveDamageResult,
+  type SpellSelectedFailedSaveConditionEffect,
+  type BattleCompelledBehaviorOption,
 } from "../battle-state-execution.ts";
 import { isReadonlyArrayNonEmpty } from "effect/Array";
+import type { Condition } from "@dnd/shared/game-facts";
+import {
+  COMPELLED_GROVEL_CONDITION,
+  PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION,
+  SAVE_GATED_CONDITION_WITH_REPEAT_FAILED_SAVE_CONDITIONS,
+  STAGED_SAVE_CONDITION_FAILED_SAVE_CONDITIONS,
+} from "./domain-constants.ts";
 import { ATTACK_TARGET_HOLE_ID } from "./battle-runtime-protocol.ts";
 import { isTargetListSpellInvocation } from "./spells-invocation-guards.ts";
 import {
@@ -200,16 +209,17 @@ function maybeOpenSpellSaveFailedInterruptWindow(
   input: SaveGatedSpellResolutionInput,
   sourceProcedureRef: BattleProcedureExecutionRef,
   failedTargetIds: readonly CombatantId[],
+  appliedConditions: readonly Condition[],
 ): Extract<BattleResolutionResult, { readonly tag: "needsHoles" }> | null {
-  const triggeringTargetId = failedTargetIds[0];
-  if (triggeringTargetId === undefined) {
+  if (!isReadonlyArrayNonEmpty(failedTargetIds)) {
     return null;
   }
   return maybeOpenInterruptWindow(
     input.state,
     {
       trigger: "saveFailed",
-      targetId: triggeringTargetId,
+      failedTargetIds,
+      appliedConditions,
       sourceProcedureRef,
       continuation: spellReplayContinuation(input),
     },
@@ -690,6 +700,7 @@ export function resolvePersistentAreaSaveConditionSpellAct(input: {
     input.input,
     input.invocation.sourceProcedureRef,
     failedTargets,
+    [PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION],
   );
   if (saveFailedReactionWindow !== null) {
     return saveFailedReactionWindow;
@@ -768,6 +779,7 @@ function resolveFilledStagedSaveConditionSpellAct(
     input.input,
     input.invocation.sourceProcedureRef,
     failedTargets,
+    STAGED_SAVE_CONDITION_FAILED_SAVE_CONDITIONS,
   );
   if (saveFailedReactionWindow !== null) {
     return saveFailedReactionWindow;
@@ -962,6 +974,7 @@ export function resolveSaveGatedConditionWithRepeatSpellAct(input: {
     input.input,
     input.invocation.sourceProcedureRef,
     failedTargets,
+    SAVE_GATED_CONDITION_WITH_REPEAT_FAILED_SAVE_CONDITIONS,
   );
   if (saveFailedReactionWindow !== null) {
     return saveFailedReactionWindow;
@@ -1086,6 +1099,8 @@ export function resolveAbilityD20TestRollModeSaveGateSpellAct(input: {
     input.input,
     input.invocation.sourceProcedureRef,
     failedTargets,
+    // The failed save sets a roll mode and a damage penalty, not a condition.
+    [],
   );
   if (saveFailedReactionWindow !== null) {
     return saveFailedReactionWindow;
@@ -1577,6 +1592,9 @@ export function resolveSaveGateDamageSpellAct(input: {
     input.input,
     input.invocation.sourceProcedureRef,
     failedTargets,
+    saveGatedDamageFailedSaveConditionEffects(input.invocation).map(
+      (effect) => effect.condition,
+    ),
   );
   if (saveFailedReactionWindow !== null) {
     return saveFailedReactionWindow;
@@ -1647,7 +1665,7 @@ export function resolveSaveGateDamageSpellAct(input: {
     }
     /* v8 ignore stop -- @preserve */
     return needsHolesResult(input.input.state, input.input.subject, [
-      spellDamageHole(damageInvocation),
+      spellDamageHole(input.actorId, damageInvocation),
     ]);
   }
   const damageRoll = input.fillSet.damageRoll;
@@ -2238,20 +2256,46 @@ function applySaveGatedDamageFailedSaveConditionEffects(
   abilityChoice: Extract<SpellFillSet, { readonly tag: "ok" }>["abilityChoice"],
   heightenedSpellTargetId: CombatantId | undefined,
 ): BattleState {
-  return invocation.failedSaveConditionEffects.reduce((nextState, effect) => {
+  return saveGatedDamageFailedSaveConditionEffects(invocation).reduce(
+    (nextState, effect) =>
+      applyFailedSaveSpellConditionEffects(
+        nextState,
+        actorId,
+        failedTargets,
+        invocation,
+        effect,
+        abilityChoice,
+        heightenedSpellTargetId,
+      ),
+    state,
+  );
+}
+
+/** The conditions the chosen compelled behaviour applies to a creature that fails the save. */
+function compelledBehaviorOptionAppliedConditions(
+  option: BattleCompelledBehaviorOption,
+): readonly Condition[] {
+  return Match.value(option).pipe(
+    Match.when("grovel", () => [COMPELLED_GROVEL_CONDITION]),
+    Match.when("approach", () => []),
+    Match.when("drop", () => []),
+    Match.when("flee", () => []),
+    Match.when("halt", () => []),
+    Match.exhaustive,
+  );
+}
+
+/** The condition effects a failed save against save-gated damage applies: only those with no condition choice left open. */
+function saveGatedDamageFailedSaveConditionEffects(
+  invocation: Extract<
+    BattleExecutableSpellInvocation,
+    { readonly procedure: "saveGatedDamage" }
+  >,
+): readonly SpellSelectedFailedSaveConditionEffect[] {
+  return invocation.failedSaveConditionEffects.flatMap((effect) => {
     const selected = selectFailedSaveConditionEffect(effect, null);
-    return selected.tag !== "selected"
-      ? nextState
-      : applyFailedSaveSpellConditionEffects(
-          nextState,
-          actorId,
-          failedTargets,
-          invocation,
-          selected.effect,
-          abilityChoice,
-          heightenedSpellTargetId,
-        );
-  }, state);
+    return selected.tag === "selected" ? [selected.effect] : [];
+  });
 }
 
 function withObjectIgnitions(
@@ -2750,6 +2794,7 @@ export function resolveSaveGateConditionSpellAct(input: {
     input.input,
     input.invocation.sourceProcedureRef,
     failedTargets,
+    [selectedEffect.effect.condition],
   );
   if (saveFailedReactionWindow !== null) {
     return saveFailedReactionWindow;
@@ -2922,6 +2967,8 @@ export function resolveSaveGateConditionImmunitySpellAct(input: {
     input.input,
     input.invocation.sourceProcedureRef,
     failedTargets,
+    // The failed save grants condition immunities; it applies no condition.
+    [],
   );
   if (saveFailedReactionWindow !== null) {
     return saveFailedReactionWindow;
@@ -3119,6 +3166,9 @@ export function resolveCompelledNextTurnBehaviorSpellAct(input: {
     input.input,
     input.invocation.sourceProcedureRef,
     failedTargets,
+    compelledBehaviorOptionAppliedConditions(
+      input.fillSet.compelledBehaviorOptionChoice,
+    ),
   );
   if (saveFailedReactionWindow !== null) {
     return saveFailedReactionWindow;
@@ -3263,6 +3313,8 @@ export function resolveSaveGateAttackRollAdvantageSpellAct(input: {
     input.input,
     input.invocation.sourceProcedureRef,
     failedTargets,
+    // The failed save grants Advantage on attack rolls, not a condition.
+    [],
   );
   if (saveFailedReactionWindow !== null) {
     return saveFailedReactionWindow;

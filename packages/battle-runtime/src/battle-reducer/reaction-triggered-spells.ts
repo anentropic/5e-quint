@@ -116,7 +116,7 @@ export function triggeredReactionSpellChoices(
                     reactorId,
                     executableInvocation,
                   ),
-                  spellDamageHole(executableInvocation),
+                  spellDamageHole(reactorId, executableInvocation),
                 ]
               : executableInvocation.procedure ===
                     "spellCastInterruptionReaction" &&

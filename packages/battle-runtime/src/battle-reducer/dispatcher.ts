@@ -23,6 +23,7 @@ import { resolveLongCastingCommand } from "./long-casting-lifecycle.ts";
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.DRAGONS_BREATH_GRANTED_ACTION
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.FLAMING_SPHERE_HAZARD_LIFECYCLE BATTLE.SPELL.FEATHER_FALL_MITIGATION_LIFECYCLE BATTLE.SPELL.REACTION_CASTING_TIME BATTLE.PROTOCOL.INTERRUPT_STACK_RESUME_REPLAY
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.AFTER_HIT_DAMAGE_RIDERS
+// KERNEL-COVERAGE: runtime-owner BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 // KERNEL-COVERAGE: runtime-owner BATTLE.PROTOCOL.CONCENTRATION_BREAK_TEARDOWN
 // KERNEL-COVERAGE: runtime-owner BATTLE.SPELL.CLOUDKILL_AREA_HAZARD_LIFECYCLE
 // KERNEL-COVERAGE: runtime-owner CHARACTER.LIFECYCLE.LAYER_PROJECTION BATTLE.COMPOSITION.REDUCER_SPINE_CONTRACT BATTLE.COMPOSITION.REDUCER_ROUTE_CONNECTOR
@@ -35,6 +36,7 @@ import { resolveLongCastingCommand } from "./long-casting-lifecycle.ts";
 import { Match } from "effect";
 import { resolveReportReadyTriggerCommand } from "./ready-trigger.ts";
 import { optionalProperty } from "../optional-property.ts";
+import type { BattleInterruptTrigger } from "../battle-interrupt-triggers.ts";
 
 import { currentInterruptFrame, snapshotBattle } from "./battle-snapshot.ts";
 export {
@@ -121,7 +123,7 @@ import {
   resolveProtectionRelevantEffectSaveCommand,
 } from "./protection-charm-procedures.ts";
 import { resolveCastAttackHitBonusActionSpellCommand } from "./attack-hit-bonus-action-spell-procedures.ts";
-import { resolveD20TestRerollFills } from "./d20-test-reroll-fills.ts";
+import { resolveRollRerollFills } from "./roll-reroll-fills.ts";
 import { invalidResult } from "./result-helpers.ts";
 import { battleReducerRouteForInterrupt } from "./interrupt-route-projection.ts";
 import { battleReducerRouteForResolution } from "./reducer-route.ts";
@@ -423,21 +425,44 @@ function resolveBattleSubjectInternal(
     /* v8 ignore stop -- @preserve */
     return resolveBattleSubjectInternal(replayAdmission.input, options);
   }
-  const d20TestRerolls = resolveD20TestRerollFills({
+  return resolveBattleSubjectThroughRerollFills(input, options);
+}
+
+/**
+ * Checks the after-roll decisions on the subject's rolls, in the order they
+ * were made, and resolves it from the state after what they spend.
+ */
+function resolveBattleSubjectThroughRerollFills(
+  input: AdmittedBattleResolutionInput,
+  options: ResolveBattleSubjectInternalOptions,
+): BattleResolutionResult {
+  // A subject an interrupt checkpoint holds resolves in the interrupt's
+  // continuation, which replays its fills and checks their decisions there;
+  // a prefix of the fills resolved here would replay past them.
+  if (interruptSubjectRequiresCheckpoint(input, options))
+    return resolveBattleSubjectAfterD20TestRerolls(input, options);
+  const rollRerolls = resolveRollRerollFills({
     resolutionInput: input,
     resolvePrefix: (prefixInput) =>
       resolveBattleSubjectAfterD20TestRerolls(prefixInput, options),
   });
-  if (d20TestRerolls.tag === "settled") {
-    return d20TestRerolls.result;
+  if (rollRerolls.tag === "settled") {
+    return rollRerolls.result;
   }
-  if (d20TestRerolls.state === input.state) {
-    return resolveBattleSubjectAfterD20TestRerolls(input, options);
-  }
-  const rerolledAdmission = admitBattleResolutionInput({
-    ...input,
-    state: d20TestRerolls.state,
-  });
+  const afterRerolls = admittedInputAfterRerollSpends(input, rollRerolls.state);
+  if (afterRerolls.tag === "invalid") return afterRerolls;
+  return resolveBattleSubjectAfterD20TestRerolls(afterRerolls.input, options);
+}
+
+/** The input admitted again for the state after its rolls' reroll costs. */
+function admittedInputAfterRerollSpends(
+  input: AdmittedBattleResolutionInput,
+  state: BattleState,
+):
+  | { readonly tag: "admitted"; readonly input: AdmittedBattleResolutionInput }
+  | Extract<BattleResolutionResult, { readonly tag: "invalid" }> {
+  if (state === input.state) return { tag: "admitted", input };
+  const rerolledAdmission = admitBattleResolutionInput({ ...input, state });
   /* v8 ignore start -- @preserve -- Spending a reroll's cost changes only the roller's Heroic Inspiration or resource uses and the subject's accepted rolls; procedure bindings come from the roller's execution, which the spend preserves. */
   if (rerolledAdmission.tag === "staleCharacterProcedure") {
     return invalidResult(
@@ -447,10 +472,7 @@ function resolveBattleSubjectInternal(
     );
   }
   /* v8 ignore stop -- @preserve */
-  return resolveBattleSubjectAfterD20TestRerolls(
-    rerolledAdmission.input,
-    options,
-  );
+  return { tag: "admitted", input: rerolledAdmission.input };
 }
 
 const INTERRUPT_COMMAND_REQUIRES_CHECKPOINT = {
@@ -874,7 +896,7 @@ function resolveBattleSubjectAfterD20TestRerolls(
   if (obligationAdmission !== null) return obligationAdmission;
   const result = (() => {
     if (input.admissionKind !== "general") {
-      return resolveSpecializedAdmission(input);
+      return resolveSpecializedAdmission(input, handledInterruptTrigger);
     }
     const subject = input.subject;
     if (isLongCastingCommandSubject(subject)) {
@@ -1232,9 +1254,15 @@ function resolveSpecializedAdmission(
     AdmittedBattleResolutionInput,
     { readonly admissionKind: "general" }
   >,
+  handledInterruptTrigger: BattleInterruptTrigger | undefined,
 ): BattleResolutionResult {
   return Match.value(input).pipe(
-    Match.when({ admissionKind: "unitFeature" }, resolveUnitFeature),
+    Match.when({ admissionKind: "unitFeature" }, (unitFeatureInput) =>
+      resolveUnitFeature({
+        ...unitFeatureInput,
+        ...optionalProperty("handledInterruptTrigger", handledInterruptTrigger),
+      }),
+    ),
     Match.when(
       { admissionKind: "druidWildShape" },
       resolveDruidWildShapeUnitFeature,

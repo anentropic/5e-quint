@@ -7,6 +7,7 @@ import { expect } from "vitest";
 import {
   type BattleActiveEffect,
   type BattleD20TestRoll,
+  type BattleFailedSaveReactionReroll,
   type BattlePersistentAreaSaveCompositeTrigger,
   type BattleStationaryPersistentAreaSaveDamageTrigger,
   type BattleTranslatingPersistentAreaSaveDamageTrigger,
@@ -88,6 +89,7 @@ type SavingThrowRawDiceRerolls = readonly [
 type SavingThrowOutcomeInputCommon = {
   readonly targetId: CombatantId;
   readonly succeeded: boolean;
+  readonly failedSaveReactionReroll?: BattleFailedSaveReactionReroll;
 };
 
 type SavingThrowOutcomeInput =
@@ -1200,6 +1202,9 @@ function d20TestSavingThrowOutcomeValue(
     ...(outcome.d20TestRerolls === undefined
       ? {}
       : { d20TestRerolls: outcome.d20TestRerolls }),
+    ...(outcome.failedSaveReactionReroll === undefined
+      ? {}
+      : { failedSaveReactionReroll: outcome.failedSaveReactionReroll }),
   };
 }
 

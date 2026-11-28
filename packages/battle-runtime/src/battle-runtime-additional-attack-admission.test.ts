@@ -163,7 +163,7 @@ test("a missed Horde Breaker attack with fixed Graze damage rejects supplied dam
   );
   const suppliedDamage = damageRollFillWithGroups(
     {
-      ...attackDamageHole(attack),
+      ...attackDamageHole(fighterId, attack),
       holeId: HUNTERS_PREY_HORDE_BREAKER_DAMAGE_HOLE_ID,
     },
     [[1]],

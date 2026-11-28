@@ -608,3 +608,26 @@ export const HUNTERS_PREY_HORDE_BREAKER_DAMAGE_DISPOSITION_HOLE_ID = holeId(
 );
 export const HUNTERS_PREY_HORDE_BREAKER_DAMAGE_DISPOSITION_HOLE_INSTANCE =
   holeInstanceKey("battle:hunters-prey:horde-breaker:damage-disposition");
+
+/** The condition a failed save against the persistent area-save-condition profile applies. */
+export const PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION =
+  "prone" as const satisfies Condition;
+/** The condition a failed save against the escapable persistent area-save-condition profile applies. */
+export const PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION =
+  "restrained" as const satisfies Condition;
+/** The condition a failed save against the composite persistent area-save profile applies. */
+export const PERSISTENT_AREA_SAVE_COMPOSITE_FAILED_SAVE_CONDITION =
+  "prone" as const satisfies Condition;
+/** The conditions a failed save against the staged save-condition profile applies first. */
+export const STAGED_SAVE_CONDITION_FAILED_SAVE_CONDITIONS = [
+  STAGED_SAVE_CONDITION_AUTHORED_FACTS.phase.failureEffects.condition.condition,
+] as const satisfies readonly Condition[];
+/** The conditions a failed save against the repeated save-condition profile applies. */
+export const SAVE_GATED_CONDITION_WITH_REPEAT_FAILED_SAVE_CONDITIONS = [
+  SAVE_GATED_CONDITION_WITH_REPEAT_AUTHORED_FACTS.phase.failureEffects.prone
+    .condition,
+  SAVE_GATED_CONDITION_WITH_REPEAT_AUTHORED_FACTS.phase.failureEffects
+    .incapacitated.condition,
+] as const satisfies readonly Condition[];
+/** The condition the compelled Grovel behaviour applies to the creature that failed the save. */
+export const COMPELLED_GROVEL_CONDITION = "prone" as const satisfies Condition;

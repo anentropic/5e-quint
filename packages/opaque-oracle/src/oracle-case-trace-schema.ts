@@ -836,6 +836,13 @@ function oracleBattleInterruptChoiceIsValid(
           modifier.procedureRef,
           modifierResponderId,
         ),
+      failedSaveReactionReroll: ({ responderId: rerollResponderId, reroll }) =>
+        rerollResponderId === responderId &&
+        liveCombatantIds.has(reroll.rollerId) &&
+        battleProcedureExecutionRefBelongsToCombatant(
+          reroll.procedureRef,
+          rerollResponderId,
+        ),
     }),
   );
 }

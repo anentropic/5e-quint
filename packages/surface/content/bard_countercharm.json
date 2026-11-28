@@ -1,0 +1,30 @@
+{
+  "acquiredAtLevel": 7,
+  "className": "bard",
+  "id": "bard_countercharm",
+  "kind": "class_feature",
+  "mechanics": {
+    "activationCost": {
+      "kind": "reaction"
+    },
+    "family": "failed_saving_throw_reroll_reaction",
+    "reroll": {
+      "mustUseNewRoll": true,
+      "rollMode": "advantage"
+    },
+    "trigger": {
+      "againstEffectApplyingAnyOf": [
+        "charmed",
+        "frightened"
+      ],
+      "creatures": "self_or_creature_within_range",
+      "kind": "creature_fails_saving_throw",
+      "rangeFeet": 30
+    }
+  },
+  "name": "Countercharm",
+  "provenance": {
+    "kind": "srd-5.2.1",
+    "section": "classes.md:914-916"
+  }
+}

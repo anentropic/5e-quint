@@ -7,6 +7,9 @@
 
 import type {
   BattleAbilityCheckAddedDieDecision,
+  BattleAttackRollAddedDieDecision,
+  BattleAttackRollD20TestRerollDecision,
+  BattleAttackRollResult,
   BattleD20TestRoll,
   BattleD20TestOutcome,
   BattleFill,
@@ -15,7 +18,7 @@ import type {
   BattleSavingThrowOutcome,
 } from "../battle-state-execution.ts";
 import {
-  abilityCheckAfterAddedDie,
+  totalAfterAddedDie,
   rolledOutcomeAfterAddedDie,
 } from "./d20-test-added-die-roll.ts";
 import { d20TestRollAfterDecisions } from "./d20-test-decision-sequence.ts";
@@ -60,13 +63,31 @@ export function d20TestOutcomeThatStands<T extends BattleD20TestOutcome>(
   };
 }
 
-/** Every target's saving throw outcome after its reroll decisions and added dice. */
+/**
+ * A target's saving throw outcome after its reroll decisions and added dice;
+ * when a Reaction caused the failed save to be rerolled, the new roll's
+ * outcome after its own decisions.
+ */
+export function savingThrowOutcomeThatStands(
+  outcome: BattleSavingThrowOutcome,
+): BattleSavingThrowOutcome {
+  const reroll = outcome.failedSaveReactionReroll;
+  if (reroll === undefined) return d20TestOutcomeThatStands(outcome);
+  const newRoll = d20TestOutcomeThatStands(reroll.newRoll);
+  return {
+    ...outcome,
+    succeeded: newRoll.succeeded,
+    d20TestRoll: newRoll.d20TestRoll,
+  };
+}
+
+/** Every target's saving throw outcome that stands. */
 export function savingThrowOutcomesThatStand<
   T extends { readonly outcomes: readonly BattleSavingThrowOutcome[] },
 >(value: T): T {
   return {
     ...value,
-    outcomes: value.outcomes.map(d20TestOutcomeThatStands),
+    outcomes: value.outcomes.map(savingThrowOutcomeThatStands),
   };
 }
 
@@ -98,6 +119,26 @@ export function abilityCheckValueThatStands<T extends D20TestAbilityCheckValue>(
       d20TestRollAfterReroll,
     ),
     value.d20TestAddedDice ?? [],
-    abilityCheckAfterAddedDie,
+    totalAfterAddedDie,
+  );
+}
+
+/**
+ * An attack roll after its reroll decisions and added dice: the roll that
+ * hits or misses.
+ */
+export function attackRollThatStands(
+  attackRoll: BattleAttackRollResult,
+): BattleAttackRollResult {
+  return d20TestRollAfterDecisions<
+    BattleAttackRollResult,
+    BattleAttackRollAddedDieDecision
+  >(
+    d20TestRollAfterDecisions<
+      BattleAttackRollResult,
+      BattleAttackRollD20TestRerollDecision
+    >(attackRoll, attackRoll.d20TestRerolls ?? [], d20TestRollAfterReroll),
+    attackRoll.d20TestAddedDice ?? [],
+    totalAfterAddedDie,
   );
 }

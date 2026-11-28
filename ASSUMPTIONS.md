@@ -563,3 +563,159 @@ doesn't say what an added die does to a later reroll. The model takes the
 rerolls first. The SRD also doesn't say whether Tactical Mind's "still fails"
 reads the check before or after another added die; the model judges the check
 once with every added die.
+
+## A69: A bonus to a Death Saving Throw counts toward 10 after the d20's 1 or 20
+
+**Assumption:** A Death Saving Throw rerolled with a bonus (Indomitable) adds
+the bonus to the new d20, and the total succeeds at 10 or higher. A 1 or a 20
+on the d20 decides first, whatever the bonus: a 1 is two failures and a 20
+regains 1 Hit Point. A later reroll of that d20 by another source replaces only
+the d20 and keeps the bonus, as a reroll keeps a save's other modifiers. A die
+added to a failed Death Saving Throw (Bardic Inspiration, after its rerolls as
+A68 sets) is a bonus the same way: it counts toward 10, and it can't change a 1
+or a 20.
+
+**Rules basis / gap:** `.references/srd-5.2.1/playing-the-game.md`, "Death
+Saving Throws": "Roll 1d20. If the roll is 10 or higher, you succeed" and "When
+you roll a 1 on the d20 for a Death Saving Throw, you suffer two failures. If
+you roll a 20 on the d20, you regain 1 Hit Point." `.references/srd-5.2.1/classes.md`,
+"Indomitable": "If you fail a saving throw, you can reroll it with a bonus equal
+to your Fighter level." The core rule adds nothing to the d20, so it doesn't
+say whether "the roll" that must reach 10 includes a bonus; the model counts
+the bonus, since the feature grants it to this saving throw. The 1 and the 20
+are read from the d20 ("on the d20"), so a bonus doesn't change them. The SRD
+doesn't say whether a reroll of the d20 by another source keeps a bonus
+Indomitable added; the model keeps it, since the reroll replaces the die and
+not the saving throw's modifiers. Bardic Inspiration adds "the number rolled to
+the d20", which the model reads the same way as any bonus: it adds to the roll's
+total, and the d20 still shows its face.
+
+## A70: A die added to a missed attack roll answers the Armor Class as it stands
+
+**Assumption:** A die added to an attack roll that misses (Bardic Inspiration,
+after the roll's rerolls as A68 sets) is offered while the roll misses the
+target's Armor Class as it stands, including after a Reaction raises that Armor
+Class (Shield) or lowers the roll (Cutting Words) and so turns a hit into a
+miss. The die adds to the roll's total and the d20 keeps its face, so the die
+can't make a Critical Hit, and a 1 on the d20 still misses.
+
+**Rules basis / gap:** `.references/srd-5.2.1/classes.md`, "Bardic
+Inspiration": "Once within the next hour when the creature fails a D20 Test,
+the creature can roll the Bardic Inspiration die and add the number rolled to
+the d20, potentially turning the failure into a success." `.references/srd-5.2.1/playing-the-game.md`,
+"Rolling 20 or 1": a 20 on the d20 "hits regardless of any modifiers or the
+target's AC. This is called a Critical Hit", and a 1 "misses regardless of any
+modifiers or the target's AC". `.references/srd-5.2.1/spells.md`, "Shield":
+"you gain a +5 bonus to AC, including against the triggering attack". The SRD
+doesn't say when an attack roll has failed if a Reaction to the hit changes
+the result; the model reads the failure from the result that stands, so the
+attacker may answer the Reaction's miss with the die. It reads "add the number
+rolled to the d20" as A69 does: the number adds to the total, and the d20 still
+shows its face.
+
+## A71: A Reaction that rerolls a failed save asks one fresh roll, once the save stands failed
+
+**Assumption:** A Reaction that causes a failed saving throw to be rerolled
+(Countercharm) is offered once the save stands failed after its roller's own
+rerolls and added dice (A68). The responder picks one creature whose save
+failed, if more than one did, and the table rules whether that creature is
+within the range, measured as a straight line. The new roll is a roll of its
+own: its roll mode combines the Reaction's Advantage with the save's own
+Advantage and Disadvantage, which cancel as usual, and its roller may use any
+source the first roll left unspent, while a source the first roll spent stays
+spent. The new roll stands. A save is rerolled this way at most once, so the
+save-failed window doesn't reopen on the new roll, and a second responder
+can't take the Reaction on the same save. A save a creature repeats to end the
+condition (at the end of each of its turns) is a save against the effect that
+applies it, so a failed repeat save offers the Reaction as the first save
+does. When one turn's end holds several failed repeat saves, the first that a
+responder can answer opens the window, and no other save-failed window opens
+at that turn's end.
+
+**Rules basis / gap:** `.references/srd-5.2.1/classes.md`, "Countercharm": "If
+you or a creature within 30 feet of you fails a saving throw against an effect
+that applies the Charmed or Frightened condition, you can take a Reaction to
+cause the save to be rerolled, and the new roll has Advantage."
+`.references/srd-5.2.1/playing-the-game.md`, "Advantage/Disadvantage": "If
+circumstances cause a roll to have both Advantage and Disadvantage, the roll
+has neither of them." The SRD doesn't say when the save has failed if its
+roller can still reroll it, which creature the Reaction rerolls when several
+fail, whether the new roll keeps the first roll's spent or unspent sources,
+whether a failed new roll triggers the Reaction again, or whether a repeat
+save to end the condition counts. The model reads the failure from the result
+that stands, as A70 does, lets the responder choose, treats the new roll as a
+fresh D20 Test, reads "the save" as the one save the trigger names, so the new
+roll can't trigger it again, and counts a repeat save, which is still "a
+saving throw against an effect that applies" the condition.
+
+## A72: Damage that Temporary Hit Points absorb at 0 Hit Points
+
+**Assumption:** A creature at 0 Hit Points that takes damage suffers the Death
+Saving Throw failure (two for a Critical Hit) even when its Temporary Hit
+Points absorb all of that damage, and it dies if the whole damage equals or
+exceeds its Hit Point maximum. The Temporary Hit Points still go first. A
+Stable creature in that case stops being Stable.
+
+**Rules basis / gap:** `.references/srd-5.2.1/playing-the-game.md`, "Damage
+at 0 Hit Points": "If you take any damage while you have 0 Hit Points, you
+suffer a Death Saving Throw failure ... If the damage equals or exceeds your
+Hit Point maximum, you die." "Lose Temporary Hit Points First": "If you have
+Temporary Hit Points and take damage, those points are lost first", with the
+example "if you have 5 Temporary Hit Points and take 7 damage". So damage that
+Temporary Hit Points absorb is still damage taken. "Massive Damage" tests the
+damage that remains, but only when damage reduces a creature to 0; the at-0
+rule tests "the damage". The SRD doesn't state this interaction outright, so
+the model reads the at-0 rule as written. The QNT owner is
+`zero-hit-point-lifecycle.qnt:applyDamageToZeroHitPointCreature`.
+
+## A73: A dead creature's turn passes without being taken
+
+**Assumption:** A dead creature takes no turn. When its place in the
+Initiative order comes up, its turn passes on its own: nothing is rolled,
+saved or chosen for it, but whatever lasts until the start or the end of its
+turn still ends then. It keeps its place in the order, so a creature that
+returns to life takes its turns there again. When no participant is alive,
+End Turn changes nothing: the order stays where it is, nothing ends, End Turn
+stays offered, and the table decides when the battle ends. The engine never
+ends a battle on its own.
+
+**Rules basis / gap:** `.references/srd-5.2.1/playing-the-game.md`, "Take
+Turns": "Each participant in the battle takes a turn in Initiative order. When
+everyone involved in the combat has had a turn, the round ends. Repeat this
+step until the fighting stops." "Initiative Order": "The Initiative order
+remains the same from round to round." `.references/srd-5.2.1/rules-glossary.md`,
+"Object": "An object is a nonliving, distinct thing", and "Dead" describes a
+dead creature returning to life. The SRD doesn't say whether a dead creature
+is still a participant that takes turns, or who stops the fighting when
+nobody is left alive.
+
+## A74: Heroic Inspiration rerolls one die of a roll its roller sees whole
+
+**Assumption:** A player character with Heroic Inspiration may reroll one die
+of a damage, healing or Temporary Hit Points roll that is theirs: the dice of
+their own attack or spell, which they roll. Dice rolled together (8d6 for one
+spell) are seen together, so the roller picks the die after seeing them all;
+one use rerolls one die, and the new face stands. A die floor (Great Weapon
+Fighting) applies to the face that stands after the reroll. Under Savage
+Attacker the two rolls of the weapon's damage dice stay two rolls: the roller
+may reroll one die of either roll before picking the roll to use, never the
+best dice of both. With Empowered Spell the roller may reroll a die before
+Empowered Spell rerolls its dice, or one of the dice Empowered Spell rerolled.
+
+**Rules basis / gap:** `.references/srd-5.2.1/rules-glossary.md`, "Heroic
+Inspiration": "you can expend it to reroll any die immediately after rolling
+it, and you must use the new roll." `.references/srd-5.2.1/feats.md`, "Savage
+Attacker": "you can roll the weapon's damage dice twice and use either roll
+against the target"; "Great Weapon Fighting": "you can treat any 1 or 2 on a
+damage die as a 3". `.references/srd-5.2.1/classes.md`, "Empowered Spell":
+"you can spend 1 Sorcery Point to reroll a number of the damage dice up to
+your Charisma modifier (minimum of one), and you must use the new rolls." The
+SRD doesn't say who rolls an effect's dice, whether "any die" means one die
+of a roll or the roll, when "immediately after rolling it" falls for dice
+rolled together, or how the reroll orders with a die floor, Savage Attacker
+or Empowered Spell. The model has the creature whose attack or spell it is
+roll its dice, reads "any die" as one die, treats dice rolled together as
+rolled at once, applies the floor to the die that stands, as a d20 minimum
+applies to the d20 that stands, keeps Savage Attacker a choice between two
+rolls, and lets the roller order Heroic Inspiration and Empowered Spell, as
+A55 does for d20 rerolls.

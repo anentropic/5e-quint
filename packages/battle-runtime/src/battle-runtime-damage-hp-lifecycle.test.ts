@@ -1,3 +1,4 @@
+import { unmodifiedDeathSavingThrowRoll } from "@dnd/shared-algebras/death-saves-algebra";
 import {
   applyCondition,
   hasCondition,
@@ -50,6 +51,7 @@ import {
   battleCreatureStateWithDamageProjection,
   battleCreatureStateWithKnockOutPreservedConditions,
 } from "./battle-reducer/creature-hit-point-state.ts";
+import { effectiveHitPointMaximum } from "./battle-reducer/hit-point-maximum.ts";
 import { allocateBattleEffectOccurrenceForCreature } from "./effect-execution-ref.ts";
 
 const aidCasterId = combatantId("damage-hp-aid-caster");
@@ -258,14 +260,14 @@ describe("damage and hit point lifecycle helpers", () => {
     const recovered = applyStartTurnDeathSavingThrow(
       new Map([[fighterId, zeroFighter]]),
       fighterId,
-      d20Roll(20),
+      unmodifiedDeathSavingThrowRoll(d20Roll(20)),
     ).get(fighterId);
     expect(recovered?.hp).toBe(Hp(1));
 
     const failedSave = applyStartTurnDeathSavingThrow(
       new Map([[fighterId, zeroFighter]]),
       fighterId,
-      d20Roll(1),
+      unmodifiedDeathSavingThrowRoll(d20Roll(1)),
     ).get(fighterId);
     expect(failedSave?.hp).toBe(zeroFighter.hp);
     expect(deathSavingThrowHole(fighterId)).toMatchObject({
@@ -304,7 +306,7 @@ describe("damage and hit point lifecycle helpers", () => {
         currentHp: Number(goblin.hp),
         hpDamage: 0,
         nextHp: goblin.hp,
-        massiveDamageKills: false,
+        hitPointMaximumDeathTestKills: false,
       }),
     ).toMatchObject({ tempHp: 1 });
   });
@@ -350,6 +352,110 @@ describe("damage and hit point lifecycle helpers", () => {
     });
   });
 
+  test("damage at 0 Hit Points counts the part Temporary Hit Points absorb", () => {
+    const fighter = fighterVsGoblinBattle().combatants.get(fighterId);
+    if (fighter === undefined || fighter.positiveHpUnconscious !== null) {
+      throw new Error("Expected the synthetic character.");
+    }
+    const atZero = applyHpDamage(fighter, Number(fighter.hp), {
+      deathFailuresAtZeroHp: 1,
+    });
+    const withTemporaryHitPoints = { ...atZero, tempHp: Hp(5) };
+
+    const absorbed = applyHpDamage(withTemporaryHitPoints, 4, {
+      deathFailuresAtZeroHp: 1,
+    });
+    expect(absorbed.tempHp).toBe(Hp(1));
+    expect(absorbed.hp).toBe(Hp(0));
+    expect(absorbed.zeroHpLifecycle).toMatchObject({
+      policy: "usesDeathSavingThrows",
+      deathSaves: { tag: "dying", deathSaves: { failures: 1 } },
+    });
+
+    const criticalOverflow = applyHpDamage(withTemporaryHitPoints, 7, {
+      deathFailuresAtZeroHp: 2,
+    });
+    expect(criticalOverflow.tempHp).toBe(Hp(0));
+    expect(criticalOverflow.zeroHpLifecycle).toMatchObject({
+      policy: "usesDeathSavingThrows",
+      deathSaves: { tag: "dying", deathSaves: { failures: 2 } },
+    });
+
+    const maximum = Number(effectiveHitPointMaximum(withTemporaryHitPoints));
+    expect(hpDamageProjection(withTemporaryHitPoints, maximum)).toMatchObject({
+      hpDamage: maximum - 5,
+      hitPointMaximumDeathTestKills: true,
+    });
+    expect(
+      applyHpDamage(withTemporaryHitPoints, maximum, {
+        deathFailuresAtZeroHp: 1,
+      }).zeroHpLifecycle,
+    ).toMatchObject({
+      policy: "usesDeathSavingThrows",
+      deathSaves: { tag: "dead" },
+    });
+    expect(
+      hpDamageProjection(withTemporaryHitPoints, maximum - 1),
+    ).toMatchObject({
+      hitPointMaximumDeathTestKills: false,
+    });
+  });
+
+  test("Temporary Hit Points that absorb a hit at 0 Hit Points still end Stable", () => {
+    const fighter = fighterVsGoblinBattle().combatants.get(fighterId);
+    if (fighter === undefined || fighter.positiveHpUnconscious !== null) {
+      throw new Error("Expected the synthetic character.");
+    }
+    const atZero = applyHpDamage(fighter, Number(fighter.hp), {
+      deathFailuresAtZeroHp: 1,
+    });
+    if (atZero.zeroHpLifecycle.policy !== "usesDeathSavingThrows") {
+      throw new Error("Expected the character Death Saving Throw lifecycle.");
+    }
+    const stableWithTemporaryHitPoints = {
+      ...atZero,
+      tempHp: Hp(5),
+      zeroHpLifecycle: {
+        ...atZero.zeroHpLifecycle,
+        deathSaves: { tag: "stable" as const },
+      },
+    };
+
+    const hit = applyHpDamage(stableWithTemporaryHitPoints, 3, {
+      deathFailuresAtZeroHp: 1,
+    });
+    expect(hit.tempHp).toBe(Hp(2));
+    expect(hit.zeroHpLifecycle).toMatchObject({
+      policy: "usesDeathSavingThrows",
+      deathSaves: { tag: "dying", deathSaves: { successes: 0, failures: 1 } },
+    });
+  });
+
+  test("an absorbed Critical Hit at 0 Hit Points can add the third failure", () => {
+    const fighter = fighterVsGoblinBattle().combatants.get(fighterId);
+    if (fighter === undefined || fighter.positiveHpUnconscious !== null) {
+      throw new Error("Expected the synthetic character.");
+    }
+    const atZero = applyHpDamage(fighter, Number(fighter.hp), {
+      deathFailuresAtZeroHp: 1,
+    });
+    const withOneFailure = applyHpDamage(atZero, 1, {
+      deathFailuresAtZeroHp: 1,
+    });
+    expect(withOneFailure.zeroHpLifecycle).toMatchObject({
+      deathSaves: { tag: "dying", deathSaves: { failures: 1 } },
+    });
+
+    const criticalHit = applyHpDamage({ ...withOneFailure, tempHp: Hp(5) }, 4, {
+      deathFailuresAtZeroHp: 2,
+    });
+    expect(criticalHit.tempHp).toBe(Hp(1));
+    expect(criticalHit.zeroHpLifecycle).toMatchObject({
+      policy: "usesDeathSavingThrows",
+      deathSaves: { tag: "dead" },
+    });
+  });
+
   test("only a character awaiting a Death Saving Throw consumes a start-turn roll", () => {
     const state = fighterVsGoblinBattle();
     const fighter = state.combatants.get(fighterId);
@@ -358,7 +464,11 @@ describe("damage and hit point lifecycle helpers", () => {
     }
 
     expect(
-      applyStartTurnDeathSavingThrow(state.combatants, fighterId, d20Roll(10)),
+      applyStartTurnDeathSavingThrow(
+        state.combatants,
+        fighterId,
+        unmodifiedDeathSavingThrowRoll(d20Roll(10)),
+      ),
     ).toBe(state.combatants);
 
     const atZero = applyHpDamage(fighter, Number(fighter.hp), {
@@ -377,7 +487,11 @@ describe("damage and hit point lifecycle helpers", () => {
     const stableCombatants = new Map(state.combatants).set(fighterId, stable);
     expect(startTurnDeathSavingThrowRequired(stable)).toBe(false);
     expect(
-      applyStartTurnDeathSavingThrow(stableCombatants, fighterId, d20Roll(20)),
+      applyStartTurnDeathSavingThrow(
+        stableCombatants,
+        fighterId,
+        unmodifiedDeathSavingThrowRoll(d20Roll(20)),
+      ),
     ).toBe(stableCombatants);
   });
 
@@ -569,7 +683,7 @@ describe("damage and hit point lifecycle helpers", () => {
         currentHp: 1,
         hpDamage: 0,
         nextHp: Hp(1),
-        massiveDamageKills: false,
+        hitPointMaximumDeathTestKills: false,
       },
     );
     expect(preservedKnockout.positiveHpUnconscious).not.toBeNull();
@@ -580,7 +694,7 @@ describe("damage and hit point lifecycle helpers", () => {
       currentHp: 1,
       hpDamage: 0,
       nextHp: Hp(2),
-      massiveDamageKills: false,
+      hitPointMaximumDeathTestKills: false,
     });
     expect(releasedKnockout.positiveHpUnconscious).toBeNull();
     const escapeEffect = allocateBattleEffectOccurrenceForCreature({

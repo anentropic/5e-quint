@@ -4222,44 +4222,6 @@
       "unitId": "fear"
     },
     {
-      "catalogStatus": "installed",
-      "claimTag": "profile-subset-supported",
-      "closureKinds": [
-        "outside-battle-runtime"
-      ],
-      "collectionId": "srd-5.2.1",
-      "executableMechanics": true,
-      "kind": "class_feature",
-      "reason": "A Death Saving Throw is a saving throw, so a rolled one can be rerolled; its natural 1 and natural 20 effects and its fixed DC need their own decision shape on the death save hole. A failure taken without a roll has no roll to reroll.",
-      "selectedIdentity": {
-        "reason": "The Unit has selected-identity-replay evidence.",
-        "status": "witness-present"
-      },
-      "sourceRecordPath": "packages/surface/content/fighter_indomitable.json",
-      "sourceRows": [
-        {
-          "battleReadinessStatus": "accepted",
-          "catalogAdmissionState": "installed",
-          "category": "class feature",
-          "concept": "Fighter Indomitable",
-          "finalDisposition": "catalog-installed-owner-evidence-present",
-          "id": "srd521:classes:level-9:class-feature-grant:fighter_indomitable",
-          "levelBand": "level-9",
-          "nextAction": "Owner-specific operational evidence is classified and present.",
-          "rowKind": "class-feature-grant",
-          "source": {
-            "lineEnd": 4839,
-            "lineStart": 4834,
-            "path": ".references/srd-5.2.1/classes.md"
-          },
-          "unitProfileDisposition": "profile-subset-supported"
-        }
-      ],
-      "status": "closed-outside-battle-runtime-boundary",
-      "strictTargetClosed": true,
-      "unitId": "fighter_indomitable"
-    },
-    {
       "catalogDisposition": {
         "category": "srd-candidate",
         "planningLane": "QMBT14-QMBT16",
@@ -10279,7 +10241,7 @@
   "generatedBy": "scripts/unit-profile-coverage-check.cjs",
   "groups": [
     {
-      "count": 202,
+      "count": 204,
       "description": "An executable Unit profile exists for this strict accounting scope.",
       "status": "supported-profile",
       "unitIds": [
@@ -10305,6 +10267,7 @@
         "bard_ability_score_improvement_l4",
         "bard_bardic_inspiration",
         "bard_bonus_proficiencies",
+        "bard_countercharm",
         "bard_cutting_words",
         "bard_expertise",
         "bard_font_of_inspiration",
@@ -10351,6 +10314,7 @@
         "fighter_extra_attack",
         "fighter_fighting_style",
         "fighter_improved_critical",
+        "fighter_indomitable",
         "fighter_remarkable_athlete",
         "fighter_second_wind",
         "fighter_tactical_master",
@@ -10579,7 +10543,7 @@
       ]
     },
     {
-      "count": 46,
+      "count": 45,
       "description": "The remaining residuals are explicitly outside promoted battle-runtime ownership.",
       "status": "closed-outside-battle-runtime-boundary",
       "unitIds": [
@@ -10603,7 +10567,6 @@
         "dispel_evil_and_good",
         "enlarge_reduce",
         "fear",
-        "fighter_indomitable",
         "fire_shield",
         "freedom_of_movement",
         "greater_invisibility",
@@ -10680,8 +10643,8 @@
       "numerator": 1070,
       "percent": "100%",
       "rowsByStatus": {
-        "accepted": 641,
-        "accepted-no-battle-effect": 429
+        "accepted": 642,
+        "accepted-no-battle-effect": 428
       }
     },
     "rulesKernelCoveredProfileJoin": {
@@ -10705,13 +10668,13 @@
       "percent": "100%"
     },
     "strictRuntimeProfileSupport": {
-      "denominator": 353,
-      "numerator": 202,
-      "percent": "57.2%"
+      "denominator": 354,
+      "numerator": 204,
+      "percent": "57.6%"
     },
     "strictTargetClosure": {
-      "denominator": 353,
-      "numerator": 353,
+      "denominator": 354,
+      "numerator": 354,
       "percent": "100%"
     }
   },
@@ -10785,49 +10748,6 @@
           }
         ],
         "unitId": "barbarian_mindless_rage"
-      },
-      {
-        "inventoryAccounting": [
-          {
-            "battleReadinessClosure": {
-              "kind": "outside-battle-runtime",
-              "owner": "future class-feature triggered-Reaction save-failure reroll owner plus condition-application and range-witness owners",
-              "reason": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-              "source": "unit-claim",
-              "state": "recorded"
-            },
-            "battleReadinessStatus": "accepted-no-battle-effect",
-            "catalogAdmissionState": "not-installed",
-            "concept": "Bard Countercharm",
-            "finalDisposition": "catalog-only/dead-for-now",
-            "levelBand": "level-7",
-            "nextAction": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-            "rowId": "srd521:classes:level-7:class-feature-grant:bard_countercharm",
-            "rowKind": "class-feature-grant",
-            "unitProfileDisposition": "unsupported-profile"
-          }
-        ],
-        "reason": "The SRD row has level-7 class-feature pressure, but no Unit matrix row exists yet.",
-        "sourceRows": [
-          {
-            "battleReadinessStatus": "accepted-no-battle-effect",
-            "catalogAdmissionState": "not-installed",
-            "category": "class feature",
-            "concept": "Bard Countercharm",
-            "finalDisposition": "catalog-only/dead-for-now",
-            "id": "srd521:classes:level-7:class-feature-grant:bard_countercharm",
-            "levelBand": "level-7",
-            "nextAction": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-            "rowKind": "class-feature-grant",
-            "source": {
-              "lineEnd": 917,
-              "lineStart": 914,
-              "path": ".references/srd-5.2.1/classes.md"
-            },
-            "unitProfileDisposition": "unsupported-profile"
-          }
-        ],
-        "unitId": "bard_countercharm"
       },
       {
         "inventoryAccounting": [
@@ -17597,7 +17517,7 @@
                 "obligationId": "BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE",
                 "runtime": "battle",
                 "status": "covered",
-                "title": "A creature that fails a D20 Test other than an attack roll can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
+                "title": "A creature that fails a D20 Test can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
               },
               {
                 "obligationId": "BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS",
@@ -19026,7 +18946,7 @@
                 "obligationId": "BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE",
                 "runtime": "battle",
                 "status": "covered",
-                "title": "A creature that fails a D20 Test other than an attack roll can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
+                "title": "A creature that fails a D20 Test can add a Bardic Inspiration die, or on an ability check its failed ability check resource boost, once its rerolls are decided, while the test still fails"
               },
               {
                 "obligationId": "BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS",
@@ -22800,18 +22720,18 @@
     "blockingRows": [],
     "blockingRowsByStatus": {},
     "metrics": {
-      "denominator": 264,
-      "numerator": 264,
+      "denominator": 265,
+      "numerator": 265,
       "percent": "100%"
     },
     "readyRowsByStatus": {
       "not-applicable": 32,
-      "witness-present": 232
+      "witness-present": 233
     },
     "rowsByStatus": {
       "not-applicable": 32,
       "not-required": 89,
-      "witness-present": 232
+      "witness-present": 233
     }
   },
   "sourceArtifacts": {
@@ -23332,8 +23252,8 @@
         "group": "level-scoped-class-feature-grants",
         "label": "SRD class feature grants through level 9",
         "metrics": {
-          "denominator": 98,
-          "numerator": 98,
+          "denominator": 99,
+          "numerator": 99,
           "percent": "100%"
         },
         "rows": [
@@ -23480,6 +23400,15 @@
             "sourceRecordPath": "packages/surface/content/bard_font_of_inspiration.json",
             "status": "installed",
             "unitId": "bard_font_of_inspiration"
+          },
+          {
+            "kind": "class_feature",
+            "ownerUnitId": "class_bard",
+            "ready": true,
+            "relation": "class.featureGrants.level-7",
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "status": "installed",
+            "unitId": "bard_countercharm"
           },
           {
             "kind": "class_feature",
@@ -24221,7 +24150,7 @@
           }
         ],
         "rowsByStatus": {
-          "installed": 98
+          "installed": 99
         }
       },
       {
@@ -24412,8 +24341,8 @@
       }
     ],
     "metrics": {
-      "denominator": 156,
-      "numerator": 156,
+      "denominator": 157,
+      "numerator": 157,
       "percent": "100%"
     },
     "openBlockerCount": 0
@@ -24422,19 +24351,19 @@
   "summary": {
     "candidateUnitIdsBeforeExclusions": 400,
     "groupsByClaimTag": {
-      "profile-subset-supported": 62,
-      "supported-profile": 202,
+      "profile-subset-supported": 61,
+      "supported-profile": 204,
       "unsupported-profile": 89
     },
     "groupsByStatus": {
       "blocked-follow-up-split": 10,
       "closed-character-fact-and-runtime-detached-split": 4,
       "closed-companion-control-boundary": 7,
-      "closed-outside-battle-runtime-boundary": 46,
+      "closed-outside-battle-runtime-boundary": 45,
       "closed-runtime-detached-table-adjudication": 84,
-      "supported-profile": 202
+      "supported-profile": 204
     },
-    "nonSupportedFrontier": 151,
-    "strictDenominator": 353
+    "nonSupportedFrontier": 150,
+    "strictDenominator": 354
   }
 }

@@ -24,6 +24,7 @@ import { resolveBonusActionSpellAct } from "./battle-reducer/spells-resolve.ts";
 // UNIT-PROFILE-COVERAGE: verification-owner:runtime-test character-sheet.metamagic-battle-resource-bridge unit-feature.metamagic-cast-governor-quickened unit-feature.metamagic-careful-save-protection unit-feature.metamagic-heightened-save-disadvantage unit-feature.metamagic-damage-type-substitution unit-feature.metamagic-effective-level-extra-target unit-feature.metamagic-cast-component-suppression unit-feature.metamagic-missed-spell-attack-reroll unit-feature.metamagic-damage-dice-reroll
 // UNIT-IDENTITY-EVIDENCE: deterministic-admission-projection L14G-D03-SORCERER-METAMAGIC-PARTIAL-PROFILE sorcerer_metamagic
 // KERNEL-COVERAGE: parity-witness BATTLE.FEATURE.METAMAGIC_QUICKENED_CAST_GOVERNOR BATTLE.FEATURE.METAMAGIC_CAREFUL_SAVE_PROTECTION BATTLE.FEATURE.METAMAGIC_HEIGHTENED_SAVE_DISADVANTAGE BATTLE.FEATURE.METAMAGIC_TRANSMUTED_DAMAGE_TYPE_SUBSTITUTION BATTLE.FEATURE.METAMAGIC_TWINNED_EFFECTIVE_LEVEL_EXTRA_TARGET BATTLE.FEATURE.METAMAGIC_SUBTLE_COMPONENT_SUPPRESSION BATTLE.FEATURE.METAMAGIC_SEEKING_SPELL_ATTACK_REROLL BATTLE.FEATURE.METAMAGIC_EMPOWERED_DAMAGE_DICE_REROLL
+// KERNEL-COVERAGE: parity-witness BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 
 import {
   canSpendAction,
@@ -47,6 +48,7 @@ import type {
   BattleTargetSpatialFact,
 } from "./battle-state-execution.ts";
 import { HEROIC_INSPIRATION_REROLL_EFFECT_KIND } from "./battle-state-execution.ts";
+import { ROLLED_DICE_HEROIC_INSPIRATION_REPLACEMENT_MESSAGE } from "./battle-reducer/rolled-dice-heroic-inspiration-reroll.ts";
 import { D20_TEST_SOURCE_REPEATED_MESSAGE } from "./battle-reducer/d20-test-decision-sequence.ts";
 import { SEEKING_SPELL_REPLACEMENT_MODIFIER_MESSAGE } from "./battle-reducer/spells-resolve.ts";
 import {
@@ -5160,6 +5162,132 @@ describe("battle runtime: Sorcerer save-affecting Metamagic", () => {
       tag: "invalid",
       message:
         "Save-affecting Metamagic is not supported for hit-point-budget condition target admission because hit-point-budget condition uses a two-stage admission and repeat-save lifecycle.",
+    });
+  });
+});
+
+describe("battle runtime: Heroic Inspiration on spell damage dice with Empowered Spell (A74)", () => {
+  function rayOfFrostHit(session: BattleRuntimeSession) {
+    const state = session.state;
+    const act = actionRayOfFrostAct(session);
+    const target = targetFill(
+      findHole(act.initialHoles, "targetChoice"),
+      skeletonId,
+    );
+    const attack = nextSpellHole(state, act.subject, [target], "attackRoll");
+    const fills: readonly BattleFill[] = [
+      target,
+      attackRollFill(attack, {
+        total: 15,
+        naturalD20: 10,
+        d20TestRerolls: [
+          {
+            kind: "decline",
+            effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+          },
+        ],
+      }),
+    ];
+    const damage = nextSpellHole(state, act.subject, fills, "rolledDice");
+    const resolve = (damageRoll: BattleFill) =>
+      resolveBattleSubject({
+        state,
+        subject: act.subject,
+        fills: [...fills, damageRoll],
+      });
+    return { state, damage, resolve };
+  }
+  function skeletonHp(state: BattleState): number {
+    return Number(requireBattleCreature(state, skeletonId).hp);
+  }
+
+  test("the caster is asked again for their spell damage dice", () => {
+    const hit = rayOfFrostHit(
+      saveMetamagicBattle({
+        knownOptions: [empoweredMetamagicOption()],
+        heroicInspiration: HEROIC_INSPIRATION_AVAILABLE,
+      }),
+    );
+    expect(hit.damage).toMatchObject({ rollerId: wizardId });
+
+    const asked = hit.resolve(damageRollFillWithGroups(hit.damage, [[1, 1]]));
+    expect(
+      findHole(
+        asked.tag === "needsHoles" ? battleResolutionHolesForTest(asked) : [],
+        "rolledDice",
+      ),
+    ).toMatchObject({
+      rollerId: wizardId,
+      spellDamageRerolls: [{ effectKind: EMPOWERED_METAMAGIC_EFFECT_KIND }],
+      heroicInspirationRerolls: [
+        { effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND },
+      ],
+    });
+  });
+
+  test("Heroic Inspiration rerolls a die before Empowered Spell rerolls the new face", () => {
+    const hit = rayOfFrostHit(
+      saveMetamagicBattle({
+        knownOptions: [empoweredMetamagicOption()],
+        heroicInspiration: HEROIC_INSPIRATION_AVAILABLE,
+      }),
+    );
+    // Rolled 1 and 1; Heroic Inspiration turns the first 1 into a 2, and
+    // Empowered Spell rerolls that 2 into a 5.
+    const resolved = requireResolved(
+      hit.resolve({
+        ...empoweredDamageRollFill(hit.damage, [[2, 1]], {
+          kind: "reroll",
+          effectKind: EMPOWERED_METAMAGIC_EFFECT_KIND,
+          dice: [{ original: DieRollResult(2), replacement: DieRollResult(5) }],
+        }),
+        heroicInspirationReroll: {
+          kind: "rerollRolledDie",
+          effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+          rolledDie: { source: "rolledDiceGroup", groupIndex: 0 },
+          original: DieRollResult(1),
+          replacement: DieRollResult(2),
+        },
+      }),
+    ).state;
+
+    expect(skeletonHp(hit.state) - skeletonHp(resolved)).toBe(5 + 1);
+    expect(heroicInspirationOf(resolved)).toEqual(NO_HEROIC_INSPIRATION);
+    expect(sorceryPointsRemaining(resolved)).toBe(resourceCount(3));
+  });
+
+  test("Heroic Inspiration rerolls a die Empowered Spell rerolled", () => {
+    const hit = rayOfFrostHit(
+      saveMetamagicBattle({
+        knownOptions: [empoweredMetamagicOption()],
+        heroicInspiration: HEROIC_INSPIRATION_AVAILABLE,
+      }),
+    );
+    // Rolled 2 and 1; Empowered Spell turns the 2 into a 1, and Heroic
+    // Inspiration turns that 1 into a 4.
+    const afterEmpoweredSpell = (replacement: number) =>
+      ({
+        ...empoweredDamageRollFill(hit.damage, [[2, 1]], {
+          kind: "reroll",
+          effectKind: EMPOWERED_METAMAGIC_EFFECT_KIND,
+          dice: [{ original: DieRollResult(2), replacement: DieRollResult(4) }],
+        }),
+        heroicInspirationReroll: {
+          kind: "rerollRolledDie",
+          effectKind: HEROIC_INSPIRATION_REROLL_EFFECT_KIND,
+          rolledDie: { source: "spellDamageReroll" },
+          original: DieRollResult(1),
+          replacement: DieRollResult(replacement),
+        },
+      }) as const;
+    const resolved = requireResolved(hit.resolve(afterEmpoweredSpell(4))).state;
+
+    expect(skeletonHp(hit.state) - skeletonHp(resolved)).toBe(4 + 1);
+    expect(heroicInspirationOf(resolved)).toEqual(NO_HEROIC_INSPIRATION);
+    expect(sorceryPointsRemaining(resolved)).toBe(resourceCount(3));
+    expect(hit.resolve(afterEmpoweredSpell(6))).toMatchObject({
+      tag: "invalid",
+      message: ROLLED_DICE_HEROIC_INSPIRATION_REPLACEMENT_MESSAGE,
     });
   });
 });

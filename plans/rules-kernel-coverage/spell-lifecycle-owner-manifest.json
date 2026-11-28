@@ -4,7 +4,7 @@
     "plans/rules-kernel-coverage/qnt-owner-roles.jsonl"
   ],
   "provenance": {
-    "registryCommit": "de71a1a5e671800d4a78939a6780e623e448e38f",
+    "registryCommit": "547c2b803573b99bb7f1212925869dd71ee0d4aa",
     "generator": {
       "path": "scripts/spell-lifecycle-owner-manifest.cjs",
       "sha256": "ba903bab8bc134d711ea81052abfbf0c0ec78df56db45a273c909adbdda6d15f"
@@ -12,11 +12,11 @@
     "inputs": [
       {
         "path": "plans/rules-kernel-coverage/obligations.jsonl",
-        "sha256": "fb1a40c9d2e1f6c1f116ce53795c8f3ae98a1ce7b47b1671c37f406c80762c5c"
+        "sha256": "d5e2e655fb93b51d670b253457f841d0e0015ae909703c58ecf508a5b68ef888"
       },
       {
         "path": "plans/rules-kernel-coverage/qnt-owner-roles.jsonl",
-        "sha256": "20f99e3836615f497787ecd30d5e612409dfe4088c32e0bae1a312d21605017e"
+        "sha256": "2e5bd9a4c4025428e4df249a3e658f448f654cebe3991c74f72d562ad27c8431"
       }
     ]
   },
@@ -556,6 +556,7 @@
     "packages/battle-runtime/src/battle-reducer/statblock.ts",
     "packages/battle-runtime/src/battle-reducer/targeting-save-interdiction.ts",
     "packages/battle-runtime/src/battle-reducer/turn-boundary-lifecycle.ts",
+    "packages/battle-runtime/src/battle-reducer/turn-order-advance.ts",
     "packages/battle-runtime/src/battle-reducer/unit-features.ts",
     "packages/battle-runtime/src/battle-runtime-transaction.ts",
     "packages/battle-runtime/src/battle-state-execution.ts",
@@ -602,6 +603,7 @@
     "packages/battle-runtime/src/after-hit-damage-riders.mbt.test.ts",
     "packages/battle-runtime/src/antimagic-field-action-interdiction.mbt.test.ts",
     "packages/battle-runtime/src/antimagic-field-ongoing-suppression.mbt.test.ts",
+    "packages/battle-runtime/src/battle-runtime-dead-creature-turns.test.ts",
     "packages/battle-runtime/src/battle-runtime-hunters-mark-and-hex.test.ts",
     "packages/battle-runtime/src/battle-runtime-interrupt-lifecycle-continuation-boundaries.test.ts",
     "packages/battle-runtime/src/battle-runtime-mage-armor-and-armor-of-shadows.test.ts",
@@ -951,8 +953,8 @@
   ],
   "pathCounts": {
     "obligationCount": 58,
-    "sourceOrPure": 248,
-    "parityOrFixture": 102,
+    "sourceOrPure": 249,
+    "parityOrFixture": 103,
     "qntFixtureSpec": 46,
     "deferredLaterIssue": 2
   },

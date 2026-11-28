@@ -1871,6 +1871,32 @@ type IndomitableMechanicsCodec = Schema.Struct<
 export const IndomitableMechanicsSchema: IndomitableMechanicsCodec =
   Schema.Struct(indomitableMechanicsFields);
 
+// A Reaction that causes another creature's failed saving throw, or the
+// reactor's own, to be rerolled with a set roll mode. The trigger names the
+// conditions the save's effect must apply and how far the failing creature may
+// be; the reroll's new roll stands.
+const failedSavingThrowRerollReactionMechanicsFields = codecFields({
+  family: Schema.Literal("failed_saving_throw_reroll_reaction"),
+  activationCost: Schema.Struct({
+    kind: Schema.Literal("reaction"),
+  }),
+  trigger: Schema.Struct({
+    kind: Schema.Literal("creature_fails_saving_throw"),
+    creatures: Schema.Literal("self_or_creature_within_range"),
+    rangeFeet: PositiveIntegerSchema,
+    againstEffectApplyingAnyOf: Schema.NonEmptyArray(ConditionSchema),
+  }),
+  reroll: Schema.Struct({
+    mustUseNewRoll: Schema.Literal(true),
+    rollMode: Schema.Literal("advantage"),
+  }),
+});
+type FailedSavingThrowRerollReactionMechanicsCodec = Schema.Struct<
+  typeof failedSavingThrowRerollReactionMechanicsFields
+>;
+export const FailedSavingThrowRerollReactionMechanicsSchema: FailedSavingThrowRerollReactionMechanicsCodec =
+  Schema.Struct(failedSavingThrowRerollReactionMechanicsFields);
+
 const tacticalMasterMechanicsFields = codecFields({
   family: Schema.Literal("weapon_mastery_property_replacement"),
   trigger: Schema.Struct({
@@ -2356,6 +2382,7 @@ const classFeatureMechanicsMembers = codecMembers(
   CunningStrikeMechanicsSchema,
   BrutalStrikeMechanicsSchema,
   IndomitableMechanicsSchema,
+  FailedSavingThrowRerollReactionMechanicsSchema,
   TacticalMasterMechanicsSchema,
   AbjureFoesMechanicsSchema,
   AcrobaticMovementMechanicsSchema,
@@ -2405,6 +2432,7 @@ const bardClassFeatureMechanicsMembers = codecMembers(
   PreparedSpellListExpansionMechanicsSchema,
   UseCountResourceRecoveryMechanicsSchema,
   ChosenPreparedSpellAccessMechanicsSchema,
+  FailedSavingThrowRerollReactionMechanicsSchema,
 );
 type BardClassFeatureMechanicsCodec = Schema.Union<
   typeof bardClassFeatureMechanicsMembers

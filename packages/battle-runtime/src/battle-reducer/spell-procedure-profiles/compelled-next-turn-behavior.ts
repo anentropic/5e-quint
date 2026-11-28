@@ -1,3 +1,4 @@
+import { COMPELLED_GROVEL_CONDITION } from "../domain-constants.ts";
 import { leveledSpellInvocationOptions } from "./profile.ts";
 import { optionalProperty } from "../../optional-property.ts";
 import { discoverTargetSavingThrowSpellCastActs } from "../saving-throw-metamagic-holes.ts";
@@ -721,7 +722,8 @@ function compelledBehaviorFleeAndGrovelIssues(
   if (flee.duration !== "target_turn") push("fleeDuration", effectPath);
   if (!spellMechanicsObjectHasOnlyKeys(grovel, GROVEL_FIELDS))
     push("grovelShape", effectPath);
-  if (grovel.condition !== "prone") push("grovelCondition", effectPath);
+  if (grovel.condition !== COMPELLED_GROVEL_CONDITION)
+    push("grovelCondition", effectPath);
   if (grovel.afterward !== "end_turn") push("grovelAfterward", effectPath);
 }
 
