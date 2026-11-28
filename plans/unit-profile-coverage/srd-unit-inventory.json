@@ -461,8 +461,8 @@
       "non-runtime": 12
     },
     "levelSevenClassRowsByDisposition": {
-      "catalog-installed-owner-evidence-present": 7,
-      "catalog-only/dead-for-now": 5,
+      "catalog-installed-owner-evidence-present": 8,
+      "catalog-only/dead-for-now": 4,
       "non-runtime": 12
     },
     "levelEightClassRowsByDisposition": {
@@ -523,10 +523,10 @@
       "character-creation or progression mechanic": 12
     },
     "allRowsByDisposition": {
-      "catalog-installed-owner-evidence-present": 664,
+      "catalog-installed-owner-evidence-present": 665,
       "non-runtime": 240,
       "class-progression-follow-up-required": 87,
-      "catalog-only/dead-for-now": 351,
+      "catalog-only/dead-for-now": 350,
       "missing-authored-runtime-closed": 23,
       "missing-authored-record": 82,
       "catalog-authored-review-required": 64
@@ -14846,14 +14846,8 @@
         "state": "installed",
         "unitId": "fighter_indomitable"
       },
-      "unitProfileDisposition": "profile-subset-supported",
+      "unitProfileDisposition": "supported-profile",
       "finalDisposition": "catalog-installed-owner-evidence-present",
-      "battleReadinessClosure": {
-        "source": "deferred-mechanics",
-        "kind": "profile-subset-remaining-mechanics-closed",
-        "owner": "follow-up Death Saving Throw failed-save reroll owner",
-        "reason": "A Death Saving Throw is a saving throw, so a rolled one can be rerolled; its natural 1 and natural 20 effects and its fixed DC need their own decision shape on the death save hole. A failure taken without a roll has no roll to reroll."
-      },
       "ownerEvidence": [
         {
           "owner": "Unit catalog/admission",
@@ -19322,14 +19316,8 @@
         "state": "installed",
         "unitId": "fighter_indomitable"
       },
-      "unitProfileDisposition": "profile-subset-supported",
+      "unitProfileDisposition": "supported-profile",
       "finalDisposition": "catalog-installed-owner-evidence-present",
-      "battleReadinessClosure": {
-        "source": "deferred-mechanics",
-        "kind": "profile-subset-remaining-mechanics-closed",
-        "owner": "follow-up Death Saving Throw failed-save reroll owner",
-        "reason": "A Death Saving Throw is a saving throw, so a rolled one can be rerolled; its natural 1 and natural 20 effects and its fixed DC need their own decision shape on the death save hole. A failure taken without a roll has no roll to reroll."
-      },
       "ownerEvidence": [
         {
           "owner": "Unit catalog/admission",
@@ -31417,23 +31405,30 @@
         "state": "current-surface-can-express-source-facts"
       },
       "authoredContent": {
-        "state": "missing-authored-record"
+        "state": "authored-record-present",
+        "unitId": "bard_countercharm",
+        "sourceRecordPath": "packages/surface/content/bard_countercharm.json"
       },
       "catalogAdmission": {
-        "state": "not-installed",
+        "state": "installed",
         "unitId": "bard_countercharm"
       },
-      "unitProfileDisposition": "unsupported-profile",
-      "finalDisposition": "catalog-only/dead-for-now",
-      "battleReadinessClosure": {
-        "source": "unit-claim",
-        "kind": "outside-battle-runtime",
-        "owner": "future class-feature triggered-Reaction save-failure reroll owner plus condition-application and range-witness owners",
-        "reason": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity."
-      },
-      "ownerEvidence": [],
-      "nextAction": "A future owner must consume a selected Countercharm source fact, observe an in-flight failed Saving Throw event, verify that the failed save's source effect applies the Charmed or Frightened condition, verify the triggering creature is the Bard or is within 30 feet through caller/table range witnesses, open an optional Reaction window for the Bard, spend the Bard's existing Reaction resource on commit, and reroll the same Saving Throw with Advantage while preserving the ordinary save outcome pipeline. The closure must not model Countercharm as a passive save bonus, preemptively grant Advantage to all Charmed/Frightened saves, copy spell or condition state into Bard-local storage, create a second Reaction ledger, or dispatch on Bard, Countercharm, Charmed/Frightened source spell, or condition authored identity.",
-      "battleReadinessStatus": "accepted-no-battle-effect"
+      "unitProfileDisposition": "supported-profile",
+      "finalDisposition": "catalog-installed-owner-evidence-present",
+      "ownerEvidence": [
+        {
+          "owner": "Unit catalog/admission",
+          "evidence": "candidate Unit bard_countercharm is installed in srdUnitCollection",
+          "status": "catalog evidence"
+        },
+        {
+          "owner": "battle-runtime",
+          "evidence": "plans/unit-profile-coverage/unit-claims.jsonl records this SRD Unit as supported or subset-supported; plans/unit-profile-coverage/unit-evidence.jsonl records deterministic-admission-projection evidence; U580-COUNTERCHARM at packages/battle-runtime/src/failed-save-reaction-reroll.test.ts",
+          "status": "owner evidence present"
+        }
+      ],
+      "nextAction": "Owner-specific operational evidence is classified and present.",
+      "battleReadinessStatus": "accepted"
     },
     {
       "id": "srd521:classes:level-7:class-feature-grant:cleric_blessed_strikes",
@@ -33919,14 +33914,8 @@
         "state": "installed",
         "unitId": "fighter_indomitable"
       },
-      "unitProfileDisposition": "profile-subset-supported",
+      "unitProfileDisposition": "supported-profile",
       "finalDisposition": "catalog-installed-owner-evidence-present",
-      "battleReadinessClosure": {
-        "source": "deferred-mechanics",
-        "kind": "profile-subset-remaining-mechanics-closed",
-        "owner": "follow-up Death Saving Throw failed-save reroll owner",
-        "reason": "A Death Saving Throw is a saving throw, so a rolled one can be rerolled; its natural 1 and natural 20 effects and its fixed DC need their own decision shape on the death save hole. A failure taken without a roll has no roll to reroll."
-      },
       "ownerEvidence": [
         {
           "owner": "Unit catalog/admission",

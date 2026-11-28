@@ -39,7 +39,7 @@ function validatorFor(hole: BattleHole) {
 describe("current Battle dice input", () => {
   for (const critical of [false, true]) {
     it(`bounds the actual ${critical ? "critical" : "ordinary"} damage request`, () => {
-      const hole = attackDamageHole(attack, critical, hit);
+      const hole = attackDamageHole(fighterId, attack, critical, hit);
       const validate = validatorFor(hole);
       const dice = critical ? [6, 1] : [6];
       const fill = (results: readonly number[]) => ({
@@ -124,7 +124,7 @@ describe("current Battle dice input", () => {
         rollMode: "advantage",
       },
     } as const;
-    const hole = attackDamageHole(action, true, criticalAdvantage);
+    const hole = attackDamageHole(goblinId, action, true, criticalAdvantage);
     expect(hole.damageDice).toEqual({
       kind: "fixed",
       groups: [
@@ -175,9 +175,17 @@ describe("current Battle dice input", () => {
     const candidateRef = battleProcedureExecutionRefForTest(
       "synthetic-candidate-rolls",
     );
-    const hole = attackDamageHole(attack, true, hit, [rider], [], [], 0, [
-      candidateRef,
-    ]);
+    const hole = attackDamageHole(
+      fighterId,
+      attack,
+      true,
+      hit,
+      [rider],
+      [],
+      [],
+      0,
+      [candidateRef],
+    );
     expect(hole.damageDice.kind).toBe("selectionDependent");
     const validate = validatorFor(hole);
     expect(

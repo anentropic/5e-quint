@@ -65,6 +65,7 @@ import { ATTACK_TARGET_HOLE_ID } from "../battle-runtime-protocol.ts";
 import { spellHealingAmount } from "../spell-effects.ts";
 import {
   spellHealingRollHole,
+  spellHealingRollHoleId,
   validateSpellHealingFill,
 } from "../spells-damage-fills.ts";
 import {
@@ -931,7 +932,7 @@ function resolveDirectHitPointRestoration(
     !fillsBelongToSpellCastHoles(input.input.fills, [
       ATTACK_TARGET_HOLE_ID,
       spellTargetListHoleId(input.invocation),
-      spellHealingRollHole(input.invocation).holeId,
+      spellHealingRollHoleId(input.invocation),
     ])
   ) {
     return invalidResult(
@@ -965,7 +966,7 @@ function resolveDirectHitPointRestoration(
 
   if (input.fillSet.healingRoll == null) {
     return needsHolesResult(input.input.state, input.input.subject, [
-      spellHealingRollHole(input.invocation),
+      spellHealingRollHole(input.actorId, input.invocation),
     ]);
   }
   const healingValidation = validateSpellHealingFill(

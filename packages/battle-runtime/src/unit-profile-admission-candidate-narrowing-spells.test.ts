@@ -324,9 +324,12 @@ describe("QMBT15 Spell Unit admission candidate narrowing", () => {
     expect(
       validateSpellDamageFill(
         damageRollFillWithGroups(
-          spellDamageHole(selectedSorcerousBurstInvocation, false, [
-            markedDamageRider,
-          ]),
+          spellDamageHole(
+            spellCasterId,
+            selectedSorcerousBurstInvocation,
+            false,
+            [markedDamageRider],
+          ),
           [[8, 3, 4], [2]],
         ),
         selectedSorcerousBurstInvocation,
@@ -337,9 +340,12 @@ describe("QMBT15 Spell Unit admission candidate narrowing", () => {
     expect(
       validateSpellDamageFill(
         damageRollFillWithGroups(
-          spellDamageHole(selectedSorcerousBurstInvocation, false, [
-            markedDamageRider,
-          ]),
+          spellDamageHole(
+            spellCasterId,
+            selectedSorcerousBurstInvocation,
+            false,
+            [markedDamageRider],
+          ),
           [[8, 3, 4], [2]],
           undefined,
           undefined,

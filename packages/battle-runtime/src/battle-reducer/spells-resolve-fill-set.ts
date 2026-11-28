@@ -69,14 +69,14 @@ import {
   duplicateHitInterceptionRollHoleId,
 } from "./duplicate-hit-interception.ts";
 import {
-  spellBurstDamageHole,
+  spellBurstDamageHoleId,
   rollModifierUsesTargetAbilityChoices,
   spellAttackSequencePartAttackRollHoleId,
   spellAttackSequencePartDamageHoleId,
   spellAttackSequencePartObjectTargetHoleId,
   spellAttackSequencePartTargetHoleId,
   compelledBehaviorOptionChoiceHoleId,
-  spellDamageHole,
+  spellDamageHoleId,
   spellDamageTypeChoiceHole,
   spellConditionChoices,
   spellInvocationHasConditionChoice,
@@ -2085,15 +2085,9 @@ export function spellFillSet(
       }
       if (invocation.procedure === "attackBurstSaveDamage") {
         const executionInvocation = { ...invocation, sourceProcedureRef };
-        const attackDamageHole = spellDamageHole(executionInvocation, false);
-        const criticalAttackDamageHole = spellDamageHole(
-          executionInvocation,
-          true,
-        );
-        const burstDamageHole = spellBurstDamageHole(executionInvocation);
         if (
-          fill.holeId === attackDamageHole.holeId ||
-          fill.holeId === criticalAttackDamageHole.holeId
+          fill.holeId === spellDamageHoleId(executionInvocation, false, []) ||
+          fill.holeId === spellDamageHoleId(executionInvocation, true, [])
         ) {
           /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
           if (attackBurstDamageRoll !== undefined) {
@@ -2107,7 +2101,7 @@ export function spellFillSet(
           attackBurstDamageRoll = fill;
           continue;
         }
-        if (fill.holeId === burstDamageHole.holeId) {
+        if (fill.holeId === spellBurstDamageHoleId(executionInvocation)) {
           /* v8 ignore start -- @preserve -- Malformed resolution input: this guard exists only to reject a fill that contradicts the admitted subject's discovered hole contract. */
           if (damageRoll !== undefined) {
             /* v8 ignore next -- @preserve -- Malformed fill set: discovery is the canonical hole contract; this return rejects a duplicate, wrong-kind, wrong-hole, or contradictory spell fill. */

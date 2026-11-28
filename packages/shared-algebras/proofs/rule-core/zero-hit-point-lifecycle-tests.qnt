@@ -36,24 +36,56 @@ module zeroHitPointLifecycleTests {
     }
   }
 
-  run test_temporary_hit_points_absorb_zero_hit_point_damage_before_failures = {
-    val vitals = {
-      kind: PlayerCharacter,
-      hitPoints: 0,
-      hitPointMaximum: 12,
-      temporaryHitPoints: 5,
-      dead: false,
-      unconscious: true,
-    }
-    val absorbed = applyDamageToZeroHitPointCreature(vitals, resetDeathSavingThrowLifecycle, 4, true)
-    val overflow = applyDamageToZeroHitPointCreature(vitals, resetDeathSavingThrowLifecycle, 7, true)
+  pure def zeroHitPointVitalsWithTemporaryHitPoints(temporaryHitPoints: int): CreatureVitals = {
+    kind: PlayerCharacter,
+    hitPoints: 0,
+    hitPointMaximum: 10,
+    temporaryHitPoints: temporaryHitPoints,
+    dead: false,
+    unconscious: true,
+  }
+
+  run test_temporary_hit_points_absorbed_damage_at_zero_still_fails = {
+    val vitals = zeroHitPointVitalsWithTemporaryHitPoints(5)
+    val absorbed = applyDamageToZeroHitPointCreature(vitals, resetDeathSavingThrowLifecycle, 4, false)
+    val criticalOverflow = applyDamageToZeroHitPointCreature(vitals, resetDeathSavingThrowLifecycle, 7, true)
     all {
       assert(absorbed.vitals.temporaryHitPoints == 1),
-      assert(deathSavingThrowFailures(absorbed.deathSavingThrows) == 0),
-      assert(overflow.vitals.temporaryHitPoints == 0),
-      assert(deathSavingThrowFailures(overflow.deathSavingThrows) == 2),
+      assert(absorbed.vitals.hitPoints == 0),
+      assert(deathSavingThrowFailures(absorbed.deathSavingThrows) == 1),
+      assert(criticalOverflow.vitals.temporaryHitPoints == 0),
+      assert(deathSavingThrowFailures(criticalOverflow.deathSavingThrows) == 2),
       assert(legalPlayerCharacterDeathSavingThrowState(absorbed.vitals, absorbed.deathSavingThrows)),
-      assert(legalPlayerCharacterDeathSavingThrowState(overflow.vitals, overflow.deathSavingThrows)),
+      assert(legalPlayerCharacterDeathSavingThrowState(criticalOverflow.vitals, criticalOverflow.deathSavingThrows)),
+    }
+  }
+
+  run test_damage_at_zero_tests_incoming_damage_against_maximum = {
+    val result = applyDamageToZeroHitPointCreature(
+      zeroHitPointVitalsWithTemporaryHitPoints(5),
+      resetDeathSavingThrowLifecycle,
+      12,
+      false
+    )
+    all {
+      assert(result.vitals.temporaryHitPoints == 0),
+      assert(result.vitals.dead),
+      assert(result.deathSavingThrows == Dead),
+      assert(legalPlayerCharacterDeathSavingThrowState(result.vitals, result.deathSavingThrows)),
+    }
+  }
+
+  run test_temporary_hit_points_absorbed_damage_ends_stable = {
+    val result = applyDamageToZeroHitPointCreature(
+      zeroHitPointVitalsWithTemporaryHitPoints(5),
+      Stable,
+      3,
+      false
+    )
+    all {
+      assert(result.vitals.temporaryHitPoints == 2),
+      assert(result.deathSavingThrows == Dying({ successes: 0, failures: 1 })),
+      assert(legalPlayerCharacterDeathSavingThrowState(result.vitals, result.deathSavingThrows)),
     }
   }
 
@@ -84,7 +116,11 @@ module zeroHitPointLifecycleTests {
       unconscious: true,
     }
     val lifecycle = Dying({ successes: 2, failures: 1 })
-    val result = resolveStartTurnDeathSavingThrow(vitals, lifecycle, 10)
+    val result = resolveStartTurnDeathSavingThrow(
+      vitals,
+      lifecycle,
+      unmodifiedDeathSavingThrowRoll(10),
+    )
     all {
       assert(result.deathSavingThrows == Stable),
       assert(legalPlayerCharacterDeathSavingThrowState(result.vitals, result.deathSavingThrows)),
@@ -100,13 +136,50 @@ module zeroHitPointLifecycleTests {
       dead: false,
       unconscious: true,
     }
-    val result = resolveStartTurnDeathSavingThrow(vitals, resetDeathSavingThrowLifecycle, 20)
+    val result = resolveStartTurnDeathSavingThrow(
+      vitals,
+      resetDeathSavingThrowLifecycle,
+      unmodifiedDeathSavingThrowRoll(20),
+    )
     all {
       assert(result.vitals.hitPoints == 1),
       assert(not(result.vitals.unconscious)),
       assert(result.deathSavingThrows == resetDeathSavingThrowLifecycle),
       assert(result.deathSavingThrowOutcome == DeathSavingThrowRegainedHitPoint),
       assert(legalPlayerCharacterDeathSavingThrowState(result.vitals, result.deathSavingThrows)),
+    }
+  }
+
+  run test_a_bonus_counts_toward_10_but_a_1_or_a_20_decides_first = {
+    val vitals = {
+      kind: PlayerCharacter,
+      hitPoints: 0,
+      hitPointMaximum: 12,
+      temporaryHitPoints: 0,
+      dead: false,
+      unconscious: true,
+    }
+    val lifecycle = Dying({ successes: 1, failures: 0 })
+    val withBonus = resolveStartTurnDeathSavingThrow(
+      vitals,
+      lifecycle,
+      { naturalD20: 2, bonus: 9 },
+    )
+    val shortOfTen = resolveStartTurnDeathSavingThrow(
+      vitals,
+      lifecycle,
+      { naturalD20: 2, bonus: 7 },
+    )
+    val oneWithBonus = resolveStartTurnDeathSavingThrow(
+      vitals,
+      lifecycle,
+      { naturalD20: 1, bonus: 9 },
+    )
+    all {
+      assert(withBonus.deathSavingThrows == Dying({ successes: 2, failures: 0 })),
+      assert(shortOfTen.deathSavingThrows == Dying({ successes: 1, failures: 1 })),
+      assert(oneWithBonus.deathSavingThrows == Dying({ successes: 1, failures: 2 })),
+      assert(not(deathSavingThrowRollFails({ naturalD20: 20, bonus: 0 }))),
     }
   }
 

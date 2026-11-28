@@ -408,6 +408,10 @@
                 "level": 5
               },
               {
+                "unitId": "bard_countercharm",
+                "level": 7
+              },
+              {
                 "unitId": "bard_ability_score_improvement_l4",
                 "level": 8
               },
@@ -7907,6 +7911,37 @@
               "section": "classes.md:908-912"
             },
             "rulesExcerpt": "#### Level 5: Font of Inspiration\n\nYou now regain all your expended uses of Bardic Inspiration when you finish a Short or Long Rest.\n\nIn addition, you can expend a spell slot (no action required) to regain one expended use of Bardic Inspiration."
+          },
+          {
+            "id": "bard_countercharm",
+            "name": "Countercharm",
+            "kind": "class_feature",
+            "acquiredAtLevel": 7,
+            "className": "bard",
+            "mechanics": {
+              "family": "failed_saving_throw_reroll_reaction",
+              "activationCost": {
+                "kind": "reaction"
+              },
+              "trigger": {
+                "kind": "creature_fails_saving_throw",
+                "creatures": "self_or_creature_within_range",
+                "rangeFeet": 30,
+                "againstEffectApplyingAnyOf": [
+                  "charmed",
+                  "frightened"
+                ]
+              },
+              "reroll": {
+                "mustUseNewRoll": true,
+                "rollMode": "advantage"
+              }
+            },
+            "provenance": {
+              "kind": "srd-5.2.1",
+              "section": "classes.md:914-916"
+            },
+            "rulesExcerpt": "#### Level 7: Countercharm\n\nYou can use musical notes or words of power to disrupt mind-influencing effects. If you or a creature within 30 feet of you fails a saving throw against an effect that applies the Charmed or Frightened condition, you can take a Reaction to cause the save to be rerolled, and the new roll has Advantage."
           },
           {
             "id": "bard_magical_discoveries",
@@ -103677,6 +103712,10 @@
                 "level": 5
               },
               {
+                "unitId": "bard_countercharm",
+                "level": 7
+              },
+              {
                 "unitId": "bard_ability_score_improvement_l4",
                 "level": 8
               },
@@ -111511,19 +111550,26 @@
               "code": "dangling-authored-dependency",
               "path": "$.units[1].featureGrants[5].unitId",
               "targetKind": "unit",
-              "targetId": "bard_ability_score_improvement_l4",
+              "targetId": "bard_countercharm",
               "relation": "unit-reference"
             },
             {
               "code": "dangling-authored-dependency",
               "path": "$.units[1].featureGrants[6].unitId",
               "targetKind": "unit",
-              "targetId": "bard_expertise",
+              "targetId": "bard_ability_score_improvement_l4",
               "relation": "unit-reference"
             },
             {
               "code": "dangling-authored-dependency",
               "path": "$.units[1].featureGrants[7].unitId",
+              "targetKind": "unit",
+              "targetId": "bard_expertise",
+              "relation": "unit-reference"
+            },
+            {
+              "code": "dangling-authored-dependency",
+              "path": "$.units[1].featureGrants[8].unitId",
               "targetKind": "unit",
               "targetId": "bard_magical_secrets",
               "relation": "unit-reference"
@@ -112874,19 +112920,26 @@
               "code": "dangling-authored-dependency",
               "path": "$.units[1].featureGrants[5].unitId",
               "targetKind": "unit",
-              "targetId": "bard_ability_score_improvement_l4",
+              "targetId": "bard_countercharm",
               "relation": "unit-reference"
             },
             {
               "code": "dangling-authored-dependency",
               "path": "$.units[1].featureGrants[6].unitId",
               "targetKind": "unit",
-              "targetId": "bard_expertise",
+              "targetId": "bard_ability_score_improvement_l4",
               "relation": "unit-reference"
             },
             {
               "code": "dangling-authored-dependency",
               "path": "$.units[1].featureGrants[7].unitId",
+              "targetKind": "unit",
+              "targetId": "bard_expertise",
+              "relation": "unit-reference"
+            },
+            {
+              "code": "dangling-authored-dependency",
+              "path": "$.units[1].featureGrants[8].unitId",
               "targetKind": "unit",
               "targetId": "bard_magical_secrets",
               "relation": "unit-reference"

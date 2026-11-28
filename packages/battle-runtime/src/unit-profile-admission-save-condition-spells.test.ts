@@ -1,3 +1,4 @@
+import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
 import { battleResolutionHolesForTest } from "./battle-runtime.test-support.ts";
 import { unitId as parseSharedUnitId } from "@dnd/shared/game-facts";
 import { battleRuntimeSessionForTest } from "./battle-runtime-session.test-support.ts";
@@ -1047,6 +1048,61 @@ describe("QMBT14 deterministic save-condition Spell Unit admission", () => {
     expect(contagionEffect(successState)).toBeUndefined();
   });
 
+  test("a failed Contagion save opens the Reaction window naming the Poisoned condition", () => {
+    const spell = spellRecord(contagionUnitId);
+    const session = spellBattleWithTargetReadiedRay({
+      preparedSpells: [spell],
+      spellSlots: [{ spellLevel: 5, count: 1 }],
+      casterClassLevels: [{ className: "cleric", level: 9 }],
+    });
+    const act = spellAct({
+      session,
+      spellId: contagionUnitId,
+      slotLevel: 5,
+    });
+    const targetFill = spellTargetFill(
+      requireHole(act.initialHoles, "targetChoice"),
+      contagionUnitId,
+      spellCasterId,
+      spellTargetId,
+    );
+    const abilityFill = abilityChoiceFill(
+      requireHole(act.initialHoles, "abilityChoice"),
+      "con",
+    );
+    const initialSave = requireResultHole(
+      resolveBattleSubject({
+        state: session.state,
+        subject: act.subject,
+        fills: [targetFill, abilityFill],
+      }),
+      "savingThrowOutcome",
+    );
+    const awaitingReaction = resolveBattleSubject({
+      state: session.state,
+      subject: act.subject,
+      fills: [
+        targetFill,
+        abilityFill,
+        savingThrowOutcomeFill(initialSave, [
+          {
+            targetId: spellTargetId,
+            succeeded: false,
+            withoutRoll: true as const,
+          },
+        ]),
+      ],
+    });
+    if (awaitingReaction.tag !== "needsHoles") {
+      throw new Error("Expected the failed-save Reaction window.");
+    }
+    expect(currentInterruptCheckpoint(awaitingReaction.state)).toMatchObject({
+      trigger: "saveFailed",
+      failedTargetIds: [spellTargetId],
+      appliedConditions: ["poisoned"],
+    });
+  });
+
   test("contagion requests its failed-save ability choice before the Saving Throw", () => {
     const spell = spellRecord(contagionUnitId);
     const session = spellBattle({
@@ -1621,6 +1677,14 @@ describe("QMBT14 deterministic save-condition Spell Unit admission", () => {
           },
         ]),
       ],
+    });
+    if (awaitingReaction.tag !== "needsHoles") {
+      throw new Error("Expected the failed-save Reaction window.");
+    }
+    expect(currentInterruptCheckpoint(awaitingReaction.state)).toMatchObject({
+      trigger: "saveFailed",
+      failedTargetIds: [spellTargetId],
+      appliedConditions: ["incapacitated"],
     });
 
     const declined = declineTargetReadiedSpellAfterFailedSave(awaitingReaction);

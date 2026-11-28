@@ -672,7 +672,7 @@ function resolveObjectContactDamage(input: {
   const damageRoll = input.fillSet.damageRoll;
   if (damageRoll === undefined) {
     return needsHolesResult(needsHolesState, input.subject, [
-      spellDamageHole(input.invocation),
+      spellDamageHole(input.actorId, input.invocation),
     ]);
   }
   const damageValidation = validateSpellDamageFill(

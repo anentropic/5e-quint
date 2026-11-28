@@ -100,7 +100,7 @@
               "numerator": 48
             },
             "witnessKinds": {
-              "contract-test": 16,
+              "contract-test": 17,
               "deterministic-qnt-replay": 5,
               "focused-mbt": 57,
               "runtime-test": 19
@@ -481,7 +481,7 @@
               "numerator": 51
             },
             "witnessKinds": {
-              "contract-test": 16,
+              "contract-test": 17,
               "deterministic-qnt-replay": 8,
               "focused-mbt": 57,
               "runtime-test": 19
@@ -865,7 +865,7 @@
               "numerator": 77
             },
             "witnessKinds": {
-              "contract-test": 16,
+              "contract-test": 17,
               "deterministic-qnt-replay": 14,
               "focused-mbt": 79,
               "runtime-test": 34
@@ -1112,7 +1112,7 @@
               "numerator": 78
             },
             "witnessKinds": {
-              "contract-test": 16,
+              "contract-test": 17,
               "deterministic-qnt-replay": 15,
               "focused-mbt": 79,
               "runtime-test": 36
@@ -1360,7 +1360,7 @@
               "numerator": 84
             },
             "witnessKinds": {
-              "contract-test": 16,
+              "contract-test": 17,
               "deterministic-qnt-replay": 17,
               "focused-mbt": 82,
               "runtime-test": 42
@@ -1614,7 +1614,7 @@
               "numerator": 85
             },
             "witnessKinds": {
-              "contract-test": 16,
+              "contract-test": 17,
               "deterministic-qnt-replay": 18,
               "focused-mbt": 82,
               "runtime-test": 44
@@ -1821,13 +1821,13 @@
               "strictTargetOpenCount": 0
             },
             "selectedIdentityReadiness": {
-              "denominator": 217,
-              "numerator": 217,
+              "denominator": 218,
+              "numerator": 218,
               "percent": "100%"
             },
             "srdAuthoredProductReadiness": {
-              "denominator": 138,
-              "numerator": 138,
+              "denominator": 139,
+              "numerator": 139,
               "percent": "100%"
             },
             "strictFinalSupport": {
@@ -1836,8 +1836,8 @@
               "percent": "100%"
             },
             "strictTargetClosure": {
-              "denominator": 306,
-              "numerator": 306,
+              "denominator": 307,
+              "numerator": 307,
               "percent": "100%"
             }
           },
@@ -1869,7 +1869,7 @@
               "numerator": 86
             },
             "witnessKinds": {
-              "contract-test": 16,
+              "contract-test": 17,
               "deterministic-qnt-replay": 19,
               "focused-mbt": 82,
               "runtime-test": 46
@@ -2077,13 +2077,13 @@
               "strictTargetOpenCount": 0
             },
             "selectedIdentityReadiness": {
-              "denominator": 218,
-              "numerator": 218,
+              "denominator": 219,
+              "numerator": 219,
               "percent": "100%"
             },
             "srdAuthoredProductReadiness": {
-              "denominator": 150,
-              "numerator": 150,
+              "denominator": 151,
+              "numerator": 151,
               "percent": "100%"
             },
             "strictFinalSupport": {
@@ -2092,8 +2092,8 @@
               "percent": "100%"
             },
             "strictTargetClosure": {
-              "denominator": 307,
-              "numerator": 307,
+              "denominator": 308,
+              "numerator": 308,
               "percent": "100%"
             }
           },
@@ -2125,7 +2125,7 @@
               "numerator": 86
             },
             "witnessKinds": {
-              "contract-test": 16,
+              "contract-test": 17,
               "deterministic-qnt-replay": 19,
               "focused-mbt": 82,
               "runtime-test": 46
@@ -2333,13 +2333,13 @@
               "strictTargetOpenCount": 0
             },
             "selectedIdentityReadiness": {
-              "denominator": 264,
-              "numerator": 264,
+              "denominator": 265,
+              "numerator": 265,
               "percent": "100%"
             },
             "srdAuthoredProductReadiness": {
-              "denominator": 159,
-              "numerator": 159,
+              "denominator": 160,
+              "numerator": 160,
               "percent": "100%"
             },
             "strictFinalSupport": {
@@ -2348,8 +2348,8 @@
               "percent": "100%"
             },
             "strictTargetClosure": {
-              "denominator": 353,
-              "numerator": 353,
+              "denominator": 354,
+              "numerator": 354,
               "percent": "100%"
             }
           },
@@ -2381,7 +2381,7 @@
               "numerator": 86
             },
             "witnessKinds": {
-              "contract-test": 16,
+              "contract-test": 17,
               "deterministic-qnt-replay": 19,
               "focused-mbt": 82,
               "runtime-test": 46
@@ -2577,13 +2577,13 @@
               "strictTargetOpenCount": 0
             },
             "selectedIdentityReadiness": {
-              "denominator": 276,
-              "numerator": 276,
+              "denominator": 277,
+              "numerator": 277,
               "percent": "100%"
             },
             "srdAuthoredProductReadiness": {
-              "denominator": 166,
-              "numerator": 166,
+              "denominator": 167,
+              "numerator": 167,
               "percent": "100%"
             },
             "strictFinalSupport": {
@@ -2592,8 +2592,8 @@
               "percent": "100%"
             },
             "strictTargetClosure": {
-              "denominator": 365,
-              "numerator": 365,
+              "denominator": 366,
+              "numerator": 366,
               "percent": "100%"
             }
           },
@@ -2625,7 +2625,7 @@
               "numerator": 86
             },
             "witnessKinds": {
-              "contract-test": 16,
+              "contract-test": 17,
               "deterministic-qnt-replay": 19,
               "focused-mbt": 82,
               "runtime-test": 46
@@ -2929,77 +2929,237 @@
       {
         "metrics": {
           "auditedEvidenceRows": {
-            "denominator": 179,
-            "numerator": 179
+            "denominator": 180,
+            "numerator": 180
           },
           "joinedEvidenceRows": {
-            "denominator": 179,
+            "denominator": 180,
             "numerator": 179
           },
           "missingJoinRows": {
-            "denominator": 179,
-            "numerator": 0
+            "denominator": 180,
+            "numerator": 1
           }
         },
-        "rowCount": 0,
-        "rows": [],
+        "rowCount": 1,
+        "rows": [
+          {
+            "collectionId": "srd-5.2.1",
+            "evidence": {
+              "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts",
+              "tag": "selected-identity-replay",
+              "taskId": "U580-COUNTERCHARM"
+            },
+            "kind": "class_feature",
+            "mcpScenarioJoin": {
+              "coveredFlowIds": [],
+              "missingFlowIds": [],
+              "requiredFlowIds": [],
+              "status": "not-applicable"
+            },
+            "parityWitnessJoin": {
+              "joinedRows": [],
+              "status": "missing-unit-profile-join",
+              "unitProfileJoinRowCount": 0,
+              "unitProfileWitnessOwners": []
+            },
+            "profileIds": [
+              "unit-feature.failed-save-reaction-reroll"
+            ],
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "unitId": "bard_countercharm"
+          }
+        ],
         "scopeId": "level-1-7"
       },
       {
         "metrics": {
           "auditedEvidenceRows": {
-            "denominator": 180,
-            "numerator": 180
+            "denominator": 181,
+            "numerator": 181
           },
           "joinedEvidenceRows": {
-            "denominator": 180,
+            "denominator": 181,
             "numerator": 180
           },
           "missingJoinRows": {
-            "denominator": 180,
-            "numerator": 0
+            "denominator": 181,
+            "numerator": 1
           }
         },
-        "rowCount": 0,
-        "rows": [],
+        "rowCount": 1,
+        "rows": [
+          {
+            "collectionId": "srd-5.2.1",
+            "evidence": {
+              "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts",
+              "tag": "selected-identity-replay",
+              "taskId": "U580-COUNTERCHARM"
+            },
+            "kind": "class_feature",
+            "mcpScenarioJoin": {
+              "coveredFlowIds": [],
+              "missingFlowIds": [],
+              "requiredFlowIds": [],
+              "status": "not-applicable"
+            },
+            "parityWitnessJoin": {
+              "joinedRows": [],
+              "status": "missing-unit-profile-join",
+              "unitProfileJoinRowCount": 0,
+              "unitProfileWitnessOwners": []
+            },
+            "profileIds": [
+              "unit-feature.failed-save-reaction-reroll"
+            ],
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "unitId": "bard_countercharm"
+          }
+        ],
         "scopeId": "level-1-8"
       },
       {
         "metrics": {
           "auditedEvidenceRows": {
-            "denominator": 187,
-            "numerator": 187
+            "denominator": 189,
+            "numerator": 189
           },
           "joinedEvidenceRows": {
-            "denominator": 187,
+            "denominator": 189,
             "numerator": 187
           },
           "missingJoinRows": {
-            "denominator": 187,
-            "numerator": 0
+            "denominator": 189,
+            "numerator": 2
           }
         },
-        "rowCount": 0,
-        "rows": [],
+        "rowCount": 2,
+        "rows": [
+          {
+            "collectionId": "srd-5.2.1",
+            "evidence": {
+              "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts",
+              "tag": "selected-identity-replay",
+              "taskId": "U580-COUNTERCHARM"
+            },
+            "kind": "class_feature",
+            "mcpScenarioJoin": {
+              "coveredFlowIds": [],
+              "missingFlowIds": [],
+              "requiredFlowIds": [],
+              "status": "not-applicable"
+            },
+            "parityWitnessJoin": {
+              "joinedRows": [],
+              "status": "missing-unit-profile-join",
+              "unitProfileJoinRowCount": 0,
+              "unitProfileWitnessOwners": []
+            },
+            "profileIds": [
+              "unit-feature.failed-save-reaction-reroll"
+            ],
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "unitId": "bard_countercharm"
+          },
+          {
+            "collectionId": "srd-5.2.1",
+            "evidence": {
+              "ownerPath": "packages/character-battle-runtime/src/fighter-indomitable-sdk-handoff.test.ts",
+              "tag": "selected-identity-replay",
+              "taskId": "L19D-04-FIGHTER-INDOMITABLE"
+            },
+            "kind": "class_feature",
+            "mcpScenarioJoin": {
+              "coveredFlowIds": [],
+              "missingFlowIds": [],
+              "requiredFlowIds": [],
+              "status": "not-applicable"
+            },
+            "parityWitnessJoin": {
+              "joinedRows": [],
+              "status": "missing-unit-profile-join",
+              "unitProfileJoinRowCount": 0,
+              "unitProfileWitnessOwners": []
+            },
+            "profileIds": [
+              "unit-feature.failed-saving-throw-reroll"
+            ],
+            "sourceRecordPath": "packages/surface/content/fighter_indomitable.json",
+            "unitId": "fighter_indomitable"
+          }
+        ],
         "scopeId": "level-1-9"
       },
       {
         "metrics": {
           "auditedEvidenceRows": {
-            "denominator": 192,
-            "numerator": 192
+            "denominator": 194,
+            "numerator": 194
           },
           "joinedEvidenceRows": {
-            "denominator": 192,
+            "denominator": 194,
             "numerator": 192
           },
           "missingJoinRows": {
-            "denominator": 192,
-            "numerator": 0
+            "denominator": 194,
+            "numerator": 2
           }
         },
-        "rowCount": 0,
-        "rows": [],
+        "rowCount": 2,
+        "rows": [
+          {
+            "collectionId": "srd-5.2.1",
+            "evidence": {
+              "ownerPath": "packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts",
+              "tag": "selected-identity-replay",
+              "taskId": "U580-COUNTERCHARM"
+            },
+            "kind": "class_feature",
+            "mcpScenarioJoin": {
+              "coveredFlowIds": [],
+              "missingFlowIds": [],
+              "requiredFlowIds": [],
+              "status": "not-applicable"
+            },
+            "parityWitnessJoin": {
+              "joinedRows": [],
+              "status": "missing-unit-profile-join",
+              "unitProfileJoinRowCount": 0,
+              "unitProfileWitnessOwners": []
+            },
+            "profileIds": [
+              "unit-feature.failed-save-reaction-reroll"
+            ],
+            "sourceRecordPath": "packages/surface/content/bard_countercharm.json",
+            "unitId": "bard_countercharm"
+          },
+          {
+            "collectionId": "srd-5.2.1",
+            "evidence": {
+              "ownerPath": "packages/character-battle-runtime/src/fighter-indomitable-sdk-handoff.test.ts",
+              "tag": "selected-identity-replay",
+              "taskId": "L19D-04-FIGHTER-INDOMITABLE"
+            },
+            "kind": "class_feature",
+            "mcpScenarioJoin": {
+              "coveredFlowIds": [],
+              "missingFlowIds": [],
+              "requiredFlowIds": [],
+              "status": "not-applicable"
+            },
+            "parityWitnessJoin": {
+              "joinedRows": [],
+              "status": "missing-unit-profile-join",
+              "unitProfileJoinRowCount": 0,
+              "unitProfileWitnessOwners": []
+            },
+            "profileIds": [
+              "unit-feature.failed-saving-throw-reroll"
+            ],
+            "sourceRecordPath": "packages/surface/content/fighter_indomitable.json",
+            "unitId": "fighter_indomitable"
+          }
+        ],
         "scopeId": "level-1-10"
       }
     ]

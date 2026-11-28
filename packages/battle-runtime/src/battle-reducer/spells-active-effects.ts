@@ -32,6 +32,7 @@
 export { applyDirectConditionSpellEffects } from "./direct-condition-lifecycle.ts";
 
 import { Match } from "effect";
+import type { Condition } from "@dnd/shared/game-facts";
 import { persistentAreaSaveDamageRepositionKind } from "./persistent-area-save-damage-lifecycle.ts";
 import {
   applyCondition,
@@ -129,7 +130,13 @@ import {
   ongoingSpellEffectRefForEmitter,
   ongoingSpellEffectRefKey,
 } from "./magic-suppression-ongoing-effect.ts";
-import { SPELL_CREATED_HELD_OBJECT_MELEE_REACH_FEET } from "./domain-constants.ts";
+import {
+  COMPELLED_GROVEL_CONDITION,
+  PERSISTENT_AREA_SAVE_COMPOSITE_FAILED_SAVE_CONDITION,
+  PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION,
+  PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION,
+  SPELL_CREATED_HELD_OBJECT_MELEE_REACH_FEET,
+} from "./domain-constants.ts";
 import {
   battleCreatureWithSpellCreatedHeldObjectHand,
   spellCreatedHeldObjectFreeHand,
@@ -2054,9 +2061,10 @@ export function applyPersistentAreaSaveConditionCastEffects(input: {
   });
   return {
     ...stateWithActiveEffect,
-    combatants: applyProneToCombatants(
+    combatants: applyConditionToCombatants(
       new Map(stateWithActiveEffect.combatants),
       input.failedTargetIds,
+      PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION,
     ),
   };
 }
@@ -2920,7 +2928,8 @@ export function applyPersistentAreaSaveConditionEscapeRestrainedCondition(
     (candidate) =>
       candidate.kind === "spellCondition" &&
       activeEffectSourceMatches(candidate, effect) &&
-      candidate.condition === "restrained",
+      candidate.condition ===
+        PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION,
   );
   const allocation = allocateBattleEffectOccurrenceForCreature({
     owner: target,
@@ -2928,10 +2937,10 @@ export function applyPersistentAreaSaveConditionEscapeRestrainedCondition(
       kind: "spellCondition",
       sourceProcedureRef: effect.sourceProcedureRef,
       sourceCombatantId: effect.sourceCombatantId,
-      condition: "restrained",
+      condition: PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION,
       conditionHadNonSpellSource: conditionHadNonSpellSourceBeforeSpellEffect(
         target,
-        "restrained",
+        PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION,
       ),
       escape: {
         kind: "abilityCheck",
@@ -2975,27 +2984,37 @@ export function removePersistentAreaSaveConditionEscapeRestrainedCondition(input
     > =>
       candidate.kind === "spellCondition" &&
       activeEffectSourceMatches(candidate, input) &&
-      candidate.condition === "restrained",
+      candidate.condition ===
+        PERSISTENT_AREA_SAVE_CONDITION_ESCAPE_FAILED_SAVE_CONDITION,
   );
   return effect === undefined
     ? input.state
     : removeSpellConditionEffect(input.state, input.targetId, effect);
 }
 
-export function applyPersistentAreaSaveConditionProneToTarget(
+export function applyPersistentAreaSaveConditionToTarget(
   state: BattleState,
   targetId: CombatantId,
 ): BattleState {
-  return applyProneToTarget(state, targetId);
+  return applyConditionToTarget(
+    state,
+    targetId,
+    PERSISTENT_AREA_SAVE_CONDITION_FAILED_SAVE_CONDITION,
+  );
 }
 
-export function applyProneToTarget(
+function applyConditionToTarget(
   state: BattleState,
   targetId: CombatantId,
+  condition: Condition,
 ): BattleState {
   return {
     ...state,
-    combatants: applyProneToCombatants(new Map(state.combatants), [targetId]),
+    combatants: applyConditionToCombatants(
+      new Map(state.combatants),
+      [targetId],
+      condition,
+    ),
   };
 }
 
@@ -3004,7 +3023,11 @@ export function applyPersistentAreaSaveCompositeFailedSaveEffect(
   targetId: CombatantId,
 ): BattleState {
   return breakBattleConcentration(
-    applyProneToTarget(state, targetId),
+    applyConditionToTarget(
+      state,
+      targetId,
+      PERSISTENT_AREA_SAVE_COMPOSITE_FAILED_SAVE_CONDITION,
+    ),
     targetId,
   );
 }
@@ -3088,19 +3111,20 @@ export function applyExecuteCompelledGrovelProneToTarget(
             (candidate) => candidate !== effect,
           ),
         },
-        applyCondition(target.conditions, "prone"),
+        applyCondition(target.conditions, COMPELLED_GROVEL_CONDITION),
       ),
     ),
   };
 }
 
-function applyProneToCombatants(
+function applyConditionToCombatants(
   combatants: Map<CombatantId, BattleCreatureState>,
   targetIds: readonly CombatantId[],
+  condition: Condition,
 ): Map<CombatantId, BattleCreatureState> {
   for (const targetId of targetIds) {
     const target = combatants.get(targetId);
-    /* v8 ignore start -- @preserve -- Defensive internal guard: prone target ids come from validated spell or feature saving-throw outcomes over the current combatant map. */
+    /* v8 ignore start -- @preserve -- Defensive internal guard: condition target ids come from validated spell or feature saving-throw outcomes over the current combatant map. */
     if (target === undefined) {
       continue;
     }
@@ -3109,7 +3133,7 @@ function applyProneToCombatants(
       targetId,
       battleCreatureStateWithKnockOutPreservedConditions(
         target,
-        applyCondition(target.conditions, "prone"),
+        applyCondition(target.conditions, condition),
       ),
     );
   }

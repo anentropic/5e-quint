@@ -1158,6 +1158,9 @@ export type BrutalStrikeMechanics = Schema.Schema.Type<
 export type IndomitableMechanics = Schema.Schema.Type<
   typeof SurfaceSchema.IndomitableMechanicsSchema
 >;
+export type FailedSavingThrowRerollReactionMechanics = Schema.Schema.Type<
+  typeof SurfaceSchema.FailedSavingThrowRerollReactionMechanicsSchema
+>;
 export type TacticalMasterMechanics = Schema.Schema.Type<
   typeof SurfaceSchema.TacticalMasterMechanicsSchema
 >;

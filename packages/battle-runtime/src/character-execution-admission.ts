@@ -1,5 +1,5 @@
 import { MARTIAL_ARTS_ATTACK_PROJECTION_SUPPORT_PROFILE } from "./unit-feature-execution-constants.ts";
-// UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.passive-initiative-roll-mode unit-feature.ongoing-feature-activation-movement-rider
+// UNIT-PROFILE-COVERAGE: runtime-owner unit-feature.passive-initiative-roll-mode unit-feature.ongoing-feature-activation-movement-rider unit-feature.failed-save-reaction-reroll
 import { spellProcedureExecution } from "./spell-procedure-execution-admission.ts";
 export { spellProcedureExecution } from "./spell-procedure-execution-admission.ts";
 import { optionalProperty } from "./optional-property.ts";
@@ -1481,6 +1481,10 @@ export function unitFeatureProcedureExecution(
         kind: value.kind,
         remarkableAthlete: value.remarkableAthlete,
       }),
+      failedSavingThrowRerollReaction: (value) => ({
+        kind: value.kind,
+        reaction: value.reaction,
+      }),
       openHandTechnique: (value) => {
         const resourcePoolRef = context.resourcePoolRefsByUnitId.get(
           value.technique.trigger.resourceUnitId,
@@ -1670,6 +1674,10 @@ export function unitSupportProcedureExecution(
       remarkableAthlete: (value) => ({
         kind: value.kind,
         remarkableAthlete: value.remarkableAthlete,
+      }),
+      failedSavingThrowRerollReaction: (value) => ({
+        kind: value.kind,
+        reaction: value.reaction,
       }),
       attackRollDefense: (value) => ({
         kind: value.kind,

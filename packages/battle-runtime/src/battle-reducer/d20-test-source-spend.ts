@@ -1,6 +1,7 @@
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.HEROIC_INSPIRATION_REROLL
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_SAVING_THROW_REROLL
 // KERNEL-COVERAGE: runtime-owner BATTLE.D20_TEST.FAILED_D20_TEST_ADDED_DIE
+// KERNEL-COVERAGE: runtime-owner BATTLE.ROLLED_DICE.HEROIC_INSPIRATION_REROLL
 // What a D20 Test source that costs something (Heroic Inspiration, a use of a
 // failed saving throw reroll, a Bardic Inspiration die, a use of a failed
 // ability check boost) shares: where its cost stands for one roll, and the
@@ -18,6 +19,7 @@ import type {
 } from "../battle-state-execution.ts";
 import type { BattleSubject } from "../battle-subjects.ts";
 import { subjectContinuationPhaseFor } from "./subject-continuation-phase.ts";
+import { sameD20TestRollKey } from "./d20-test-roll-key.ts";
 
 /**
  * Where a roller's cost for a reroll source can stand for one roll:
@@ -57,13 +59,6 @@ export type D20TestSpendRecord = keyof Pick<
 export type D20TestSpendRecordEntry<Record extends D20TestSpendRecord> =
   NonNullable<BattleAcceptedSubjectReplayEvidence[Record]>[number];
 
-function sameD20TestRoll(
-  left: BattleD20TestRollKey,
-  right: BattleD20TestRollKey,
-): boolean {
-  return left.rollerId === right.rollerId && left.holeId === right.holeId;
-}
-
 function takenRolls<Record extends D20TestSpendRecord>(
   state: BattleState,
   scope: D20TestSpendScope,
@@ -90,8 +85,17 @@ export function d20TestSourceTakeOnRoll<
   readonly roll: BattleD20TestRollKey;
 }): D20TestSpendRecordEntry<Record> | undefined {
   return takenRolls(input.state, input.scope, input.record).find((taken) =>
-    sameD20TestRoll(taken, input.roll),
+    sameD20TestRollKey(taken, input.roll),
   );
+}
+
+/** Whether an earlier pass of the subject recorded any roll as taking the source. */
+export function d20TestSourceTakenInScope(input: {
+  readonly state: BattleState;
+  readonly scope: D20TestSpendScope;
+  readonly record: D20TestSpendRecord;
+}): boolean {
+  return takenRolls(input.state, input.scope, input.record).length > 0;
 }
 
 /** Whether an earlier pass of the subject recorded this roll as taking its source. */

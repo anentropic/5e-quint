@@ -42,6 +42,7 @@ const EXPECTED_OBSERVED_ROOT_IDS = [
   "barbarian_instinctive_pounce",
   "barbarian_retaliation",
   "bard_bardic_inspiration",
+  "bard_countercharm",
   "bard_cutting_words",
   "cleric_disciple_of_life",
   "cleric_preserve_life",

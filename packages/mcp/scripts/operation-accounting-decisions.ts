@@ -2074,6 +2074,15 @@ export const OPERATION_ACCOUNTING = {
       ),
       REASONS.interruptSelection,
     ),
+    failedSaveReactionReroll: account(
+      "continuation",
+      "failedSaveReactionReroll",
+      at(
+        "packages/battle-runtime/src/battle-reducer/interrupt-lifecycle.ts",
+        "resolveInterruptLifecycleDecision",
+      ),
+      REASONS.interruptSelection,
+    ),
     opportunityAttack: account(
       "operation",
       "opportunityAttack",
@@ -3729,7 +3738,7 @@ export const OPERATION_ACCOUNTING = {
       "d20TestNaturalOneReroll",
       at(
         "packages/battle-runtime/src/battle-reducer/d20-test-reroll-fills.ts",
-        "resolveD20TestRerollFills",
+        "d20TestRerollFillCheck",
       ),
       REASONS.unitContinuation,
     ),
@@ -3784,6 +3793,15 @@ export const OPERATION_ACCOUNTING = {
       at(
         "packages/battle-runtime/src/battle-reducer/failed-saving-throw-reroll.ts",
         "failedSavingThrowRerollOutcomeIssue",
+      ),
+      REASONS.unitContinuation,
+    ),
+    failedSavingThrowRerollReaction: account(
+      "continuation",
+      "failedSavingThrowRerollReaction",
+      at(
+        "packages/battle-runtime/src/battle-reducer/failed-save-reaction-reroll.ts",
+        "failedSaveReactionRerollChoices",
       ),
       REASONS.unitContinuation,
     ),
@@ -4248,7 +4266,7 @@ export const OPERATION_ACCOUNTING = {
       "d20TestNaturalOneReroll",
       at(
         "packages/battle-runtime/src/battle-reducer/d20-test-reroll-fills.ts",
-        "resolveD20TestRerollFills",
+        "d20TestRerollFillCheck",
       ),
       REASONS.unitContinuation,
     ),
@@ -4303,6 +4321,15 @@ export const OPERATION_ACCOUNTING = {
       at(
         "packages/battle-runtime/src/battle-reducer/failed-saving-throw-reroll.ts",
         "failedSavingThrowRerollOutcomeIssue",
+      ),
+      REASONS.unitContinuation,
+    ),
+    failedSavingThrowRerollReaction: account(
+      "continuation",
+      "failedSavingThrowRerollReaction",
+      at(
+        "packages/battle-runtime/src/battle-reducer/failed-save-reaction-reroll.ts",
+        "failedSaveReactionRerollChoices",
       ),
       REASONS.unitContinuation,
     ),

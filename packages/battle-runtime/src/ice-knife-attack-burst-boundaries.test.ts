@@ -1,3 +1,4 @@
+import { currentInterruptCheckpoint } from "./battle-reducer/battle-snapshot.ts";
 import { assertStatBlockForTest } from "@dnd/surface/surface/stat-block-catalog.test-support";
 import { statBlockId } from "@dnd/shared/game-facts";
 import { describe, expect, test } from "vitest";
@@ -679,6 +680,13 @@ describe("Ice Knife attack-burst boundaries", () => {
         kind: "interruptDecision",
         decisionHole: { kind: "interruptDecision", trigger: "saveFailed" },
       },
+    });
+    if (awaitingReaction.tag !== "needsHoles") {
+      throw new Error("Expected the failed-save Reaction window.");
+    }
+    expect(currentInterruptCheckpoint(awaitingReaction.state)).toMatchObject({
+      failedTargetIds: [primaryTargetId],
+      appliedConditions: [],
     });
   });
 

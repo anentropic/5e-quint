@@ -39,427 +39,427 @@ import unitPeer37 from "../../../content/barbarian_weapon_mastery.json";
 import unitPeer38 from "../../../content/bard_ability_score_improvement_l4.json";
 import unitPeer39 from "../../../content/bard_bardic_inspiration.json";
 import unitPeer40 from "../../../content/bard_bonus_proficiencies.json";
-import unitPeer41 from "../../../content/bard_cutting_words.json";
-import unitPeer42 from "../../../content/bard_expertise.json";
-import unitPeer43 from "../../../content/bard_font_of_inspiration.json";
-import unitPeer44 from "../../../content/bard_jack_of_all_trades.json";
-import unitPeer45 from "../../../content/bard_magical_discoveries.json";
-import unitPeer46 from "../../../content/bard_magical_secrets.json";
-import unitPeer47 from "../../../content/barkskin.json";
-import unitPeer48 from "../../../content/bestow_curse.json";
-import unitPeer49 from "../../../content/bless.json";
-import unitPeer50 from "../../../content/blindness_deafness.json";
-import unitPeer51 from "../../../content/blink.json";
-import unitPeer52 from "../../../content/blur.json";
-import unitPeer53 from "../../../content/burning_hands.json";
-import unitPeer54 from "../../../content/calm_emotions.json";
-import unitPeer55 from "../../../content/chain_lightning.json";
-import unitPeer56 from "../../../content/charm_person.json";
-import unitPeer57 from "../../../content/chill_touch.json";
-import unitPeer58 from "../../../content/chromatic_orb.json";
-import unitPeer59 from "../../../content/clairvoyance.json";
-import unitPeer60 from "../../../content/class_barbarian.json";
-import unitPeer61 from "../../../content/class_bard.json";
-import unitPeer62 from "../../../content/class_cleric.json";
-import unitPeer63 from "../../../content/class_druid.json";
-import unitPeer64 from "../../../content/class_fighter.json";
-import unitPeer65 from "../../../content/class_monk.json";
-import unitPeer66 from "../../../content/class_paladin.json";
-import unitPeer67 from "../../../content/class_ranger.json";
-import unitPeer68 from "../../../content/class_rogue.json";
-import unitPeer69 from "../../../content/class_sorcerer.json";
-import unitPeer70 from "../../../content/class_warlock.json";
-import unitPeer71 from "../../../content/class_wizard.json";
-import unitPeer72 from "../../../content/cleric_ability_score_improvement_l4.json";
-import unitPeer73 from "../../../content/cleric_channel_divinity.json";
-import unitPeer74 from "../../../content/cleric_disciple_of_life.json";
-import unitPeer75 from "../../../content/cleric_divine_intervention.json";
-import unitPeer76 from "../../../content/cleric_divine_order.json";
-import unitPeer77 from "../../../content/cleric_life_domain_spells.json";
-import unitPeer78 from "../../../content/cleric_preserve_life.json";
-import unitPeer79 from "../../../content/cloudkill.json";
-import unitPeer80 from "../../../content/color_spray.json";
-import unitPeer81 from "../../../content/command.json";
-import unitPeer82 from "../../../content/commune.json";
-import unitPeer83 from "../../../content/commune_with_nature.json";
-import unitPeer84 from "../../../content/cone_of_cold.json";
-import unitPeer85 from "../../../content/confusion.json";
-import unitPeer86 from "../../../content/conjure_animals.json";
-import unitPeer87 from "../../../content/conjure_elemental.json";
-import unitPeer88 from "../../../content/contact_other_plane.json";
-import unitPeer89 from "../../../content/contagion.json";
-import unitPeer90 from "../../../content/continual_flame.json";
-import unitPeer91 from "../../../content/control_water.json";
-import unitPeer92 from "../../../content/control_weather.json";
-import unitPeer93 from "../../../content/counterspell.json";
-import unitPeer94 from "../../../content/create_food_and_water.json";
-import unitPeer95 from "../../../content/create_undead.json";
-import unitPeer96 from "../../../content/creation.json";
-import unitPeer97 from "../../../content/cure_wounds.json";
-import unitPeer98 from "../../../content/dancing_lights.json";
-import unitPeer99 from "../../../content/darkness.json";
-import unitPeer100 from "../../../content/darkvision.json";
-import unitPeer101 from "../../../content/darkvision_elf.json";
-import unitPeer102 from "../../../content/daylight.json";
-import unitPeer103 from "../../../content/detect_evil_and_good.json";
-import unitPeer104 from "../../../content/detect_magic.json";
-import unitPeer105 from "../../../content/detect_poison_and_disease.json";
-import unitPeer106 from "../../../content/detect_thoughts.json";
-import unitPeer107 from "../../../content/dimension_door.json";
-import unitPeer108 from "../../../content/disguise_self.json";
-import unitPeer109 from "../../../content/dispel_evil_and_good.json";
-import unitPeer110 from "../../../content/dispel_magic.json";
-import unitPeer111 from "../../../content/dissonant_whispers.json";
-import unitPeer112 from "../../../content/divine_favor.json";
-import unitPeer113 from "../../../content/divine_smite.json";
-import unitPeer114 from "../../../content/dominate_person.json";
-import unitPeer115 from "../../../content/dragons_breath.json";
-import unitPeer116 from "../../../content/dream.json";
-import unitPeer117 from "../../../content/druid_ability_score_improvement_l4.json";
-import unitPeer118 from "../../../content/druid_circle_of_the_land_spells.json";
-import unitPeer119 from "../../../content/druid_druidic.json";
-import unitPeer120 from "../../../content/druid_lands_aid.json";
-import unitPeer121 from "../../../content/druid_natures_ward.json";
-import unitPeer122 from "../../../content/druid_primal_order.json";
-import unitPeer123 from "../../../content/druid_wild_companion.json";
-import unitPeer124 from "../../../content/druid_wild_shape.json";
-import unitPeer125 from "../../../content/druidcraft.json";
-import unitPeer126 from "../../../content/eldritch_blast.json";
-import unitPeer127 from "../../../content/elementalism.json";
-import unitPeer128 from "../../../content/enhance_ability.json";
-import unitPeer129 from "../../../content/enlarge_reduce.json";
-import unitPeer130 from "../../../content/ensnaring_strike.json";
-import unitPeer131 from "../../../content/entangle.json";
-import unitPeer132 from "../../../content/enthrall.json";
-import unitPeer133 from "../../../content/equipment_shield.json";
-import unitPeer134 from "../../../content/etherealness.json";
-import unitPeer135 from "../../../content/expeditious_retreat.json";
-import unitPeer136 from "../../../content/faerie_fire.json";
-import unitPeer137 from "../../../content/false_life.json";
-import unitPeer138 from "../../../content/fear.json";
-import unitPeer139 from "../../../content/feat_ability_score_improvement.json";
-import unitPeer140 from "../../../content/feat_archery.json";
-import unitPeer141 from "../../../content/feat_boon_of_combat_prowess.json";
-import unitPeer142 from "../../../content/feat_defense.json";
-import unitPeer143 from "../../../content/feat_grappler.json";
-import unitPeer144 from "../../../content/feat_great_weapon_fighting.json";
-import unitPeer145 from "../../../content/feat_magic_initiate_cleric.json";
-import unitPeer146 from "../../../content/feat_magic_initiate_druid.json";
-import unitPeer147 from "../../../content/feat_magic_initiate_wizard.json";
-import unitPeer148 from "../../../content/feat_savage_attacker.json";
-import unitPeer149 from "../../../content/feat_skilled.json";
-import unitPeer150 from "../../../content/feat_two_weapon_fighting.json";
-import unitPeer151 from "../../../content/feather_fall.json";
-import unitPeer152 from "../../../content/fighter_ability_score_improvement_l4.json";
-import unitPeer153 from "../../../content/fighter_action_surge.json";
-import unitPeer154 from "../../../content/fighter_additional_fighting_style.json";
-import unitPeer155 from "../../../content/fighter_extra_attack.json";
-import unitPeer156 from "../../../content/fighter_fighting_style.json";
-import unitPeer157 from "../../../content/fighter_heroic_warrior.json";
-import unitPeer158 from "../../../content/fighter_improved_critical.json";
-import unitPeer159 from "../../../content/fighter_indomitable.json";
-import unitPeer160 from "../../../content/fighter_remarkable_athlete.json";
-import unitPeer161 from "../../../content/fighter_second_wind.json";
-import unitPeer162 from "../../../content/fighter_tactical_master.json";
-import unitPeer163 from "../../../content/fighter_tactical_mind.json";
-import unitPeer164 from "../../../content/fighter_tactical_shift.json";
-import unitPeer165 from "../../../content/fighter_weapon_mastery.json";
-import unitPeer166 from "../../../content/find_familiar.json";
-import unitPeer167 from "../../../content/find_traps.json";
-import unitPeer168 from "../../../content/finger_of_death.json";
-import unitPeer169 from "../../../content/fire_bolt.json";
-import unitPeer170 from "../../../content/fireball.json";
-import unitPeer171 from "../../../content/flame_blade.json";
-import unitPeer172 from "../../../content/flame_strike.json";
-import unitPeer173 from "../../../content/flaming_sphere.json";
-import unitPeer174 from "../../../content/fly.json";
-import unitPeer175 from "../../../content/fog_cloud.json";
-import unitPeer176 from "../../../content/gaseous_form.json";
-import unitPeer177 from "../../../content/geas.json";
-import unitPeer178 from "../../../content/glyph_of_warding.json";
-import unitPeer179 from "../../../content/grease.json";
-import unitPeer180 from "../../../content/greater_restoration.json";
-import unitPeer181 from "../../../content/guidance.json";
-import unitPeer182 from "../../../content/guiding_bolt.json";
-import unitPeer183 from "../../../content/gust_of_wind.json";
-import unitPeer184 from "../../../content/hallow.json";
-import unitPeer185 from "../../../content/harm.json";
-import unitPeer186 from "../../../content/haste.json";
-import unitPeer187 from "../../../content/healing_word.json";
-import unitPeer188 from "../../../content/heat_metal.json";
-import unitPeer189 from "../../../content/hellish_rebuke.json";
-import unitPeer190 from "../../../content/heroes_feast.json";
-import unitPeer191 from "../../../content/heroism.json";
-import unitPeer192 from "../../../content/hex.json";
-import unitPeer193 from "../../../content/hideous_laughter.json";
-import unitPeer194 from "../../../content/hold_monster.json";
-import unitPeer195 from "../../../content/hold_person.json";
-import unitPeer196 from "../../../content/hunters_mark.json";
-import unitPeer197 from "../../../content/hypnotic_pattern.json";
-import unitPeer198 from "../../../content/ice_knife.json";
-import unitPeer199 from "../../../content/ice_storm.json";
-import unitPeer200 from "../../../content/identify.json";
-import unitPeer201 from "../../../content/inflict_wounds.json";
-import unitPeer202 from "../../../content/insect_plague.json";
-import unitPeer203 from "../../../content/invisibility.json";
-import unitPeer204 from "../../../content/jump.json";
-import unitPeer205 from "../../../content/knock.json";
-import unitPeer206 from "../../../content/legend_lore.json";
-import unitPeer207 from "../../../content/lesser_restoration.json";
-import unitPeer208 from "../../../content/levitate.json";
-import unitPeer209 from "../../../content/light.json";
-import unitPeer210 from "../../../content/lightning_bolt.json";
-import unitPeer211 from "../../../content/locate_animals_or_plants.json";
-import unitPeer212 from "../../../content/locate_object.json";
-import unitPeer213 from "../../../content/longstrider.json";
-import unitPeer214 from "../../../content/mage_armor.json";
-import unitPeer215 from "../../../content/mage_hand.json";
-import unitPeer216 from "../../../content/magic_circle.json";
-import unitPeer217 from "../../../content/magic_missile.json";
-import unitPeer218 from "../../../content/magic_mouth.json";
-import unitPeer219 from "../../../content/magic_weapon.json";
-import unitPeer220 from "../../../content/major_image.json";
-import unitPeer221 from "../../../content/mass_cure_wounds.json";
-import unitPeer222 from "../../../content/mass_healing_word.json";
-import unitPeer223 from "../../../content/mastery_cleave.json";
-import unitPeer224 from "../../../content/mastery_graze.json";
-import unitPeer225 from "../../../content/mastery_nick.json";
-import unitPeer226 from "../../../content/mastery_push.json";
-import unitPeer227 from "../../../content/mastery_sap.json";
-import unitPeer228 from "../../../content/mastery_slow.json";
-import unitPeer229 from "../../../content/mastery_topple.json";
-import unitPeer230 from "../../../content/mastery_vex.json";
-import unitPeer231 from "../../../content/meld_into_stone.json";
-import unitPeer232 from "../../../content/mending.json";
-import unitPeer233 from "../../../content/message.json";
-import unitPeer234 from "../../../content/mind_spike.json";
-import unitPeer235 from "../../../content/minor_illusion.json";
-import unitPeer236 from "../../../content/mirror_image.json";
-import unitPeer237 from "../../../content/mislead.json";
-import unitPeer238 from "../../../content/misty_step.json";
-import unitPeer239 from "../../../content/modify_memory.json";
-import unitPeer240 from "../../../content/monk_ability_score_improvement_l4.json";
-import unitPeer241 from "../../../content/monk_acrobatic_movement.json";
-import unitPeer242 from "../../../content/monk_deflect_attacks.json";
-import unitPeer243 from "../../../content/monk_evasion.json";
-import unitPeer244 from "../../../content/monk_extra_attack.json";
-import unitPeer245 from "../../../content/monk_heightened_focus.json";
-import unitPeer246 from "../../../content/monk_martial_arts.json";
-import unitPeer247 from "../../../content/monk_monks_focus.json";
-import unitPeer248 from "../../../content/monk_open_hand_technique.json";
-import unitPeer249 from "../../../content/monk_self_restoration.json";
-import unitPeer250 from "../../../content/monk_slow_fall.json";
-import unitPeer251 from "../../../content/monk_stunning_strike.json";
-import unitPeer252 from "../../../content/monk_unarmored_defense.json";
-import unitPeer253 from "../../../content/monk_unarmored_movement.json";
-import unitPeer254 from "../../../content/monk_uncanny_metabolism.json";
-import unitPeer255 from "../../../content/moonbeam.json";
-import unitPeer256 from "../../../content/nondetection.json";
-import unitPeer257 from "../../../content/orc_adrenaline_rush.json";
-import unitPeer258 from "../../../content/orc_relentless_endurance.json";
-import unitPeer259 from "../../../content/paladin_ability_score_improvement_l4.json";
-import unitPeer260 from "../../../content/paladin_abjure_foes.json";
-import unitPeer261 from "../../../content/paladin_aura_of_courage.json";
-import unitPeer262 from "../../../content/paladin_channel_divinity.json";
-import unitPeer263 from "../../../content/paladin_extra_attack.json";
-import unitPeer264 from "../../../content/paladin_fighting_style.json";
-import unitPeer265 from "../../../content/paladin_lay_on_hands.json";
-import unitPeer266 from "../../../content/paladin_oath_of_devotion_spells.json";
-import unitPeer267 from "../../../content/paladin_paladins_smite.json";
-import unitPeer268 from "../../../content/paladin_sacred_weapon.json";
-import unitPeer269 from "../../../content/paladin_weapon_mastery.json";
-import unitPeer270 from "../../../content/pass_without_trace.json";
-import unitPeer271 from "../../../content/passwall.json";
-import unitPeer272 from "../../../content/phantasmal_force.json";
-import unitPeer273 from "../../../content/phantasmal_killer.json";
-import unitPeer274 from "../../../content/planar_binding.json";
-import unitPeer275 from "../../../content/plane_shift.json";
-import unitPeer276 from "../../../content/plant_growth.json";
-import unitPeer277 from "../../../content/poison_spray.json";
-import unitPeer278 from "../../../content/power_word_kill.json";
-import unitPeer279 from "../../../content/power_word_stun.json";
-import unitPeer280 from "../../../content/prayer_of_healing.json";
-import unitPeer281 from "../../../content/prestidigitation.json";
-import unitPeer282 from "../../../content/produce_flame.json";
-import unitPeer283 from "../../../content/project_image.json";
-import unitPeer284 from "../../../content/protection_from_energy.json";
-import unitPeer285 from "../../../content/protection_from_evil_and_good.json";
-import unitPeer286 from "../../../content/protection_from_poison.json";
-import unitPeer287 from "../../../content/raise_dead.json";
-import unitPeer288 from "../../../content/ranger_ability_score_improvement_l4.json";
-import unitPeer289 from "../../../content/ranger_ability_score_improvement_l8.json";
-import unitPeer290 from "../../../content/ranger_defensive_tactics.json";
-import unitPeer291 from "../../../content/ranger_deft_explorer.json";
-import unitPeer292 from "../../../content/ranger_expertise.json";
-import unitPeer293 from "../../../content/ranger_extra_attack.json";
-import unitPeer294 from "../../../content/ranger_favored_enemy.json";
-import unitPeer295 from "../../../content/ranger_fighting_style.json";
-import unitPeer296 from "../../../content/ranger_hunters_lore.json";
-import unitPeer297 from "../../../content/ranger_hunters_prey.json";
-import unitPeer298 from "../../../content/ranger_roving.json";
-import unitPeer299 from "../../../content/ranger_tireless.json";
-import unitPeer300 from "../../../content/ranger_weapon_mastery.json";
-import unitPeer301 from "../../../content/ray_of_enfeeblement.json";
-import unitPeer302 from "../../../content/ray_of_frost.json";
-import unitPeer303 from "../../../content/ray_of_sickness.json";
-import unitPeer304 from "../../../content/reincarnate.json";
-import unitPeer305 from "../../../content/remove_curse.json";
-import unitPeer306 from "../../../content/resistance.json";
-import unitPeer307 from "../../../content/resurrection.json";
-import unitPeer308 from "../../../content/revivify.json";
-import unitPeer309 from "../../../content/rogue_ability_score_improvement_l10.json";
-import unitPeer310 from "../../../content/rogue_ability_score_improvement_l4.json";
-import unitPeer311 from "../../../content/rogue_cunning_action.json";
-import unitPeer312 from "../../../content/rogue_cunning_strike.json";
-import unitPeer313 from "../../../content/rogue_evasion.json";
-import unitPeer314 from "../../../content/rogue_expertise.json";
-import unitPeer315 from "../../../content/rogue_fast_hands.json";
-import unitPeer316 from "../../../content/rogue_reliable_talent.json";
-import unitPeer317 from "../../../content/rogue_second_story_work.json";
-import unitPeer318 from "../../../content/rogue_sneak_attack.json";
-import unitPeer319 from "../../../content/rogue_steady_aim.json";
-import unitPeer320 from "../../../content/rogue_supreme_sneak.json";
-import unitPeer321 from "../../../content/rogue_thieves_cant.json";
-import unitPeer322 from "../../../content/rogue_uncanny_dodge.json";
-import unitPeer323 from "../../../content/rogue_weapon_mastery.json";
-import unitPeer324 from "../../../content/rope_trick.json";
-import unitPeer325 from "../../../content/sacred_flame.json";
-import unitPeer326 from "../../../content/sanctuary.json";
-import unitPeer327 from "../../../content/scorching_ray.json";
-import unitPeer328 from "../../../content/scrying.json";
-import unitPeer329 from "../../../content/searing_smite.json";
-import unitPeer330 from "../../../content/see_invisibility.json";
-import unitPeer331 from "../../../content/seeming.json";
-import unitPeer332 from "../../../content/sending.json";
-import unitPeer333 from "../../../content/shatter.json";
-import unitPeer334 from "../../../content/shield.json";
-import unitPeer335 from "../../../content/shield_of_faith.json";
-import unitPeer336 from "../../../content/shillelagh.json";
-import unitPeer337 from "../../../content/shining_smite.json";
-import unitPeer338 from "../../../content/shocking_grasp.json";
-import unitPeer339 from "../../../content/silence.json";
-import unitPeer340 from "../../../content/sleep.json";
-import unitPeer341 from "../../../content/sleet_storm.json";
-import unitPeer342 from "../../../content/slow.json";
-import unitPeer343 from "../../../content/sorcerer_ability_score_improvement_l4.json";
-import unitPeer344 from "../../../content/sorcerer_draconic_resilience.json";
-import unitPeer345 from "../../../content/sorcerer_draconic_spells.json";
-import unitPeer346 from "../../../content/sorcerer_font_of_magic.json";
-import unitPeer347 from "../../../content/sorcerer_innate_sorcery.json";
-import unitPeer348 from "../../../content/sorcerer_metamagic.json";
-import unitPeer349 from "../../../content/sorcerer_sorcerous_restoration.json";
-import unitPeer350 from "../../../content/sorcerous_burst.json";
-import unitPeer351 from "../../../content/spare_the_dying.json";
-import unitPeer352 from "../../../content/speak_with_animals.json";
-import unitPeer353 from "../../../content/speak_with_dead.json";
-import unitPeer354 from "../../../content/speak_with_plants.json";
-import unitPeer355 from "../../../content/species_dragonborn.json";
-import unitPeer356 from "../../../content/species_dragonborn_breath_weapon.json";
-import unitPeer357 from "../../../content/species_dragonborn_damage_resistance.json";
-import unitPeer358 from "../../../content/species_dragonborn_darkvision.json";
-import unitPeer359 from "../../../content/species_dwarf.json";
-import unitPeer360 from "../../../content/species_dwarf_darkvision.json";
-import unitPeer361 from "../../../content/species_dwarf_dwarven_resilience.json";
-import unitPeer362 from "../../../content/species_dwarf_dwarven_toughness.json";
-import unitPeer363 from "../../../content/species_elf.json";
-import unitPeer364 from "../../../content/species_elf_fey_ancestry.json";
-import unitPeer365 from "../../../content/species_elf_keen_senses.json";
-import unitPeer366 from "../../../content/species_elf_trance.json";
-import unitPeer367 from "../../../content/species_gnome.json";
-import unitPeer368 from "../../../content/species_gnome_darkvision.json";
-import unitPeer369 from "../../../content/species_gnome_gnomish_cunning.json";
-import unitPeer370 from "../../../content/species_gnome_gnomish_lineage.json";
-import unitPeer371 from "../../../content/species_goliath.json";
-import unitPeer372 from "../../../content/species_goliath_powerful_build.json";
-import unitPeer373 from "../../../content/species_halfling.json";
-import unitPeer374 from "../../../content/species_halfling_brave.json";
-import unitPeer375 from "../../../content/species_halfling_luck.json";
-import unitPeer376 from "../../../content/species_halfling_naturally_stealthy.json";
-import unitPeer377 from "../../../content/species_halfling_nimbleness.json";
-import unitPeer378 from "../../../content/species_human.json";
-import unitPeer379 from "../../../content/species_human_resourceful.json";
-import unitPeer380 from "../../../content/species_human_skillful.json";
-import unitPeer381 from "../../../content/species_human_versatile.json";
-import unitPeer382 from "../../../content/species_orc.json";
-import unitPeer383 from "../../../content/species_orc_darkvision.json";
-import unitPeer384 from "../../../content/species_tiefling.json";
-import unitPeer385 from "../../../content/species_tiefling_darkvision.json";
-import unitPeer386 from "../../../content/spider_climb.json";
-import unitPeer387 from "../../../content/spike_growth.json";
-import unitPeer388 from "../../../content/spirit_guardians.json";
-import unitPeer389 from "../../../content/spiritual_weapon.json";
-import unitPeer390 from "../../../content/starry_wisp.json";
-import unitPeer391 from "../../../content/subclass_barbarian_path_of_the_berserker.json";
-import unitPeer392 from "../../../content/subclass_bard_college_of_lore.json";
-import unitPeer393 from "../../../content/subclass_cleric_life_domain.json";
-import unitPeer394 from "../../../content/subclass_druid_circle_of_the_land.json";
-import unitPeer395 from "../../../content/subclass_fighter_champion.json";
-import unitPeer396 from "../../../content/subclass_monk_warrior_of_the_open_hand.json";
-import unitPeer397 from "../../../content/subclass_paladin_oath_of_devotion.json";
-import unitPeer398 from "../../../content/subclass_ranger_hunter.json";
-import unitPeer399 from "../../../content/subclass_rogue_thief.json";
-import unitPeer400 from "../../../content/subclass_sorcerer_draconic_sorcery.json";
-import unitPeer401 from "../../../content/subclass_warlock_fiend_patron.json";
-import unitPeer402 from "../../../content/subclass_wizard_evoker.json";
-import unitPeer403 from "../../../content/suggestion.json";
-import unitPeer404 from "../../../content/summon_dragon.json";
-import unitPeer405 from "../../../content/telekinesis.json";
-import unitPeer406 from "../../../content/telepathic_bond.json";
-import unitPeer407 from "../../../content/teleport.json";
-import unitPeer408 from "../../../content/teleportation_circle.json";
-import unitPeer409 from "../../../content/thaumaturgy.json";
-import unitPeer410 from "../../../content/thunderwave.json";
-import unitPeer411 from "../../../content/tiny_hut.json";
-import unitPeer412 from "../../../content/tongues.json";
-import unitPeer413 from "../../../content/tree_stride.json";
-import unitPeer414 from "../../../content/true_seeing.json";
-import unitPeer415 from "../../../content/true_strike.json";
-import unitPeer416 from "../../../content/vicious_mockery.json";
-import unitPeer417 from "../../../content/vitriolic_sphere.json";
-import unitPeer418 from "../../../content/wall_of_fire.json";
-import unitPeer419 from "../../../content/wall_of_force.json";
-import unitPeer420 from "../../../content/wall_of_stone.json";
-import unitPeer421 from "../../../content/warding_bond.json";
-import unitPeer422 from "../../../content/warlock_ability_score_improvement_l4.json";
-import unitPeer423 from "../../../content/warlock_contact_patron.json";
-import unitPeer424 from "../../../content/warlock_dark_ones_blessing.json";
-import unitPeer425 from "../../../content/warlock_eldritch_invocations.json";
-import unitPeer426 from "../../../content/warlock_fiend_spells.json";
-import unitPeer427 from "../../../content/warlock_fiendish_resilience.json";
-import unitPeer428 from "../../../content/warlock_magical_cunning.json";
-import unitPeer429 from "../../../content/warlock_pact_magic.json";
-import unitPeer430 from "../../../content/water_breathing.json";
-import unitPeer431 from "../../../content/water_walk.json";
-import unitPeer432 from "../../../content/weapon_club.json";
-import unitPeer433 from "../../../content/weapon_dagger.json";
-import unitPeer434 from "../../../content/weapon_flail.json";
-import unitPeer435 from "../../../content/weapon_greataxe.json";
-import unitPeer436 from "../../../content/weapon_longsword.json";
-import unitPeer437 from "../../../content/weapon_mace.json";
-import unitPeer438 from "../../../content/weapon_morningstar.json";
-import unitPeer439 from "../../../content/weapon_quarterstaff.json";
-import unitPeer440 from "../../../content/weapon_shortbow.json";
-import unitPeer441 from "../../../content/weapon_shortsword.json";
-import unitPeer442 from "../../../content/weapon_sling.json";
-import unitPeer443 from "../../../content/weapon_spear.json";
-import unitPeer444 from "../../../content/weapon_whip.json";
-import unitPeer445 from "../../../content/web.json";
-import unitPeer446 from "../../../content/wind_walk.json";
-import unitPeer447 from "../../../content/wizard_ability_score_improvement_l4.json";
-import unitPeer448 from "../../../content/wizard_arcane_recovery.json";
-import unitPeer449 from "../../../content/wizard_empowered_evocation.json";
-import unitPeer450 from "../../../content/wizard_evocation_savant.json";
-import unitPeer451 from "../../../content/wizard_memorize_spell.json";
-import unitPeer452 from "../../../content/wizard_potent_cantrip.json";
-import unitPeer453 from "../../../content/wizard_ritual_adept.json";
-import unitPeer454 from "../../../content/wizard_scholar.json";
-import unitPeer455 from "../../../content/word_of_recall.json";
-import unitPeer456 from "../../../content/zone_of_truth.json";
+import unitPeer41 from "../../../content/bard_countercharm.json";
+import unitPeer42 from "../../../content/bard_cutting_words.json";
+import unitPeer43 from "../../../content/bard_expertise.json";
+import unitPeer44 from "../../../content/bard_font_of_inspiration.json";
+import unitPeer45 from "../../../content/bard_jack_of_all_trades.json";
+import unitPeer46 from "../../../content/bard_magical_discoveries.json";
+import unitPeer47 from "../../../content/bard_magical_secrets.json";
+import unitPeer48 from "../../../content/barkskin.json";
+import unitPeer49 from "../../../content/bestow_curse.json";
+import unitPeer50 from "../../../content/bless.json";
+import unitPeer51 from "../../../content/blindness_deafness.json";
+import unitPeer52 from "../../../content/blink.json";
+import unitPeer53 from "../../../content/blur.json";
+import unitPeer54 from "../../../content/burning_hands.json";
+import unitPeer55 from "../../../content/calm_emotions.json";
+import unitPeer56 from "../../../content/chain_lightning.json";
+import unitPeer57 from "../../../content/charm_person.json";
+import unitPeer58 from "../../../content/chill_touch.json";
+import unitPeer59 from "../../../content/chromatic_orb.json";
+import unitPeer60 from "../../../content/clairvoyance.json";
+import unitPeer61 from "../../../content/class_barbarian.json";
+import unitPeer62 from "../../../content/class_bard.json";
+import unitPeer63 from "../../../content/class_cleric.json";
+import unitPeer64 from "../../../content/class_druid.json";
+import unitPeer65 from "../../../content/class_fighter.json";
+import unitPeer66 from "../../../content/class_monk.json";
+import unitPeer67 from "../../../content/class_paladin.json";
+import unitPeer68 from "../../../content/class_ranger.json";
+import unitPeer69 from "../../../content/class_rogue.json";
+import unitPeer70 from "../../../content/class_sorcerer.json";
+import unitPeer71 from "../../../content/class_warlock.json";
+import unitPeer72 from "../../../content/class_wizard.json";
+import unitPeer73 from "../../../content/cleric_ability_score_improvement_l4.json";
+import unitPeer74 from "../../../content/cleric_channel_divinity.json";
+import unitPeer75 from "../../../content/cleric_disciple_of_life.json";
+import unitPeer76 from "../../../content/cleric_divine_intervention.json";
+import unitPeer77 from "../../../content/cleric_divine_order.json";
+import unitPeer78 from "../../../content/cleric_life_domain_spells.json";
+import unitPeer79 from "../../../content/cleric_preserve_life.json";
+import unitPeer80 from "../../../content/cloudkill.json";
+import unitPeer81 from "../../../content/color_spray.json";
+import unitPeer82 from "../../../content/command.json";
+import unitPeer83 from "../../../content/commune.json";
+import unitPeer84 from "../../../content/commune_with_nature.json";
+import unitPeer85 from "../../../content/cone_of_cold.json";
+import unitPeer86 from "../../../content/confusion.json";
+import unitPeer87 from "../../../content/conjure_animals.json";
+import unitPeer88 from "../../../content/conjure_elemental.json";
+import unitPeer89 from "../../../content/contact_other_plane.json";
+import unitPeer90 from "../../../content/contagion.json";
+import unitPeer91 from "../../../content/continual_flame.json";
+import unitPeer92 from "../../../content/control_water.json";
+import unitPeer93 from "../../../content/control_weather.json";
+import unitPeer94 from "../../../content/counterspell.json";
+import unitPeer95 from "../../../content/create_food_and_water.json";
+import unitPeer96 from "../../../content/create_undead.json";
+import unitPeer97 from "../../../content/creation.json";
+import unitPeer98 from "../../../content/cure_wounds.json";
+import unitPeer99 from "../../../content/dancing_lights.json";
+import unitPeer100 from "../../../content/darkness.json";
+import unitPeer101 from "../../../content/darkvision.json";
+import unitPeer102 from "../../../content/darkvision_elf.json";
+import unitPeer103 from "../../../content/daylight.json";
+import unitPeer104 from "../../../content/detect_evil_and_good.json";
+import unitPeer105 from "../../../content/detect_magic.json";
+import unitPeer106 from "../../../content/detect_poison_and_disease.json";
+import unitPeer107 from "../../../content/detect_thoughts.json";
+import unitPeer108 from "../../../content/dimension_door.json";
+import unitPeer109 from "../../../content/disguise_self.json";
+import unitPeer110 from "../../../content/dispel_evil_and_good.json";
+import unitPeer111 from "../../../content/dispel_magic.json";
+import unitPeer112 from "../../../content/dissonant_whispers.json";
+import unitPeer113 from "../../../content/divine_favor.json";
+import unitPeer114 from "../../../content/divine_smite.json";
+import unitPeer115 from "../../../content/dominate_person.json";
+import unitPeer116 from "../../../content/dragons_breath.json";
+import unitPeer117 from "../../../content/dream.json";
+import unitPeer118 from "../../../content/druid_ability_score_improvement_l4.json";
+import unitPeer119 from "../../../content/druid_circle_of_the_land_spells.json";
+import unitPeer120 from "../../../content/druid_druidic.json";
+import unitPeer121 from "../../../content/druid_lands_aid.json";
+import unitPeer122 from "../../../content/druid_natures_ward.json";
+import unitPeer123 from "../../../content/druid_primal_order.json";
+import unitPeer124 from "../../../content/druid_wild_companion.json";
+import unitPeer125 from "../../../content/druid_wild_shape.json";
+import unitPeer126 from "../../../content/druidcraft.json";
+import unitPeer127 from "../../../content/eldritch_blast.json";
+import unitPeer128 from "../../../content/elementalism.json";
+import unitPeer129 from "../../../content/enhance_ability.json";
+import unitPeer130 from "../../../content/enlarge_reduce.json";
+import unitPeer131 from "../../../content/ensnaring_strike.json";
+import unitPeer132 from "../../../content/entangle.json";
+import unitPeer133 from "../../../content/enthrall.json";
+import unitPeer134 from "../../../content/equipment_shield.json";
+import unitPeer135 from "../../../content/etherealness.json";
+import unitPeer136 from "../../../content/expeditious_retreat.json";
+import unitPeer137 from "../../../content/faerie_fire.json";
+import unitPeer138 from "../../../content/false_life.json";
+import unitPeer139 from "../../../content/fear.json";
+import unitPeer140 from "../../../content/feat_ability_score_improvement.json";
+import unitPeer141 from "../../../content/feat_archery.json";
+import unitPeer142 from "../../../content/feat_boon_of_combat_prowess.json";
+import unitPeer143 from "../../../content/feat_defense.json";
+import unitPeer144 from "../../../content/feat_grappler.json";
+import unitPeer145 from "../../../content/feat_great_weapon_fighting.json";
+import unitPeer146 from "../../../content/feat_magic_initiate_cleric.json";
+import unitPeer147 from "../../../content/feat_magic_initiate_druid.json";
+import unitPeer148 from "../../../content/feat_magic_initiate_wizard.json";
+import unitPeer149 from "../../../content/feat_savage_attacker.json";
+import unitPeer150 from "../../../content/feat_skilled.json";
+import unitPeer151 from "../../../content/feat_two_weapon_fighting.json";
+import unitPeer152 from "../../../content/feather_fall.json";
+import unitPeer153 from "../../../content/fighter_ability_score_improvement_l4.json";
+import unitPeer154 from "../../../content/fighter_action_surge.json";
+import unitPeer155 from "../../../content/fighter_additional_fighting_style.json";
+import unitPeer156 from "../../../content/fighter_extra_attack.json";
+import unitPeer157 from "../../../content/fighter_fighting_style.json";
+import unitPeer158 from "../../../content/fighter_heroic_warrior.json";
+import unitPeer159 from "../../../content/fighter_improved_critical.json";
+import unitPeer160 from "../../../content/fighter_indomitable.json";
+import unitPeer161 from "../../../content/fighter_remarkable_athlete.json";
+import unitPeer162 from "../../../content/fighter_second_wind.json";
+import unitPeer163 from "../../../content/fighter_tactical_master.json";
+import unitPeer164 from "../../../content/fighter_tactical_mind.json";
+import unitPeer165 from "../../../content/fighter_tactical_shift.json";
+import unitPeer166 from "../../../content/fighter_weapon_mastery.json";
+import unitPeer167 from "../../../content/find_familiar.json";
+import unitPeer168 from "../../../content/find_traps.json";
+import unitPeer169 from "../../../content/finger_of_death.json";
+import unitPeer170 from "../../../content/fire_bolt.json";
+import unitPeer171 from "../../../content/fireball.json";
+import unitPeer172 from "../../../content/flame_blade.json";
+import unitPeer173 from "../../../content/flame_strike.json";
+import unitPeer174 from "../../../content/flaming_sphere.json";
+import unitPeer175 from "../../../content/fly.json";
+import unitPeer176 from "../../../content/fog_cloud.json";
+import unitPeer177 from "../../../content/gaseous_form.json";
+import unitPeer178 from "../../../content/geas.json";
+import unitPeer179 from "../../../content/glyph_of_warding.json";
+import unitPeer180 from "../../../content/grease.json";
+import unitPeer181 from "../../../content/greater_restoration.json";
+import unitPeer182 from "../../../content/guidance.json";
+import unitPeer183 from "../../../content/guiding_bolt.json";
+import unitPeer184 from "../../../content/gust_of_wind.json";
+import unitPeer185 from "../../../content/hallow.json";
+import unitPeer186 from "../../../content/harm.json";
+import unitPeer187 from "../../../content/haste.json";
+import unitPeer188 from "../../../content/healing_word.json";
+import unitPeer189 from "../../../content/heat_metal.json";
+import unitPeer190 from "../../../content/hellish_rebuke.json";
+import unitPeer191 from "../../../content/heroes_feast.json";
+import unitPeer192 from "../../../content/heroism.json";
+import unitPeer193 from "../../../content/hex.json";
+import unitPeer194 from "../../../content/hideous_laughter.json";
+import unitPeer195 from "../../../content/hold_monster.json";
+import unitPeer196 from "../../../content/hold_person.json";
+import unitPeer197 from "../../../content/hunters_mark.json";
+import unitPeer198 from "../../../content/hypnotic_pattern.json";
+import unitPeer199 from "../../../content/ice_knife.json";
+import unitPeer200 from "../../../content/ice_storm.json";
+import unitPeer201 from "../../../content/identify.json";
+import unitPeer202 from "../../../content/inflict_wounds.json";
+import unitPeer203 from "../../../content/insect_plague.json";
+import unitPeer204 from "../../../content/invisibility.json";
+import unitPeer205 from "../../../content/jump.json";
+import unitPeer206 from "../../../content/knock.json";
+import unitPeer207 from "../../../content/legend_lore.json";
+import unitPeer208 from "../../../content/lesser_restoration.json";
+import unitPeer209 from "../../../content/levitate.json";
+import unitPeer210 from "../../../content/light.json";
+import unitPeer211 from "../../../content/lightning_bolt.json";
+import unitPeer212 from "../../../content/locate_animals_or_plants.json";
+import unitPeer213 from "../../../content/locate_object.json";
+import unitPeer214 from "../../../content/longstrider.json";
+import unitPeer215 from "../../../content/mage_armor.json";
+import unitPeer216 from "../../../content/mage_hand.json";
+import unitPeer217 from "../../../content/magic_circle.json";
+import unitPeer218 from "../../../content/magic_missile.json";
+import unitPeer219 from "../../../content/magic_mouth.json";
+import unitPeer220 from "../../../content/magic_weapon.json";
+import unitPeer221 from "../../../content/major_image.json";
+import unitPeer222 from "../../../content/mass_cure_wounds.json";
+import unitPeer223 from "../../../content/mass_healing_word.json";
+import unitPeer224 from "../../../content/mastery_cleave.json";
+import unitPeer225 from "../../../content/mastery_graze.json";
+import unitPeer226 from "../../../content/mastery_nick.json";
+import unitPeer227 from "../../../content/mastery_push.json";
+import unitPeer228 from "../../../content/mastery_sap.json";
+import unitPeer229 from "../../../content/mastery_slow.json";
+import unitPeer230 from "../../../content/mastery_topple.json";
+import unitPeer231 from "../../../content/mastery_vex.json";
+import unitPeer232 from "../../../content/meld_into_stone.json";
+import unitPeer233 from "../../../content/mending.json";
+import unitPeer234 from "../../../content/message.json";
+import unitPeer235 from "../../../content/mind_spike.json";
+import unitPeer236 from "../../../content/minor_illusion.json";
+import unitPeer237 from "../../../content/mirror_image.json";
+import unitPeer238 from "../../../content/mislead.json";
+import unitPeer239 from "../../../content/misty_step.json";
+import unitPeer240 from "../../../content/modify_memory.json";
+import unitPeer241 from "../../../content/monk_ability_score_improvement_l4.json";
+import unitPeer242 from "../../../content/monk_acrobatic_movement.json";
+import unitPeer243 from "../../../content/monk_deflect_attacks.json";
+import unitPeer244 from "../../../content/monk_evasion.json";
+import unitPeer245 from "../../../content/monk_extra_attack.json";
+import unitPeer246 from "../../../content/monk_heightened_focus.json";
+import unitPeer247 from "../../../content/monk_martial_arts.json";
+import unitPeer248 from "../../../content/monk_monks_focus.json";
+import unitPeer249 from "../../../content/monk_open_hand_technique.json";
+import unitPeer250 from "../../../content/monk_self_restoration.json";
+import unitPeer251 from "../../../content/monk_slow_fall.json";
+import unitPeer252 from "../../../content/monk_stunning_strike.json";
+import unitPeer253 from "../../../content/monk_unarmored_defense.json";
+import unitPeer254 from "../../../content/monk_unarmored_movement.json";
+import unitPeer255 from "../../../content/monk_uncanny_metabolism.json";
+import unitPeer256 from "../../../content/moonbeam.json";
+import unitPeer257 from "../../../content/nondetection.json";
+import unitPeer258 from "../../../content/orc_adrenaline_rush.json";
+import unitPeer259 from "../../../content/orc_relentless_endurance.json";
+import unitPeer260 from "../../../content/paladin_ability_score_improvement_l4.json";
+import unitPeer261 from "../../../content/paladin_abjure_foes.json";
+import unitPeer262 from "../../../content/paladin_aura_of_courage.json";
+import unitPeer263 from "../../../content/paladin_channel_divinity.json";
+import unitPeer264 from "../../../content/paladin_extra_attack.json";
+import unitPeer265 from "../../../content/paladin_fighting_style.json";
+import unitPeer266 from "../../../content/paladin_lay_on_hands.json";
+import unitPeer267 from "../../../content/paladin_oath_of_devotion_spells.json";
+import unitPeer268 from "../../../content/paladin_paladins_smite.json";
+import unitPeer269 from "../../../content/paladin_sacred_weapon.json";
+import unitPeer270 from "../../../content/paladin_weapon_mastery.json";
+import unitPeer271 from "../../../content/pass_without_trace.json";
+import unitPeer272 from "../../../content/passwall.json";
+import unitPeer273 from "../../../content/phantasmal_force.json";
+import unitPeer274 from "../../../content/phantasmal_killer.json";
+import unitPeer275 from "../../../content/planar_binding.json";
+import unitPeer276 from "../../../content/plane_shift.json";
+import unitPeer277 from "../../../content/plant_growth.json";
+import unitPeer278 from "../../../content/poison_spray.json";
+import unitPeer279 from "../../../content/power_word_kill.json";
+import unitPeer280 from "../../../content/power_word_stun.json";
+import unitPeer281 from "../../../content/prayer_of_healing.json";
+import unitPeer282 from "../../../content/prestidigitation.json";
+import unitPeer283 from "../../../content/produce_flame.json";
+import unitPeer284 from "../../../content/project_image.json";
+import unitPeer285 from "../../../content/protection_from_energy.json";
+import unitPeer286 from "../../../content/protection_from_evil_and_good.json";
+import unitPeer287 from "../../../content/protection_from_poison.json";
+import unitPeer288 from "../../../content/raise_dead.json";
+import unitPeer289 from "../../../content/ranger_ability_score_improvement_l4.json";
+import unitPeer290 from "../../../content/ranger_ability_score_improvement_l8.json";
+import unitPeer291 from "../../../content/ranger_defensive_tactics.json";
+import unitPeer292 from "../../../content/ranger_deft_explorer.json";
+import unitPeer293 from "../../../content/ranger_expertise.json";
+import unitPeer294 from "../../../content/ranger_extra_attack.json";
+import unitPeer295 from "../../../content/ranger_favored_enemy.json";
+import unitPeer296 from "../../../content/ranger_fighting_style.json";
+import unitPeer297 from "../../../content/ranger_hunters_lore.json";
+import unitPeer298 from "../../../content/ranger_hunters_prey.json";
+import unitPeer299 from "../../../content/ranger_roving.json";
+import unitPeer300 from "../../../content/ranger_tireless.json";
+import unitPeer301 from "../../../content/ranger_weapon_mastery.json";
+import unitPeer302 from "../../../content/ray_of_enfeeblement.json";
+import unitPeer303 from "../../../content/ray_of_frost.json";
+import unitPeer304 from "../../../content/ray_of_sickness.json";
+import unitPeer305 from "../../../content/reincarnate.json";
+import unitPeer306 from "../../../content/remove_curse.json";
+import unitPeer307 from "../../../content/resistance.json";
+import unitPeer308 from "../../../content/resurrection.json";
+import unitPeer309 from "../../../content/revivify.json";
+import unitPeer310 from "../../../content/rogue_ability_score_improvement_l10.json";
+import unitPeer311 from "../../../content/rogue_ability_score_improvement_l4.json";
+import unitPeer312 from "../../../content/rogue_cunning_action.json";
+import unitPeer313 from "../../../content/rogue_cunning_strike.json";
+import unitPeer314 from "../../../content/rogue_evasion.json";
+import unitPeer315 from "../../../content/rogue_expertise.json";
+import unitPeer316 from "../../../content/rogue_fast_hands.json";
+import unitPeer317 from "../../../content/rogue_reliable_talent.json";
+import unitPeer318 from "../../../content/rogue_second_story_work.json";
+import unitPeer319 from "../../../content/rogue_sneak_attack.json";
+import unitPeer320 from "../../../content/rogue_steady_aim.json";
+import unitPeer321 from "../../../content/rogue_supreme_sneak.json";
+import unitPeer322 from "../../../content/rogue_thieves_cant.json";
+import unitPeer323 from "../../../content/rogue_uncanny_dodge.json";
+import unitPeer324 from "../../../content/rogue_weapon_mastery.json";
+import unitPeer325 from "../../../content/rope_trick.json";
+import unitPeer326 from "../../../content/sacred_flame.json";
+import unitPeer327 from "../../../content/sanctuary.json";
+import unitPeer328 from "../../../content/scorching_ray.json";
+import unitPeer329 from "../../../content/scrying.json";
+import unitPeer330 from "../../../content/searing_smite.json";
+import unitPeer331 from "../../../content/see_invisibility.json";
+import unitPeer332 from "../../../content/seeming.json";
+import unitPeer333 from "../../../content/sending.json";
+import unitPeer334 from "../../../content/shatter.json";
+import unitPeer335 from "../../../content/shield.json";
+import unitPeer336 from "../../../content/shield_of_faith.json";
+import unitPeer337 from "../../../content/shillelagh.json";
+import unitPeer338 from "../../../content/shining_smite.json";
+import unitPeer339 from "../../../content/shocking_grasp.json";
+import unitPeer340 from "../../../content/silence.json";
+import unitPeer341 from "../../../content/sleep.json";
+import unitPeer342 from "../../../content/sleet_storm.json";
+import unitPeer343 from "../../../content/slow.json";
+import unitPeer344 from "../../../content/sorcerer_ability_score_improvement_l4.json";
+import unitPeer345 from "../../../content/sorcerer_draconic_resilience.json";
+import unitPeer346 from "../../../content/sorcerer_draconic_spells.json";
+import unitPeer347 from "../../../content/sorcerer_font_of_magic.json";
+import unitPeer348 from "../../../content/sorcerer_innate_sorcery.json";
+import unitPeer349 from "../../../content/sorcerer_metamagic.json";
+import unitPeer350 from "../../../content/sorcerer_sorcerous_restoration.json";
+import unitPeer351 from "../../../content/sorcerous_burst.json";
+import unitPeer352 from "../../../content/spare_the_dying.json";
+import unitPeer353 from "../../../content/speak_with_animals.json";
+import unitPeer354 from "../../../content/speak_with_dead.json";
+import unitPeer355 from "../../../content/speak_with_plants.json";
+import unitPeer356 from "../../../content/species_dragonborn.json";
+import unitPeer357 from "../../../content/species_dragonborn_breath_weapon.json";
+import unitPeer358 from "../../../content/species_dragonborn_damage_resistance.json";
+import unitPeer359 from "../../../content/species_dragonborn_darkvision.json";
+import unitPeer360 from "../../../content/species_dwarf.json";
+import unitPeer361 from "../../../content/species_dwarf_darkvision.json";
+import unitPeer362 from "../../../content/species_dwarf_dwarven_resilience.json";
+import unitPeer363 from "../../../content/species_dwarf_dwarven_toughness.json";
+import unitPeer364 from "../../../content/species_elf.json";
+import unitPeer365 from "../../../content/species_elf_fey_ancestry.json";
+import unitPeer366 from "../../../content/species_elf_keen_senses.json";
+import unitPeer367 from "../../../content/species_elf_trance.json";
+import unitPeer368 from "../../../content/species_gnome.json";
+import unitPeer369 from "../../../content/species_gnome_darkvision.json";
+import unitPeer370 from "../../../content/species_gnome_gnomish_cunning.json";
+import unitPeer371 from "../../../content/species_gnome_gnomish_lineage.json";
+import unitPeer372 from "../../../content/species_goliath.json";
+import unitPeer373 from "../../../content/species_goliath_powerful_build.json";
+import unitPeer374 from "../../../content/species_halfling.json";
+import unitPeer375 from "../../../content/species_halfling_brave.json";
+import unitPeer376 from "../../../content/species_halfling_luck.json";
+import unitPeer377 from "../../../content/species_halfling_naturally_stealthy.json";
+import unitPeer378 from "../../../content/species_halfling_nimbleness.json";
+import unitPeer379 from "../../../content/species_human.json";
+import unitPeer380 from "../../../content/species_human_resourceful.json";
+import unitPeer381 from "../../../content/species_human_skillful.json";
+import unitPeer382 from "../../../content/species_human_versatile.json";
+import unitPeer383 from "../../../content/species_orc.json";
+import unitPeer384 from "../../../content/species_orc_darkvision.json";
+import unitPeer385 from "../../../content/species_tiefling.json";
+import unitPeer386 from "../../../content/species_tiefling_darkvision.json";
+import unitPeer387 from "../../../content/spider_climb.json";
+import unitPeer388 from "../../../content/spike_growth.json";
+import unitPeer389 from "../../../content/spirit_guardians.json";
+import unitPeer390 from "../../../content/spiritual_weapon.json";
+import unitPeer391 from "../../../content/starry_wisp.json";
+import unitPeer392 from "../../../content/subclass_barbarian_path_of_the_berserker.json";
+import unitPeer393 from "../../../content/subclass_bard_college_of_lore.json";
+import unitPeer394 from "../../../content/subclass_cleric_life_domain.json";
+import unitPeer395 from "../../../content/subclass_druid_circle_of_the_land.json";
+import unitPeer396 from "../../../content/subclass_fighter_champion.json";
+import unitPeer397 from "../../../content/subclass_monk_warrior_of_the_open_hand.json";
+import unitPeer398 from "../../../content/subclass_paladin_oath_of_devotion.json";
+import unitPeer399 from "../../../content/subclass_ranger_hunter.json";
+import unitPeer400 from "../../../content/subclass_rogue_thief.json";
+import unitPeer401 from "../../../content/subclass_sorcerer_draconic_sorcery.json";
+import unitPeer402 from "../../../content/subclass_warlock_fiend_patron.json";
+import unitPeer403 from "../../../content/subclass_wizard_evoker.json";
+import unitPeer404 from "../../../content/suggestion.json";
+import unitPeer405 from "../../../content/summon_dragon.json";
+import unitPeer406 from "../../../content/telekinesis.json";
+import unitPeer407 from "../../../content/telepathic_bond.json";
+import unitPeer408 from "../../../content/teleport.json";
+import unitPeer409 from "../../../content/teleportation_circle.json";
+import unitPeer410 from "../../../content/thaumaturgy.json";
+import unitPeer411 from "../../../content/thunderwave.json";
+import unitPeer412 from "../../../content/tiny_hut.json";
+import unitPeer413 from "../../../content/tongues.json";
+import unitPeer414 from "../../../content/tree_stride.json";
+import unitPeer415 from "../../../content/true_seeing.json";
+import unitPeer416 from "../../../content/true_strike.json";
+import unitPeer417 from "../../../content/vicious_mockery.json";
+import unitPeer418 from "../../../content/vitriolic_sphere.json";
+import unitPeer419 from "../../../content/wall_of_fire.json";
+import unitPeer420 from "../../../content/wall_of_force.json";
+import unitPeer421 from "../../../content/wall_of_stone.json";
+import unitPeer422 from "../../../content/warding_bond.json";
+import unitPeer423 from "../../../content/warlock_ability_score_improvement_l4.json";
+import unitPeer424 from "../../../content/warlock_contact_patron.json";
+import unitPeer425 from "../../../content/warlock_dark_ones_blessing.json";
+import unitPeer426 from "../../../content/warlock_eldritch_invocations.json";
+import unitPeer427 from "../../../content/warlock_fiend_spells.json";
+import unitPeer428 from "../../../content/warlock_fiendish_resilience.json";
+import unitPeer429 from "../../../content/warlock_magical_cunning.json";
+import unitPeer430 from "../../../content/warlock_pact_magic.json";
+import unitPeer431 from "../../../content/water_breathing.json";
+import unitPeer432 from "../../../content/water_walk.json";
+import unitPeer433 from "../../../content/weapon_club.json";
+import unitPeer434 from "../../../content/weapon_dagger.json";
+import unitPeer435 from "../../../content/weapon_flail.json";
+import unitPeer436 from "../../../content/weapon_greataxe.json";
+import unitPeer437 from "../../../content/weapon_longsword.json";
+import unitPeer438 from "../../../content/weapon_mace.json";
+import unitPeer439 from "../../../content/weapon_morningstar.json";
+import unitPeer440 from "../../../content/weapon_quarterstaff.json";
+import unitPeer441 from "../../../content/weapon_shortbow.json";
+import unitPeer442 from "../../../content/weapon_shortsword.json";
+import unitPeer443 from "../../../content/weapon_sling.json";
+import unitPeer444 from "../../../content/weapon_spear.json";
+import unitPeer445 from "../../../content/weapon_whip.json";
+import unitPeer446 from "../../../content/web.json";
+import unitPeer447 from "../../../content/wind_walk.json";
+import unitPeer448 from "../../../content/wizard_ability_score_improvement_l4.json";
+import unitPeer449 from "../../../content/wizard_arcane_recovery.json";
+import unitPeer450 from "../../../content/wizard_empowered_evocation.json";
+import unitPeer451 from "../../../content/wizard_evocation_savant.json";
+import unitPeer452 from "../../../content/wizard_memorize_spell.json";
+import unitPeer453 from "../../../content/wizard_potent_cantrip.json";
+import unitPeer454 from "../../../content/wizard_ritual_adept.json";
+import unitPeer455 from "../../../content/wizard_scholar.json";
+import unitPeer456 from "../../../content/word_of_recall.json";
+import unitPeer457 from "../../../content/zone_of_truth.json";
 
 // Generated from the ordered SRD Unit publication membership and canonical strict JSON peers.
 // Regenerate with pnpm generate:surface-unit-aggregate.
 export const srdUnitAggregateInputs = [
-  unitPeer60,
   unitPeer61,
   unitPeer62,
   unitPeer63,
@@ -471,20 +471,20 @@ export const srdUnitAggregateInputs = [
   unitPeer69,
   unitPeer70,
   unitPeer71,
+  unitPeer72,
   unitPeer19,
   unitPeer20,
   unitPeer21,
   unitPeer22,
-  unitPeer355,
-  unitPeer359,
-  unitPeer363,
-  unitPeer367,
-  unitPeer373,
-  unitPeer378,
-  unitPeer371,
-  unitPeer382,
-  unitPeer384,
-  unitPeer391,
+  unitPeer356,
+  unitPeer360,
+  unitPeer364,
+  unitPeer368,
+  unitPeer374,
+  unitPeer379,
+  unitPeer372,
+  unitPeer383,
+  unitPeer385,
   unitPeer392,
   unitPeer393,
   unitPeer394,
@@ -496,20 +496,21 @@ export const srdUnitAggregateInputs = [
   unitPeer400,
   unitPeer401,
   unitPeer402,
-  unitPeer156,
-  unitPeer161,
-  unitPeer165,
-  unitPeer153,
-  unitPeer155,
-  unitPeer164,
-  unitPeer163,
-  unitPeer159,
-  unitPeer162,
-  unitPeer152,
+  unitPeer403,
   unitPeer157,
-  unitPeer158,
-  unitPeer160,
+  unitPeer162,
+  unitPeer166,
   unitPeer154,
+  unitPeer156,
+  unitPeer165,
+  unitPeer164,
+  unitPeer160,
+  unitPeer163,
+  unitPeer153,
+  unitPeer158,
+  unitPeer159,
+  unitPeer161,
+  unitPeer155,
   unitPeer24,
   unitPeer30,
   unitPeer33,
@@ -524,118 +525,118 @@ export const srdUnitAggregateInputs = [
   unitPeer37,
   unitPeer39,
   unitPeer40,
+  unitPeer44,
+  unitPeer41,
+  unitPeer46,
+  unitPeer42,
   unitPeer43,
   unitPeer45,
-  unitPeer41,
-  unitPeer42,
-  unitPeer44,
   unitPeer38,
-  unitPeer46,
-  unitPeer72,
+  unitPeer47,
   unitPeer73,
   unitPeer74,
-  unitPeer76,
-  unitPeer77,
   unitPeer75,
+  unitPeer77,
   unitPeer78,
-  unitPeer117,
+  unitPeer76,
+  unitPeer79,
   unitPeer118,
   unitPeer119,
   unitPeer120,
   unitPeer121,
   unitPeer122,
-  unitPeer124,
   unitPeer123,
-  unitPeer246,
+  unitPeer125,
+  unitPeer124,
   unitPeer247,
-  unitPeer241,
-  unitPeer252,
+  unitPeer248,
+  unitPeer242,
   unitPeer253,
   unitPeer254,
-  unitPeer242,
+  unitPeer255,
   unitPeer243,
   unitPeer244,
-  unitPeer240,
   unitPeer245,
-  unitPeer249,
+  unitPeer241,
+  unitPeer246,
   unitPeer250,
   unitPeer251,
-  unitPeer248,
-  unitPeer288,
+  unitPeer252,
+  unitPeer249,
   unitPeer289,
-  unitPeer291,
+  unitPeer290,
   unitPeer292,
-  unitPeer294,
+  unitPeer293,
   unitPeer295,
-  unitPeer299,
-  unitPeer310,
-  unitPeer309,
+  unitPeer296,
+  unitPeer300,
   unitPeer311,
-  unitPeer313,
-  unitPeer316,
-  unitPeer322,
-  unitPeer314,
-  unitPeer315,
-  unitPeer317,
-  unitPeer319,
-  unitPeer318,
+  unitPeer310,
   unitPeer312,
+  unitPeer314,
+  unitPeer317,
+  unitPeer323,
+  unitPeer315,
+  unitPeer316,
+  unitPeer318,
   unitPeer320,
+  unitPeer319,
+  unitPeer313,
   unitPeer321,
-  unitPeer347,
-  unitPeer346,
+  unitPeer322,
   unitPeer348,
+  unitPeer347,
   unitPeer349,
-  unitPeer343,
+  unitPeer350,
   unitPeer344,
   unitPeer345,
-  unitPeer425,
-  unitPeer424,
-  unitPeer427,
-  unitPeer429,
-  unitPeer428,
-  unitPeer422,
+  unitPeer346,
   unitPeer426,
+  unitPeer425,
+  unitPeer428,
+  unitPeer430,
+  unitPeer429,
   unitPeer423,
-  unitPeer453,
-  unitPeer448,
+  unitPeer427,
+  unitPeer424,
   unitPeer454,
-  unitPeer447,
   unitPeer449,
+  unitPeer455,
+  unitPeer448,
   unitPeer450,
-  unitPeer452,
-  unitPeer139,
+  unitPeer451,
+  unitPeer453,
   unitPeer140,
   unitPeer141,
   unitPeer142,
-  unitPeer144,
   unitPeer143,
-  unitPeer3,
   unitPeer145,
+  unitPeer144,
+  unitPeer3,
   unitPeer146,
   unitPeer147,
   unitPeer148,
   unitPeer149,
   unitPeer150,
-  unitPeer262,
-  unitPeer265,
-  unitPeer264,
-  unitPeer267,
-  unitPeer266,
-  unitPeer268,
-  unitPeer260,
+  unitPeer151,
   unitPeer263,
-  unitPeer259,
-  unitPeer261,
+  unitPeer266,
+  unitPeer265,
+  unitPeer268,
+  unitPeer267,
   unitPeer269,
-  unitPeer293,
-  unitPeer297,
-  unitPeer296,
-  unitPeer290,
+  unitPeer261,
+  unitPeer264,
+  unitPeer260,
+  unitPeer262,
+  unitPeer270,
+  unitPeer294,
   unitPeer298,
-  unitPeer300,
-  unitPeer323,
-  unitPeer223,
+  unitPeer297,
+  unitPeer291,
+  unitPeer299,
+  unitPeer301,
+  unitPeer324,
   unitPeer224,
   unitPeer225,
   unitPeer226,
@@ -643,66 +644,67 @@ export const srdUnitAggregateInputs = [
   unitPeer228,
   unitPeer229,
   unitPeer230,
-  unitPeer257,
-  unitPeer383,
+  unitPeer231,
   unitPeer258,
-  unitPeer101,
-  unitPeer364,
+  unitPeer384,
+  unitPeer259,
+  unitPeer102,
   unitPeer365,
   unitPeer366,
-  unitPeer356,
+  unitPeer367,
   unitPeer357,
   unitPeer358,
-  unitPeer360,
+  unitPeer359,
   unitPeer361,
   unitPeer362,
-  unitPeer368,
+  unitPeer363,
   unitPeer369,
   unitPeer370,
-  unitPeer374,
-  unitPeer377,
+  unitPeer371,
   unitPeer375,
+  unitPeer378,
   unitPeer376,
-  unitPeer379,
+  unitPeer377,
   unitPeer380,
   unitPeer381,
-  unitPeer372,
-  unitPeer385,
+  unitPeer382,
+  unitPeer373,
+  unitPeer386,
   unitPeer7,
-  unitPeer55,
-  unitPeer59,
-  unitPeer85,
-  unitPeer91,
+  unitPeer56,
+  unitPeer60,
+  unitPeer86,
   unitPeer92,
-  unitPeer95,
-  unitPeer107,
+  unitPeer93,
+  unitPeer96,
   unitPeer108,
-  unitPeer125,
-  unitPeer127,
-  unitPeer134,
-  unitPeer138,
-  unitPeer168,
-  unitPeer185,
-  unitPeer190,
-  unitPeer199,
+  unitPeer109,
+  unitPeer126,
+  unitPeer128,
+  unitPeer135,
+  unitPeer139,
+  unitPeer169,
+  unitPeer186,
+  unitPeer191,
   unitPeer200,
-  unitPeer215,
-  unitPeer220,
-  unitPeer273,
-  unitPeer275,
-  unitPeer278,
+  unitPeer201,
+  unitPeer216,
+  unitPeer221,
+  unitPeer274,
+  unitPeer276,
   unitPeer279,
-  unitPeer283,
-  unitPeer307,
-  unitPeer388,
-  unitPeer407,
-  unitPeer412,
-  unitPeer414,
-  unitPeer417,
+  unitPeer280,
+  unitPeer284,
+  unitPeer308,
+  unitPeer389,
+  unitPeer408,
+  unitPeer413,
+  unitPeer415,
   unitPeer418,
-  unitPeer430,
-  unitPeer446,
-  unitPeer455,
+  unitPeer419,
+  unitPeer431,
+  unitPeer447,
+  unitPeer456,
   unitPeer1,
   unitPeer0,
   unitPeer2,
@@ -716,37 +718,36 @@ export const srdUnitAggregateInputs = [
   unitPeer12,
   unitPeer17,
   unitPeer18,
-  unitPeer47,
-  unitPeer50,
-  unitPeer23,
   unitPeer48,
-  unitPeer49,
   unitPeer51,
+  unitPeer23,
+  unitPeer49,
+  unitPeer50,
   unitPeer52,
   unitPeer53,
   unitPeer54,
-  unitPeer57,
+  unitPeer55,
   unitPeer58,
-  unitPeer79,
+  unitPeer59,
   unitPeer80,
   unitPeer81,
   unitPeer82,
   unitPeer83,
-  unitPeer90,
-  unitPeer88,
   unitPeer84,
-  unitPeer86,
-  unitPeer87,
+  unitPeer91,
   unitPeer89,
-  unitPeer93,
-  unitPeer96,
+  unitPeer85,
+  unitPeer87,
+  unitPeer88,
+  unitPeer90,
   unitPeer94,
   unitPeer97,
+  unitPeer95,
   unitPeer98,
   unitPeer99,
   unitPeer100,
-  unitPeer102,
-  unitPeer109,
+  unitPeer101,
+  unitPeer103,
   unitPeer110,
   unitPeer111,
   unitPeer112,
@@ -754,166 +755,167 @@ export const srdUnitAggregateInputs = [
   unitPeer114,
   unitPeer115,
   unitPeer116,
-  unitPeer128,
+  unitPeer117,
   unitPeer129,
   unitPeer130,
   unitPeer131,
   unitPeer132,
-  unitPeer135,
+  unitPeer133,
   unitPeer136,
-  unitPeer151,
   unitPeer137,
-  unitPeer169,
+  unitPeer152,
+  unitPeer138,
   unitPeer170,
   unitPeer171,
   unitPeer172,
-  unitPeer166,
-  unitPeer167,
   unitPeer173,
-  unitPeer175,
-  unitPeer177,
-  unitPeer181,
-  unitPeer179,
-  unitPeer180,
+  unitPeer167,
+  unitPeer168,
+  unitPeer174,
+  unitPeer176,
+  unitPeer178,
   unitPeer182,
+  unitPeer180,
+  unitPeer181,
   unitPeer183,
   unitPeer184,
-  unitPeer186,
-  unitPeer188,
-  unitPeer191,
+  unitPeer185,
+  unitPeer187,
+  unitPeer189,
   unitPeer192,
-  unitPeer196,
-  unitPeer198,
-  unitPeer201,
+  unitPeer193,
+  unitPeer197,
+  unitPeer199,
   unitPeer202,
   unitPeer203,
   unitPeer204,
   unitPeer205,
   unitPeer206,
-  unitPeer208,
   unitPeer207,
-  unitPeer210,
+  unitPeer209,
+  unitPeer208,
   unitPeer211,
   unitPeer212,
-  unitPeer209,
   unitPeer213,
-  unitPeer232,
+  unitPeer210,
+  unitPeer214,
   unitPeer233,
-  unitPeer238,
-  unitPeer237,
+  unitPeer234,
   unitPeer239,
-  unitPeer271,
-  unitPeer405,
-  unitPeer419,
-  unitPeer420,
-  unitPeer270,
+  unitPeer238,
+  unitPeer240,
   unitPeer272,
-  unitPeer276,
-  unitPeer274,
+  unitPeer406,
+  unitPeer420,
+  unitPeer421,
+  unitPeer271,
+  unitPeer273,
   unitPeer277,
-  unitPeer280,
+  unitPeer275,
+  unitPeer278,
   unitPeer281,
-  unitPeer284,
+  unitPeer282,
   unitPeer285,
   unitPeer286,
-  unitPeer282,
-  unitPeer301,
+  unitPeer287,
+  unitPeer283,
   unitPeer302,
   unitPeer303,
-  unitPeer287,
   unitPeer304,
-  unitPeer306,
+  unitPeer288,
   unitPeer305,
-  unitPeer308,
-  unitPeer324,
-  unitPeer332,
-  unitPeer352,
+  unitPeer307,
+  unitPeer306,
+  unitPeer309,
+  unitPeer325,
+  unitPeer333,
   unitPeer353,
   unitPeer354,
-  unitPeer325,
+  unitPeer355,
   unitPeer326,
   unitPeer327,
   unitPeer328,
-  unitPeer330,
   unitPeer329,
   unitPeer331,
-  unitPeer338,
-  unitPeer350,
+  unitPeer330,
+  unitPeer332,
+  unitPeer339,
   unitPeer351,
-  unitPeer390,
-  unitPeer406,
-  unitPeer408,
+  unitPeer352,
+  unitPeer391,
+  unitPeer407,
   unitPeer409,
-  unitPeer411,
-  unitPeer413,
-  unitPeer416,
-  unitPeer431,
-  unitPeer103,
+  unitPeer410,
+  unitPeer412,
+  unitPeer414,
+  unitPeer417,
+  unitPeer432,
   unitPeer104,
   unitPeer105,
   unitPeer106,
-  unitPeer214,
-  unitPeer216,
+  unitPeer107,
+  unitPeer215,
   unitPeer217,
   unitPeer218,
   unitPeer219,
-  unitPeer231,
-  unitPeer234,
-  unitPeer236,
-  unitPeer255,
+  unitPeer220,
+  unitPeer232,
+  unitPeer235,
+  unitPeer237,
   unitPeer256,
-  unitPeer221,
+  unitPeer257,
   unitPeer222,
-  unitPeer187,
-  unitPeer334,
+  unitPeer223,
+  unitPeer188,
   unitPeer335,
-  unitPeer333,
   unitPeer336,
-  unitPeer339,
+  unitPeer334,
   unitPeer337,
   unitPeer340,
+  unitPeer338,
   unitPeer341,
   unitPeer342,
-  unitPeer174,
-  unitPeer176,
-  unitPeer178,
-  unitPeer386,
+  unitPeer343,
+  unitPeer175,
+  unitPeer177,
+  unitPeer179,
   unitPeer387,
-  unitPeer389,
-  unitPeer403,
+  unitPeer388,
+  unitPeer390,
   unitPeer404,
-  unitPeer456,
-  unitPeer410,
-  unitPeer415,
-  unitPeer126,
-  unitPeer235,
-  unitPeer56,
-  unitPeer189,
-  unitPeer193,
-  unitPeer197,
-  unitPeer421,
-  unitPeer445,
+  unitPeer405,
+  unitPeer457,
+  unitPeer411,
+  unitPeer416,
+  unitPeer127,
+  unitPeer236,
+  unitPeer57,
+  unitPeer190,
   unitPeer194,
+  unitPeer198,
+  unitPeer422,
+  unitPeer446,
   unitPeer195,
+  unitPeer196,
   unitPeer13,
   unitPeer14,
   unitPeer15,
   unitPeer16,
-  unitPeer133,
-  unitPeer432,
+  unitPeer134,
   unitPeer433,
-  unitPeer435,
-  unitPeer436,
-  unitPeer443,
   unitPeer434,
-  unitPeer440,
-  unitPeer441,
-  unitPeer439,
+  unitPeer436,
   unitPeer437,
-  unitPeer438,
   unitPeer444,
+  unitPeer435,
+  unitPeer441,
   unitPeer442,
-  unitPeer451,
+  unitPeer440,
+  unitPeer438,
+  unitPeer439,
+  unitPeer445,
+  unitPeer443,
+  unitPeer452,
   unitPeer29,
   unitPeer31,
 ] as const;

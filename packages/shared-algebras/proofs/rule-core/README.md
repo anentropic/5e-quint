@@ -49,6 +49,17 @@ Out of scope for this first procedure:
 has a documented branch budget and is intentionally small enough for serialized
 `quint verify`.
 
+### Hit Point maximum of 0
+
+SRD 5.2.1 `playing-the-game.md`, "Instant Death": "A creature dies if its Hit
+Point maximum reaches 0." `legalVitals` therefore admits a Hit Point maximum
+of 0 only for a dead creature, and the proof machine's domain includes it.
+No rule-core transition lowers a maximum: the SRD effects that drain one are
+not modeled in battle, and the Character Sheet's maximum
+(`hit-point-maximum.qnt:legalHitPointMaximumFacts`) refuses a reduction that
+leaves no positive maximum. When an effect that lowers a maximum is
+modeled, reaching 0 must make the creature dead.
+
 ## QCORE2: Zero-HP Lifecycle
 
 `zero-hit-point-lifecycle.qnt` models the SRD 5.2.1 player-character procedure
@@ -176,8 +187,13 @@ Scope:
 - invalid target/quota/disposition combinations do not spend quota;
 - attack damage totals compose QCORE4 target adjustments, QCORE1 Hit Point
   damage, and QCORE3 Knock Out disposition;
-- melee Knock Out is legal only when the attack damage would reduce the target
-  to 0 Hit Points.
+- melee Knock Out is legal only when the attack damage would reduce a target
+  with positive Hit Points to 0 Hit Points;
+- a target at 0 Hit Points that still makes Death Saving Throws (Dying or
+  Stable) is a legal target: the procedure takes its Death Saving Throw
+  lifecycle, and a hit goes through the QCORE2 zero-HP lifecycle (one failure,
+  two for a Critical Hit, death when the damage equals or exceeds the Hit Point
+  maximum).
 
 Out of scope for QCORE5:
 

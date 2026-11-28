@@ -588,6 +588,8 @@
 {"unitId":"glyph_of_warding","evidence":{"tag":"deterministic-admission-projection","taskId":"L3-FOLLOWUP-GLYPH-STORED-SELF-TRANSFORMATION-CONCENTRATION","ownerPath":"packages/battle-runtime/src/unit-profile-admission-glyph-of-warding.test.ts"}}
 {"unitId":"glyph_of_warding","evidence":{"tag":"selected-identity-replay","taskId":"L5UG-GATE-04-LEVEL15-SELECTED-IDENTITY-WITNESSES","ownerPath":"packages/battle-runtime/src/level3-spell-selected-identity.mbt.test.ts"}}
 {"unitId":"fighter_indomitable","evidence":{"tag":"deterministic-admission-projection","taskId":"L19D-04-FIGHTER-INDOMITABLE","ownerPath":"packages/battle-runtime/src/unit-profile-admission-class-roll-and-resource-features.test.ts"}}
+{"unitId":"bard_countercharm","evidence":{"tag":"selected-identity-replay","taskId":"U580-COUNTERCHARM","ownerPath":"packages/character-battle-runtime/src/bard-countercharm-sdk-handoff.test.ts"}}
+{"unitId":"bard_countercharm","evidence":{"tag":"deterministic-admission-projection","taskId":"U580-COUNTERCHARM","ownerPath":"packages/battle-runtime/src/failed-save-reaction-reroll.test.ts"}}
 {"unitId":"dream","evidence":{"tag":"deterministic-admission-projection","taskId":"L19E-07-L5-DIVINATION-SOCIAL-EXPLORATION","ownerPath":"packages/character-sheet-runtime/src/dream.test.ts"}}
 {"unitId":"dream","evidence":{"tag":"selected-identity-replay","taskId":"L19E-07-L5-DIVINATION-SOCIAL-EXPLORATION","ownerPath":"packages/character-sheet-runtime/src/dream.test.ts"}}
 {"unitId":"seeming","evidence":{"tag":"deterministic-admission-projection","taskId":"L19E-07-L5-DIVINATION-SOCIAL-EXPLORATION","ownerPath":"packages/character-sheet-runtime/src/seeming.test.ts"}}
