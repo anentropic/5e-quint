@@ -266,6 +266,8 @@ const SURFACE_PUBLICATION_CANDIDATE_AGGREGATE_CONTRACTS = [
   "currentSurfaceContract",
   "ownPublishedSchema",
 ] as const;
+const [CURRENT_SURFACE_CONTRACT, OWN_PUBLISHED_SCHEMA] =
+  SURFACE_PUBLICATION_CANDIDATE_AGGREGATE_CONTRACTS;
 
 export type SurfacePublicationCandidateAggregateContract =
   (typeof SURFACE_PUBLICATION_CANDIDATE_AGGREGATE_CONTRACTS)[number];
@@ -3130,13 +3132,13 @@ function compareAggregateSnapshots(
   const artifacts = validAggregateArtifacts(issues, baseline, candidate);
   if (artifacts === undefined) return;
   Match.value(candidateAggregateContract).pipe(
-    Match.when("currentSurfaceContract", () =>
+    Match.when(CURRENT_SURFACE_CONTRACT, () =>
       appendCandidateAggregateDecodeIssue(
         issues,
         candidateAggregateDecode(artifacts.candidate.value),
       ),
     ),
-    Match.when("ownPublishedSchema", () => undefined),
+    Match.when(OWN_PUBLISHED_SCHEMA, () => undefined),
     Match.exhaustive,
   );
   const projections = aggregateSnapshotProjections(
