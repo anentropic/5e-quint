@@ -1433,7 +1433,6 @@ export const UnitFeatureProcedureExecutionSchema = Schema.Union([
   MonkFocusBattleOptionsProcedureExecutionSchema,
   CreatureSpaceMovementPermissionProcedureExecutionSchema,
   HideActionObscurementPermissionProcedureExecutionSchema,
-  SleeplessProcedureExecutionSchema,
   WeaponDamageDiceRollChoiceProcedureExecutionSchema,
   AttackDamageDieFloorProcedureExecutionSchema,
   LightExtraAttackDamageAbilityModifierProcedureExecutionSchema,

@@ -6,18 +6,26 @@ import type { AuthoredUnitSource } from "@dnd/surface/surface/types";
 import type { ReadonlyNonEmptyArray } from "@dnd/shared/types";
 import { Match } from "effect";
 
-import type { UnitFeatureProcedureExecution } from "../character-execution-vocabulary.ts";
-
-export type AtomicSpeciesTraitProcedureFacts = Extract<
+import type {
   UnitFeatureProcedureExecution,
-  {
-    readonly kind:
-      | "creatureSpaceMovementPermission"
-      | "d20TestNaturalOneReroll"
-      | "sleepless"
-      | "hideActionObscurementPermission";
-  }
->;
+  UnitSupportProcedureExecution,
+} from "../character-execution-vocabulary.ts";
+
+/**
+ * The facts an atomic species trait admits. Trance binds only as a support
+ * profile, so its fact comes from the support execution vocabulary.
+ */
+export type AtomicSpeciesTraitProcedureFacts =
+  | Extract<
+      UnitFeatureProcedureExecution,
+      {
+        readonly kind:
+          | "creatureSpaceMovementPermission"
+          | "d20TestNaturalOneReroll"
+          | "hideActionObscurementPermission";
+      }
+    >
+  | Extract<UnitSupportProcedureExecution, { readonly kind: "sleepless" }>;
 
 const ATOMIC_SPECIES_TRAIT_ROOT_MECHANICS_PATH = unitMechanicsPath([
   { kind: "singleton", role: "recordMechanics" },

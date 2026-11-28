@@ -131,6 +131,7 @@ describe("Surface trace helper branches", () => {
           upTo: { amount: 1, unit: "minute" },
         },
         tiers: [
+          { atSlot: 8, duration: { kind: "permanent" } },
           {
             atSlot: 9,
             duration: { kind: "permanent", endsOn: ["dispel"] },
@@ -145,7 +146,7 @@ describe("Surface trace helper branches", () => {
 
     expect(nodes.map((node) => node.label)).toEqual([
       "persist\npermanent",
-      "slot_tiered_duration\nbase: concentration up to 1 minute\nslot >= 9: permanent until dispel",
+      "slot_tiered_duration\nbase: concentration up to 1 minute\nslot >= 8: permanent\nslot >= 9: permanent until dispel",
     ]);
     expect(edges).toEqual([
       expect.objectContaining({ from: "procedure", relation: "grants" }),

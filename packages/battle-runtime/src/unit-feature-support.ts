@@ -3530,32 +3530,6 @@ export function battleHideActionObscurementPermissionSupportForUnit(
   );
 }
 
-export type BattleSleeplessSupport =
-  | BattleSleeplessSupportProfile
-  | "unsupported"
-  | null;
-
-export function battleSleeplessSupportForUnit(
-  unit: AuthoredUnitSource,
-): BattleSleeplessSupport {
-  return Match.value(admitAtomicSpeciesTraitProcedure(unit)).pipe(
-    Match.when({ tag: "notBattleOwned" }, () => null),
-    Match.when({ tag: "rejected" }, ({ issues }) =>
-      issues[0].procedure === "sleepless" ? ("unsupported" as const) : null,
-    ),
-    Match.when({ tag: "admitted" }, ({ procedure }) =>
-      Match.value(procedure.facts).pipe(
-        Match.when({ kind: "sleepless" }, (facts) => facts),
-        Match.when({ kind: "creatureSpaceMovementPermission" }, () => null),
-        Match.when({ kind: "d20TestNaturalOneReroll" }, () => null),
-        Match.when({ kind: "hideActionObscurementPermission" }, () => null),
-        Match.exhaustive,
-      ),
-    ),
-    Match.exhaustive,
-  );
-}
-
 export function battleWeaponDamageDiceRollChoiceSupportForUnit(
   unit: AuthoredUnitSource,
 ): BattleWeaponDamageDiceRollChoiceSupport {

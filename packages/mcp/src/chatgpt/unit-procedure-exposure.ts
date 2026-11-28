@@ -114,7 +114,6 @@ const SHARED_UNIT_PROCEDURE_EXPOSURE = {
     UNIT_PROCEDURE_EXPOSURE["creatureSpaceMovementPermission"],
   d20TestDieMinimum: UNIT_PROCEDURE_EXPOSURE["d20TestDieMinimum"],
   d20TestNaturalOneReroll: UNIT_PROCEDURE_EXPOSURE["d20TestNaturalOneReroll"],
-  sleepless: UNIT_PROCEDURE_EXPOSURE["sleepless"],
   druidWildShapeKnownForm: UNIT_PROCEDURE_EXPOSURE["druidWildShapeKnownForm"],
   enemyZeroHitPointTemporaryHitPoints:
     UNIT_PROCEDURE_EXPOSURE["enemyZeroHitPointTemporaryHitPoints"],
@@ -199,6 +198,7 @@ export const UNIT_SUPPORT_EXPOSURE = {
   druidWildCompanionSpellCast:
     UNIT_PROCEDURE_EXPOSURE["druidWildCompanionSpellCast"],
   huntersPrey: UNIT_PROCEDURE_EXPOSURE["huntersPrey"],
+  sleepless: UNIT_PROCEDURE_EXPOSURE["sleepless"],
   markedCreatureDefensesDisclosure:
     UNIT_PROCEDURE_EXPOSURE["markedCreatureDefensesDisclosure"],
   passiveDamageResistance: UNIT_PROCEDURE_EXPOSURE["passiveDamageResistance"],

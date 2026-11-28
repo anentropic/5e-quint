@@ -9,7 +9,6 @@ import {
   battleCreatureSpaceMovementPermissionSupportForUnit,
   battleD20TestNaturalOneRerollSupportForUnit,
   battleHideActionObscurementPermissionSupportForUnit,
-  battleSleeplessSupportForUnit,
   battleUnitSupportProfilesForUnit,
 } from "./unit-feature-support.ts";
 
@@ -30,9 +29,6 @@ function malformedTrance() {
 
 describe("Elf Trance Battle support", () => {
   test("projects the sleepless support profile from the Surface shape", () => {
-    expect(battleSleeplessSupportForUnit(trance)).toEqual({
-      kind: "sleepless",
-    });
     expect(battleUnitSupportProfilesForUnit({ unit: trance })).toMatchObject({
       _tag: "Success",
       success: [{ kind: "sleepless" }],
@@ -47,21 +43,23 @@ describe("Elf Trance Battle support", () => {
     expect(
       battleHideActionObscurementPermissionSupportForUnit(trance),
     ).toBeNull();
-    expect(
-      battleSleeplessSupportForUnit(
-        unitLibrary.requireUnit("species_halfling_luck"),
-      ),
-    ).toBeNull();
-    expect(
-      battleSleeplessSupportForUnit(
-        unitLibrary.requireUnit("species_halfling_brave"),
-      ),
-    ).toBeNull();
+    for (const id of ["species_halfling_luck", "species_halfling_brave"]) {
+      const profiles = battleUnitSupportProfilesForUnit({
+        unit: unitLibrary.requireUnit(id),
+      });
+      expect(profiles._tag).toBe("Success");
+      expect(
+        profiles._tag === "Success" &&
+          profiles.success.some(
+            (profile) =>
+              typeof profile === "object" && profile.kind === "sleepless",
+          ),
+      ).toBe(false);
+    }
   });
 
   test("rejects a represented shape that still needs sleep", () => {
     const malformed = malformedTrance();
-    expect(battleSleeplessSupportForUnit(malformed)).toBe("unsupported");
     expect(battleD20TestNaturalOneRerollSupportForUnit(malformed)).toBeNull();
     expect(battleUnitSupportProfilesForUnit({ unit: malformed })).toMatchObject(
       {

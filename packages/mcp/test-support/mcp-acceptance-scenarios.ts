@@ -2795,6 +2795,13 @@ async function createAndFinalizeElfWizardTwoWithSpells(
     expectedRevision: 1,
     fills: [
       choiceFill(
+        unitHoleId(
+          "species_elf_keen_senses",
+          "species_trait_proficiency_choice",
+        ),
+        "perception",
+      ),
+      choiceFill(
         unitHoleId("class_wizard", "class_skill_proficiency_choice"),
         "arcana",
         "history",
@@ -2909,6 +2916,13 @@ async function createAndFinalizeElfWizardThree(
     draftId,
     expectedRevision: 1,
     fills: [
+      choiceFill(
+        unitHoleId(
+          "species_elf_keen_senses",
+          "species_trait_proficiency_choice",
+        ),
+        "perception",
+      ),
       choiceFill(
         unitHoleId("class_wizard", "class_skill_proficiency_choice"),
         "arcana",
@@ -3502,6 +3516,7 @@ async function createAndFinalizeElfSoldierWizardWithAsi(
     unitHoleId("background_soldier", "background_ability_score_increase"),
     unitHoleId("background_soldier", "background_tool_choice"),
     unitHoleId("background_soldier", "background_equipment_choice"),
+    unitHoleId("species_elf_keen_senses", "species_trait_proficiency_choice"),
   ]);
 
   const classFill = await callTool(client, "apply_character_creation_choices", {
@@ -3564,6 +3579,14 @@ async function createAndFinalizeElfSoldierWizardWithAsi(
         classChoices,
         unitHoleId("background_soldier", "background_equipment_choice"),
         "option_b",
+      ),
+      choiceFillFromReturnedHole(
+        classChoices,
+        unitHoleId(
+          "species_elf_keen_senses",
+          "species_trait_proficiency_choice",
+        ),
+        "perception",
       ),
     ],
   });

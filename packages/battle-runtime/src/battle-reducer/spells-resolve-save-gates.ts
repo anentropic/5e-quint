@@ -37,7 +37,7 @@ import {
 } from "../effect-execution-ref.ts";
 import {
   characterUnitProcedureBindings,
-  characterUnitProcedureExecutionsOfKind,
+  unitSupportProfileKind,
 } from "../character-execution-queries.ts";
 import { isCantripSpellAccess } from "../procedure-execution/spell-invocation-vocabulary.ts";
 import {
@@ -175,6 +175,7 @@ import {
 } from "./interrupt-execution.ts";
 import { spellReplayContinuation } from "./spell-reaction-continuation.ts";
 import { snapshotBattle } from "./battle-snapshot.ts";
+import { SLEEPLESS_SUPPORT_PROFILE } from "../unit-feature-execution-constants.ts";
 
 type SaveMetamagicSelectionHole =
   | ReturnType<typeof carefulSpellProtectedTargetsHole>
@@ -4298,7 +4299,10 @@ function hitPointBudgetConditionTargetAutomaticallySucceeds(
   );
 }
 
-/** A character whose own trait says it doesn't sleep, without a table fact. */
+/**
+ * A character whose own trait says it doesn't sleep, without a table fact. The
+ * trait is only ever bound as a support profile.
+ */
 function hitPointBudgetConditionTargetIsSleepless(
   state: BattleState,
   targetId: CombatantId,
@@ -4306,8 +4310,12 @@ function hitPointBudgetConditionTargetIsSleepless(
   const target = state.combatants.get(targetId);
   return (
     target?.origin.kind === "character" &&
-    characterUnitProcedureExecutionsOfKind(target.origin.execution, "sleepless")
-      .length > 0
+    characterUnitProcedureBindings(target.origin.execution).some(
+      ({ procedure }) =>
+        procedure.kind === "unitSupportProfile" &&
+        unitSupportProfileKind(procedure.execution) ===
+          SLEEPLESS_SUPPORT_PROFILE,
+    )
   );
 }
 
