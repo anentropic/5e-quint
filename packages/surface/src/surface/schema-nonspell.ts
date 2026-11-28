@@ -4663,21 +4663,175 @@ const GnomishLineageRockOptionSchema = Schema.Struct({
   clockworkDevice: GnomishLineageRockClockworkDeviceSchema,
 });
 
-const gnomishLineageMechanicsFields = codecFields({
-  family: Schema.Literal("species_lineage_choice"),
-  choiceKey: surfaceSchemaRole(Schema.Literal("gnome_lineage"), {
+const speciesLineageChoiceKeySchema = <const ChoiceKey extends string>(
+  choiceKey: ChoiceKey,
+) =>
+  surfaceSchemaRole(Schema.Literal(choiceKey), {
     category: "protocol",
     kind: "choiceKey",
-  }),
-  timing: Schema.Literal("species_selection"),
-  spellcastingAbilityChoice: Schema.Struct({
-    kind: Schema.Literal("spellcasting_ability_choice"),
-    abilities: Schema.Tuple([
-      Schema.Literal("int"),
-      Schema.Literal("wis"),
-      Schema.Literal("cha"),
+  });
+
+const SpeciesLineageSpellcastingAbilityChoiceSchema = Schema.Struct({
+  kind: Schema.Literal("spellcasting_ability_choice"),
+  abilities: Schema.Tuple([
+    Schema.Literal("int"),
+    Schema.Literal("wis"),
+    Schema.Literal("cha"),
+  ]),
+});
+
+const speciesLineageKnownCantripGrantSchema = <const SpellId extends string>(
+  spellId: SpellId,
+) =>
+  Schema.Struct({
+    kind: Schema.Literal("grant_spell_access"),
+    spellId: surfaceDependency(Schema.Literal(spellId), "spell-reference"),
+    mode: Schema.Literal("known"),
+  });
+
+/**
+ * A spell a lineage teaches at a character level: always prepared, castable
+ * once without a spell slot per Long Rest, and castable with any spell slot of
+ * the appropriate level (SRD 5.2.1 character-origins.md, Elven Lineage and
+ * Fiendish Legacy).
+ */
+const speciesLineageCharacterLevelSpellSchema = <
+  const CharacterLevel extends number,
+  const SpellId extends string,
+>(
+  characterLevel: CharacterLevel,
+  spellId: SpellId,
+) =>
+  Schema.Struct({
+    characterLevel: Schema.Literal(characterLevel),
+    grants: Schema.Tuple([
+      Schema.Struct({
+        kind: Schema.Literal("grant_spell_access"),
+        spellId: surfaceDependency(Schema.Literal(spellId), "spell-reference"),
+        mode: Schema.Literal("prepared"),
+      }),
+      Schema.Struct({
+        kind: Schema.Literal("grant_spell_free_casts"),
+        spellId: surfaceDependency(Schema.Literal(spellId), "spell-reference"),
+        count: Schema.Literal(1),
+        resetCadence: Schema.Literal("long_rest"),
+      }),
+    ]),
+  });
+
+const speciesLineageLevelThreeAndFiveSpellsSchema = <
+  const LevelThreeSpellId extends string,
+  const LevelFiveSpellId extends string,
+>(
+  levelThreeSpellId: LevelThreeSpellId,
+  levelFiveSpellId: LevelFiveSpellId,
+) =>
+  Schema.Tuple([
+    speciesLineageCharacterLevelSpellSchema(3, levelThreeSpellId),
+    speciesLineageCharacterLevelSpellSchema(5, levelFiveSpellId),
+  ]);
+
+const ElvenLineageDrowOptionSchema = Schema.Struct({
+  id: surfaceIdentity(Schema.Literal("drow"), "id"),
+  displayName: surfaceIdentity(Schema.Literal("Drow"), "displayName"),
+  mechanics: Schema.Struct({
+    family: Schema.Literal("passive"),
+    grants: Schema.Tuple([
+      Schema.Struct({
+        kind: Schema.Literal("grant_sense"),
+        sense: Schema.Literal("darkvision"),
+        rangeFeet: Schema.Literal(120),
+      }),
+      speciesLineageKnownCantripGrantSchema("dancing_lights"),
     ]),
   }),
+  characterLevelGrants: speciesLineageLevelThreeAndFiveSpellsSchema(
+    "faerie_fire",
+    "darkness",
+  ),
+});
+
+const ElvenLineageHighElfOptionSchema = Schema.Struct({
+  id: surfaceIdentity(Schema.Literal("high_elf"), "id"),
+  displayName: surfaceIdentity(Schema.Literal("High Elf"), "displayName"),
+  mechanics: Schema.Struct({
+    family: Schema.Literal("passive"),
+    grants: Schema.Tuple([
+      speciesLineageKnownCantripGrantSchema("prestidigitation"),
+    ]),
+  }),
+  characterLevelGrants: speciesLineageLevelThreeAndFiveSpellsSchema(
+    "detect_magic",
+    "misty_step",
+  ),
+  cantripReplacement: Schema.Struct({
+    kind: Schema.Literal("replace_lineage_cantrip"),
+    trigger: Schema.Literal("long_rest"),
+    spellList: Schema.Literal("wizard"),
+  }),
+});
+
+const ElvenLineageWoodElfOptionSchema = Schema.Struct({
+  id: surfaceIdentity(Schema.Literal("wood_elf"), "id"),
+  displayName: surfaceIdentity(Schema.Literal("Wood Elf"), "displayName"),
+  mechanics: Schema.Struct({
+    family: Schema.Literal("passive"),
+    grants: Schema.Tuple([
+      Schema.Struct({
+        kind: Schema.Literal("set_speed"),
+        feet: Schema.Literal(35),
+      }),
+      speciesLineageKnownCantripGrantSchema("druidcraft"),
+    ]),
+  }),
+  characterLevelGrants: speciesLineageLevelThreeAndFiveSpellsSchema(
+    "longstrider",
+    "pass_without_trace",
+  ),
+});
+
+const fiendishLegacyOptionSchema = <
+  const Id extends string,
+  const DisplayName extends string,
+  const DamageType extends string,
+  const CantripId extends string,
+  const LevelThreeSpellId extends string,
+  const LevelFiveSpellId extends string,
+>(input: {
+  readonly id: Id;
+  readonly displayName: DisplayName;
+  readonly resistance: DamageType;
+  readonly cantrip: CantripId;
+  readonly levelThreeSpell: LevelThreeSpellId;
+  readonly levelFiveSpell: LevelFiveSpellId;
+}) =>
+  Schema.Struct({
+    id: surfaceIdentity(Schema.Literal(input.id), "id"),
+    displayName: surfaceIdentity(
+      Schema.Literal(input.displayName),
+      "displayName",
+    ),
+    mechanics: Schema.Struct({
+      family: Schema.Literal("passive"),
+      grants: Schema.Tuple([
+        Schema.Struct({
+          kind: Schema.Literal("grant_resistance"),
+          damageType: Schema.Literal(input.resistance),
+        }),
+        speciesLineageKnownCantripGrantSchema(input.cantrip),
+      ]),
+    }),
+    characterLevelGrants: speciesLineageLevelThreeAndFiveSpellsSchema(
+      input.levelThreeSpell,
+      input.levelFiveSpell,
+    ),
+  });
+
+const gnomishLineageMechanicsFields = codecFields({
+  family: Schema.Literal("species_lineage_choice"),
+  choiceKey: speciesLineageChoiceKeySchema("gnome_lineage"),
+  timing: Schema.Literal("species_selection"),
+  spellcastingAbilityChoice: SpeciesLineageSpellcastingAbilityChoiceSchema,
   options: Schema.Tuple([
     GnomishLineageForestOptionSchema,
     GnomishLineageRockOptionSchema,
@@ -4688,6 +4842,83 @@ type GnomishLineageMechanicsCodec = Schema.Struct<
 >;
 export const GnomishLineageMechanicsSchema: GnomishLineageMechanicsCodec =
   Schema.Struct(gnomishLineageMechanicsFields);
+
+const elvenLineageMechanicsFields = codecFields({
+  family: Schema.Literal("species_lineage_choice"),
+  choiceKey: speciesLineageChoiceKeySchema("elven_lineage"),
+  timing: Schema.Literal("species_selection"),
+  spellcastingAbilityChoice: SpeciesLineageSpellcastingAbilityChoiceSchema,
+  options: Schema.Tuple([
+    ElvenLineageDrowOptionSchema,
+    ElvenLineageHighElfOptionSchema,
+    ElvenLineageWoodElfOptionSchema,
+  ]),
+});
+type ElvenLineageMechanicsCodec = Schema.Struct<
+  typeof elvenLineageMechanicsFields
+>;
+export const ElvenLineageMechanicsSchema: ElvenLineageMechanicsCodec =
+  Schema.Struct(elvenLineageMechanicsFields);
+
+const fiendishLegacyMechanicsFields = codecFields({
+  family: Schema.Literal("species_lineage_choice"),
+  choiceKey: speciesLineageChoiceKeySchema("fiendish_legacy"),
+  timing: Schema.Literal("species_selection"),
+  spellcastingAbilityChoice: SpeciesLineageSpellcastingAbilityChoiceSchema,
+  options: Schema.Tuple([
+    fiendishLegacyOptionSchema({
+      id: "abyssal",
+      displayName: "Abyssal",
+      resistance: "poison",
+      cantrip: "poison_spray",
+      levelThreeSpell: "ray_of_sickness",
+      levelFiveSpell: "hold_person",
+    }),
+    fiendishLegacyOptionSchema({
+      id: "chthonic",
+      displayName: "Chthonic",
+      resistance: "necrotic",
+      cantrip: "chill_touch",
+      levelThreeSpell: "false_life",
+      levelFiveSpell: "ray_of_enfeeblement",
+    }),
+    fiendishLegacyOptionSchema({
+      id: "infernal",
+      displayName: "Infernal",
+      resistance: "fire",
+      cantrip: "fire_bolt",
+      levelThreeSpell: "hellish_rebuke",
+      levelFiveSpell: "darkness",
+    }),
+  ]),
+});
+type FiendishLegacyMechanicsCodec = Schema.Struct<
+  typeof fiendishLegacyMechanicsFields
+>;
+export const FiendishLegacyMechanicsSchema: FiendishLegacyMechanicsCodec =
+  Schema.Struct(fiendishLegacyMechanicsFields);
+
+/**
+ * A species trait that grants spells cast with the spellcasting ability chosen
+ * for another trait of the same species: Otherworldly Presence's Thaumaturgy
+ * uses the Fiendish Legacy's ability (SRD 5.2.1 character-origins.md, Tiefling).
+ */
+const speciesLineageAbilitySpellAccessMechanicsFields = codecFields({
+  family: Schema.Literal("species_lineage_ability_spell_access"),
+  grants: Schema.Tuple([speciesLineageKnownCantripGrantSchema("thaumaturgy")]),
+  spellcastingAbility: Schema.Struct({
+    kind: Schema.Literal("same_as_species_lineage"),
+    traitId: surfaceReference(
+      Schema.Literal("species_tiefling_fiendish_legacy"),
+      "unit-reference",
+    ),
+  }),
+});
+type SpeciesLineageAbilitySpellAccessMechanicsCodec = Schema.Struct<
+  typeof speciesLineageAbilitySpellAccessMechanicsFields
+>;
+export const SpeciesLineageAbilitySpellAccessMechanicsSchema: SpeciesLineageAbilitySpellAccessMechanicsCodec =
+  Schema.Struct(speciesLineageAbilitySpellAccessMechanicsFields);
 
 const d20TestNaturalOneRerollMechanicsFields = codecFields({
   family: Schema.Literal("d20_test_natural_one_reroll"),
@@ -4772,6 +5003,9 @@ const speciesTraitMechanicsMembers = codecMembers(
   ActivatedAbilityMechanicsSchema,
   TriggeredReplacementMechanicsSchema,
   GnomishLineageMechanicsSchema,
+  ElvenLineageMechanicsSchema,
+  FiendishLegacyMechanicsSchema,
+  SpeciesLineageAbilitySpellAccessMechanicsSchema,
   D20TestNaturalOneRerollMechanicsSchema,
   CreatureSpaceMovementPermissionMechanicsSchema,
   HideActionObscurementPermissionMechanicsSchema,
@@ -4955,6 +5189,7 @@ export const ElfSpeciesTraitsSchema = Schema.Struct({
   darkvision: Schema.Literal("elf_darkvision"),
   feyAncestry: Schema.Literal("species_elf_fey_ancestry"),
   keenSenses: Schema.Literal("species_elf_keen_senses"),
+  elvenLineage: Schema.Literal("species_elf_elven_lineage"),
   trance: Schema.Literal("species_elf_trance"),
 });
 
@@ -5036,6 +5271,10 @@ export const OrcSpeciesRecordSchema = Schema.Struct({
 
 export const TieflingSpeciesTraitsSchema = Schema.Struct({
   darkvision: Schema.Literal("species_tiefling_darkvision"),
+  fiendishLegacy: Schema.Literal("species_tiefling_fiendish_legacy"),
+  otherworldlyPresence: Schema.Literal(
+    "species_tiefling_otherworldly_presence",
+  ),
 });
 
 export const TieflingSpeciesRecordSchema = Schema.Struct({

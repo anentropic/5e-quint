@@ -87,9 +87,9 @@ export {
   type CharacterBuildClassFeatureLanguage,
   type CharacterBuildDraconicAncestryFact,
   type CharacterBuildEldritchInvocationSelection,
-  type CharacterBuildGnomishLineageFact,
-  type CharacterBuildGnomishLineageId,
-  type CharacterBuildGnomishLineageSpellcastingAbility,
+  type CharacterBuildSpeciesLineageFact,
+  type CharacterBuildSpeciesLineageId,
+  type CharacterBuildSpeciesLineageSpellcastingAbility,
   type CharacterBuildHitPoints,
   type CharacterBuildOwnedEquipmentItem,
   type CharacterBuildProficiencies,
@@ -248,11 +248,13 @@ export {
   type CharacterCreationSelectedReferenceRouteEvent,
 } from "./character-build-selected-reference-route.ts";
 export {
-  characterBuildGnomishLineageTraitProjection,
-  type CharacterBuildGnomishLineageOption,
-  type CharacterBuildGnomishLineageTraitProjection,
-  type CharacterBuildGnomishLineageTraitProjectionIssue,
-} from "./gnomish-lineage.ts";
+  characterBuildSpeciesLineageTraitProjection,
+  characterBuildSpeciesTraitSpellGrants,
+  type CharacterBuildSpeciesTraitSpellGrant,
+  type CharacterBuildSpeciesLineageOption,
+  type CharacterBuildSpeciesLineageTraitProjection,
+  type CharacterBuildSpeciesLineageTraitProjectionIssue,
+} from "./species-lineage.ts";
 export {
   isWeaponMasteryChoiceFeature,
   type WeaponMasteryChoiceFeature,
@@ -375,7 +377,9 @@ export {
   CLASS_EQUIPMENT_CHOICE_KEY,
   ELDRITCH_INVOCATIONS_CHOICE_KEY,
   GNOMISH_LINEAGE_CHOICE_KEY,
-  GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+  ELVEN_LINEAGE_CHOICE_KEY,
+  FIENDISH_LEGACY_CHOICE_KEY,
+  SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
   CLASS_FEATURE_FEAT_CHOICE_KEY,
   CLASS_SKILL_PROFICIENCY_CHOICE_KEY,
   EQUIPMENT_PURCHASE_CHOICE_KEY,

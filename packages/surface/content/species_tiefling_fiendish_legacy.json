@@ -1,0 +1,181 @@
+{
+  "id": "species_tiefling_fiendish_legacy",
+  "kind": "species_trait",
+  "mechanics": {
+    "choiceKey": "fiendish_legacy",
+    "family": "species_lineage_choice",
+    "options": [
+      {
+        "characterLevelGrants": [
+          {
+            "characterLevel": 3,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "ray_of_sickness"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "ray_of_sickness"
+              }
+            ]
+          },
+          {
+            "characterLevel": 5,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "hold_person"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "hold_person"
+              }
+            ]
+          }
+        ],
+        "displayName": "Abyssal",
+        "id": "abyssal",
+        "mechanics": {
+          "family": "passive",
+          "grants": [
+            {
+              "damageType": "poison",
+              "kind": "grant_resistance"
+            },
+            {
+              "kind": "grant_spell_access",
+              "mode": "known",
+              "spellId": "poison_spray"
+            }
+          ]
+        }
+      },
+      {
+        "characterLevelGrants": [
+          {
+            "characterLevel": 3,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "false_life"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "false_life"
+              }
+            ]
+          },
+          {
+            "characterLevel": 5,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "ray_of_enfeeblement"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "ray_of_enfeeblement"
+              }
+            ]
+          }
+        ],
+        "displayName": "Chthonic",
+        "id": "chthonic",
+        "mechanics": {
+          "family": "passive",
+          "grants": [
+            {
+              "damageType": "necrotic",
+              "kind": "grant_resistance"
+            },
+            {
+              "kind": "grant_spell_access",
+              "mode": "known",
+              "spellId": "chill_touch"
+            }
+          ]
+        }
+      },
+      {
+        "characterLevelGrants": [
+          {
+            "characterLevel": 3,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "hellish_rebuke"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "hellish_rebuke"
+              }
+            ]
+          },
+          {
+            "characterLevel": 5,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "darkness"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "darkness"
+              }
+            ]
+          }
+        ],
+        "displayName": "Infernal",
+        "id": "infernal",
+        "mechanics": {
+          "family": "passive",
+          "grants": [
+            {
+              "damageType": "fire",
+              "kind": "grant_resistance"
+            },
+            {
+              "kind": "grant_spell_access",
+              "mode": "known",
+              "spellId": "fire_bolt"
+            }
+          ]
+        }
+      }
+    ],
+    "spellcastingAbilityChoice": {
+      "abilities": [
+        "int",
+        "wis",
+        "cha"
+      ],
+      "kind": "spellcasting_ability_choice"
+    },
+    "timing": "species_selection"
+  },
+  "name": "Fiendish Legacy",
+  "provenance": {
+    "kind": "srd-5.2.1",
+    "section": "character-origins.md#Tiefling"
+  },
+  "species": "tiefling"
+}

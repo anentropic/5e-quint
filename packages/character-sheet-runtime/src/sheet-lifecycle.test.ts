@@ -433,8 +433,8 @@ describe("Character Sheet runtime / sheet lifecycle and stored parsing", () => {
 
   test("restores recorded Gnomish Lineage facts through the public sheet parser", () => {
     const speciesChoiceFacts = {
-      gnomishLineage: {
-        kind: "gnomishLineage" as const,
+      speciesLineage: {
+        kind: "speciesLineage" as const,
         lineageId: "forest_gnome" as const,
         spellcastingAbility: "wis" as const,
       },

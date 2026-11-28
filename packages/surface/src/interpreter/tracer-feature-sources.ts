@@ -6,7 +6,6 @@ import type {
   D20TestNaturalOneRerollMechanics,
   FeatRecord,
   GrapplerFeatMechanics,
-  GnomishLineageMechanics,
   HideActionObscurementPermissionMechanics,
   ItemDestructionPolicy,
   LightExtraAttackDamageAbilityModifierFeatMechanics,
@@ -21,6 +20,8 @@ import type {
   PassiveMechanics,
   RestTriggeredHeroicInspirationMechanics,
   SleeplessTranceMechanics,
+  SpeciesLineageAbilitySpellAccessMechanics,
+  SpeciesLineageChoiceMechanics,
   SpeciesTraitRecord,
   TriggeredReactionAbilityMechanics,
   TriggeredReplacementMechanics,
@@ -32,6 +33,7 @@ import type {
   TraceNode,
   TraceNodeId,
 } from "./tracer-model.ts";
+import { Match } from "effect";
 import { idGen } from "./tracer-rule-labels.ts";
 import type { IdGen } from "./tracer-rule-labels.ts";
 import { traceRoot } from "./tracer-root.ts";
@@ -396,34 +398,27 @@ export function traceSpeciesTraitUnit(trait: SpeciesTraitRecord): TraceDraft {
     `species_trait_root\n${trait.name}\n(${trait.species})`,
   );
 
-  const procId =
-    trait.mechanics.family === "triggered_replacement"
-      ? traceTriggeredReplacementMechanics(trait.mechanics, nodes, edges, ids)
-      : trait.mechanics.family === "species_lineage_choice"
-        ? traceGnomishLineageMechanics(trait.mechanics, nodes, edges, ids)
-        : trait.mechanics.family === "d20_test_natural_one_reroll"
-          ? traceD20TestNaturalOneRerollMechanics(trait.mechanics, nodes, ids)
-          : trait.mechanics.family === "creature_space_movement_permission"
-            ? traceCreatureSpaceMovementPermissionMechanics(
-                trait.mechanics,
-                nodes,
-                ids,
-              )
-            : trait.mechanics.family === "hide_action_obscurement_permission"
-              ? traceHideActionObscurementPermissionMechanics(
-                  trait.mechanics,
-                  nodes,
-                  ids,
-                )
-              : trait.mechanics.family === "rest_triggered_heroic_inspiration"
-                ? traceRestTriggeredHeroicInspirationMechanics(
-                    trait.mechanics,
-                    nodes,
-                    ids,
-                  )
-                : trait.mechanics.family === "sleepless_trance"
-                  ? traceSleeplessTranceMechanics(trait.mechanics, nodes, ids)
-                  : tracePassiveOrActivated(trait.mechanics, nodes, edges, ids);
+  const procId = Match.value(trait.mechanics).pipe(
+    Match.discriminatorsExhaustive("family")({
+      passive: (m) => tracePassiveOrActivated(m, nodes, edges, ids),
+      activation: (m) => tracePassiveOrActivated(m, nodes, edges, ids),
+      triggered_replacement: (m) =>
+        traceTriggeredReplacementMechanics(m, nodes, edges, ids),
+      species_lineage_choice: (m) =>
+        traceSpeciesLineageChoiceMechanics(m, nodes, edges, ids),
+      d20_test_natural_one_reroll: (m) =>
+        traceD20TestNaturalOneRerollMechanics(m, nodes, ids),
+      creature_space_movement_permission: (m) =>
+        traceCreatureSpaceMovementPermissionMechanics(m, nodes, ids),
+      hide_action_obscurement_permission: (m) =>
+        traceHideActionObscurementPermissionMechanics(m, nodes, ids),
+      rest_triggered_heroic_inspiration: (m) =>
+        traceRestTriggeredHeroicInspirationMechanics(m, nodes, ids),
+      sleepless_trance: (m) => traceSleeplessTranceMechanics(m, nodes, ids),
+      species_lineage_ability_spell_access: (m) =>
+        traceSpeciesLineageAbilitySpellAccessMechanics(m, nodes, edges, ids),
+    }),
+  );
   edges.push({ from: rootId, to: procId, relation: "roots" });
 
   return {
@@ -434,8 +429,8 @@ export function traceSpeciesTraitUnit(trait: SpeciesTraitRecord): TraceDraft {
   };
 }
 
-function traceGnomishLineageMechanics(
-  mechanics: GnomishLineageMechanics,
+function traceSpeciesLineageChoiceMechanics(
+  mechanics: SpeciesLineageChoiceMechanics,
   nodes: TraceNode[],
   edges: TraceEdge[],
   ids: IdGen,
@@ -462,6 +457,39 @@ function traceGnomishLineageMechanics(
 
     const grantId = tracePassiveMechanics(option.mechanics, nodes, edges, ids);
     edges.push({ from: optionId, to: grantId, relation: "selects" });
+
+    if ("characterLevelGrants" in option) {
+      for (const tier of option.characterLevelGrants) {
+        const tierId = ids(`character-level-${tier.characterLevel}`);
+        nodes.push({
+          id: tierId,
+          category: "procedure",
+          atomKind: "species_lineage_character_level_grants",
+          label: `species_lineage_character_level_grants\ncharacter level ${tier.characterLevel}`,
+        });
+        edges.push({ from: optionId, to: tierId, relation: "grants" });
+        const tierGrantId = tracePassiveMechanics(
+          { family: "passive", grants: tier.grants },
+          nodes,
+          edges,
+          ids,
+        );
+        edges.push({ from: tierId, to: tierGrantId, relation: "selects" });
+      }
+    }
+
+    if ("cantripReplacement" in option) {
+      const replacementId = ids("cantrip-replacement");
+      nodes.push({
+        id: replacementId,
+        category: "effect",
+        atomKind: option.cantripReplacement.kind,
+        label:
+          `${option.cantripReplacement.kind}\n${option.cantripReplacement.trigger}\n` +
+          `${option.cantripReplacement.spellList} cantrip`,
+      });
+      edges.push({ from: optionId, to: replacementId, relation: "grants" });
+    }
 
     if ("clockworkDevice" in option) {
       const device = option.clockworkDevice;
@@ -549,6 +577,31 @@ function traceRestTriggeredHeroicInspirationMechanics(
       `${mechanics.family}\n${mechanics.trigger.kind}: ${mechanics.trigger.rest}\n` +
       mechanics.grant.kind,
   });
+  return procId;
+}
+
+function traceSpeciesLineageAbilitySpellAccessMechanics(
+  mechanics: SpeciesLineageAbilitySpellAccessMechanics,
+  nodes: TraceNode[],
+  edges: TraceEdge[],
+  ids: IdGen,
+): TraceNodeId {
+  const procId = ids("species-lineage-ability-spell-access");
+  nodes.push({
+    id: procId,
+    category: "procedure",
+    atomKind: mechanics.family,
+    label:
+      `${mechanics.family}\n${mechanics.spellcastingAbility.kind}\n` +
+      mechanics.spellcastingAbility.traitId,
+  });
+  const grantId = tracePassiveMechanics(
+    { family: "passive", grants: mechanics.grants },
+    nodes,
+    edges,
+    ids,
+  );
+  edges.push({ from: procId, to: grantId, relation: "grants" });
   return procId;
 }
 

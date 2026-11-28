@@ -43,14 +43,14 @@
   "generatedBy": "scripts/unit-profile-coverage-check.cjs",
   "metrics": {
     "authoredSurfaceExecutableCatalogAdmissionCoverage": {
-      "denominator": 547,
-      "numerator": 402,
-      "percent": "73.5%"
+      "denominator": 550,
+      "numerator": 405,
+      "percent": "73.6%"
     },
     "authoredSurfaceUnitCatalogAdmissionCoverage": {
-      "denominator": 635,
-      "numerator": 457,
-      "percent": "72%"
+      "denominator": 638,
+      "numerator": 460,
+      "percent": "72.1%"
     },
     "classicNonSrdExpressionGate": {
       "denominator": 1,
@@ -59,7 +59,7 @@
     },
     "collectionInventoryCount": {
       "unit": "Units",
-      "value": 458
+      "value": 461
     },
     "deterministicAdmissionProjectionCoverage": {
       "denominator": 246,
@@ -67,8 +67,8 @@
       "percent": "96.3%"
     },
     "profileClassificationCoverage": {
-      "denominator": 458,
-      "numerator": 458,
+      "denominator": 461,
+      "numerator": 461,
       "percent": "100%"
     },
     "qntProfileModelingCoverage": {
@@ -112,9 +112,9 @@
       "percent": "97.1%"
     },
     "supportedProfileCoverage": {
-      "denominator": 403,
+      "denominator": 406,
       "numerator": 246,
-      "percent": "61%"
+      "percent": "60.6%"
     }
   },
   "metricSemantics": [
@@ -988,10 +988,11 @@
         "packages/battle-runtime/src/battle-reducer/damage-helpers.ts",
         "packages/character-battle-runtime/src/battle-support-profiles.ts"
       ],
-      "sourceBoundary": "Character creation preserves selected source facts when a passive Resistance depends on a species-owned choice table, such as Draconic Ancestry. Fixed passive Resistance facts, such as Dwarven Resilience's Poison damage Resistance, derive their damage type directly from the passive grant_resistance Surface shape. Battle damage adjustment consumes the admitted character Unit support profile directly from characterUnitRefs without storing a separate resistance-only damage type field.",
+      "sourceBoundary": "Character creation preserves selected source facts when a passive Resistance depends on a species-owned choice table, such as Draconic Ancestry. A species lineage choice trait's passive Resistance comes from the passive grants of the lineage option retained on the build, such as a Fiendish Legacy's damage type. Fixed passive Resistance facts, such as Dwarven Resilience's Poison damage Resistance, derive their damage type directly from the passive grant_resistance Surface shape. Battle damage adjustment consumes the admitted character Unit support profile directly from characterUnitRefs without storing a separate resistance-only damage type field.",
       "taskRefs": [
         "L3MSPEC-04-DRAGONBORN-DAMAGE-RESISTANCE",
-        "L3MSPEC-05-DWARVEN-RESILIENCE-RESISTANCE"
+        "L3MSPEC-05-DWARVEN-RESILIENCE-RESISTANCE",
+        "SPECIES-LINEAGES"
       ],
       "title": "Unit feature passively grants target-side Resistance keyed to a typed or fixed damage fact",
       "verificationOwners": [
@@ -1002,6 +1003,10 @@
         {
           "kind": "runtime-test",
           "ownerPath": "packages/character-battle-runtime/src/index.test.ts"
+        },
+        {
+          "kind": "runtime-test",
+          "ownerPath": "packages/character-battle-runtime/src/species-lineage-battle.test.ts"
         }
       ]
     },
@@ -5991,10 +5996,11 @@
         "packages/character-creation-runtime/src/finalization.ts",
         "packages/character-creation-runtime/src/support-gates.ts"
       ],
-      "sourceBoundary": "Character Creation consumes selected Species authored trait Unit refs and the trait's species_lineage_choice Surface shape. It admits Gnome through the SRD species option set, discovers a Gnomish Lineage choice hole from the selected trait Unit, discovers the associated spellcasting ability choice from the same trait mechanics, admits only the Surface-listed Forest/Rock lineage and Intelligence/Wisdom/Charisma ability options, and public finalization retains the selected lineage plus ability as CharacterBuild speciesChoiceFacts. Spell access, free-cast resources, and Rock clockwork-device behavior remain derived by future owners from the retained lineage source fact and Surface trait mechanics rather than stored in character creation.",
+      "sourceBoundary": "Character Creation consumes selected Species authored trait Unit refs and the trait's species_lineage_choice Surface shape. It discovers one lineage choice hole from the selected trait Unit, keyed by the trait's own choice key, discovers the associated spellcasting ability choice from the same trait mechanics, admits only the Surface-listed lineage and spellcasting ability options, and public finalization retains the selected lineage plus ability as CharacterBuild speciesChoiceFacts. Spell access, free-cast resources, passive lineage grants, and Rock clockwork-device behavior remain derived by later owners from the retained lineage source fact and Surface trait mechanics rather than stored in character creation.",
       "taskRefs": [
         "LT4-B02-GNOMISH-LINEAGE-CHOICE-OWNER",
-        "LT4-B04-GNOME-SPECIES-ADMISSION-EVIDENCE"
+        "LT4-B04-GNOME-SPECIES-ADMISSION-EVIDENCE",
+        "SPECIES-LINEAGES"
       ],
       "title": "Character Creation finalizes species lineage choices as retained build source facts",
       "verificationOwners": [
@@ -6009,11 +6015,14 @@
       "profileKind": "character-sheet",
       "qntOwners": [],
       "runtimeOwners": [
-        "packages/character-creation-runtime/src/gnomish-lineage.ts"
+        "packages/character-creation-runtime/src/species-lineage.ts",
+        "packages/character-sheet-runtime/src/class-feature-spells.ts",
+        "packages/character-sheet-runtime/src/resources.ts"
       ],
-      "sourceBoundary": "Character Sheet-facing composition consumes CharacterBuild.speciesChoiceFacts.gnomishLineage and the selected species trait Unit's species_lineage_choice Surface option. The projection returns the selected option's authored spell-access/free-cast grants and the Rock Gnome clockwork-device source facts on demand from the Unit catalog, while CharacterBuild stores only the lineage and spellcasting ability selection. Rock clockwork-device creation, activation, concurrent limit, duration, and dismantling are surfaced as runtime-detached table/object facts rather than battle state.",
+      "sourceBoundary": "Character Sheet-facing composition consumes CharacterBuild.speciesChoiceFacts.speciesLineage and the selected species trait Unit's species_lineage_choice Surface option. The projection returns the selected option's authored spell-access/free-cast grants, including character-level tiers at or below the character's level, spells of linked species_lineage_ability_spell_access traits cast with the lineage's spellcasting ability, and the Rock Gnome clockwork-device source facts on demand from the Unit catalog, while CharacterBuild stores only the lineage and spellcasting ability selection. Rock clockwork-device creation, activation, concurrent limit, duration, and dismantling are surfaced as runtime-detached table/object facts rather than battle state.",
       "taskRefs": [
-        "LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION"
+        "LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION",
+        "SPECIES-LINEAGES"
       ],
       "title": "Character Sheet derives selected species lineage spell and table-object facts",
       "verificationOwners": [
@@ -18693,7 +18702,7 @@
       "evidenceTag": "selected-identity-replay"
     },
     "deferredNonApplicableRows": [],
-    "rowCount": 8,
+    "rowCount": 11,
     "rows": [
       {
         "catalogAdmissionStatus": "installed",
@@ -18788,6 +18797,24 @@
           "reason": "The Unit has no selected-identity-replay evidence.",
           "status": "missing-witness"
         },
+        "sourceRecordPath": "packages/surface/content/species_elf_elven_lineage.json",
+        "support": {
+          "profileIds": [
+            "character-creation.species-lineage-choice",
+            "character-sheet.species-lineage-trait-projection"
+          ],
+          "tag": "profile-subset-supported"
+        },
+        "unitId": "species_elf_elven_lineage"
+      },
+      {
+        "catalogAdmissionStatus": "installed",
+        "collectionId": "srd-5.2.1",
+        "kind": "species_trait",
+        "selectedIdentity": {
+          "reason": "The Unit has no selected-identity-replay evidence.",
+          "status": "missing-witness"
+        },
         "sourceRecordPath": "packages/surface/content/species_elf_fey_ancestry.json",
         "support": {
           "profileIds": [
@@ -18830,6 +18857,42 @@
           "tag": "supported-profile"
         },
         "unitId": "species_gnome_gnomish_cunning"
+      },
+      {
+        "catalogAdmissionStatus": "installed",
+        "collectionId": "srd-5.2.1",
+        "kind": "species_trait",
+        "selectedIdentity": {
+          "reason": "The Unit has no selected-identity-replay evidence.",
+          "status": "missing-witness"
+        },
+        "sourceRecordPath": "packages/surface/content/species_tiefling_fiendish_legacy.json",
+        "support": {
+          "profileIds": [
+            "character-creation.species-lineage-choice",
+            "character-sheet.species-lineage-trait-projection",
+            "unit-feature.passive-damage-resistance"
+          ],
+          "tag": "profile-subset-supported"
+        },
+        "unitId": "species_tiefling_fiendish_legacy"
+      },
+      {
+        "catalogAdmissionStatus": "installed",
+        "collectionId": "srd-5.2.1",
+        "kind": "species_trait",
+        "selectedIdentity": {
+          "reason": "The Unit has no selected-identity-replay evidence.",
+          "status": "missing-witness"
+        },
+        "sourceRecordPath": "packages/surface/content/species_tiefling_otherworldly_presence.json",
+        "support": {
+          "profileIds": [
+            "character-sheet.species-lineage-trait-projection"
+          ],
+          "tag": "profile-subset-supported"
+        },
+        "unitId": "species_tiefling_otherworldly_presence"
       }
     ]
   },
@@ -23742,6 +23805,16 @@
         "unit-feature.d20-test-die-minimum"
       ],
       "taskId": "GH695-D20-TEST-DIE-MINIMUM"
+    },
+    {
+      "claimKind": "completed-runtime-parity",
+      "note": "Focused Character Creation runtime tests cover discovering and finalizing the Elven Lineage and Fiendish Legacy choices with their spellcasting abilities. Character Sheet tests cover deriving each lineage's cantrip, its character-level spell tiers with one free cast per Long Rest, and Otherworldly Presence's Thaumaturgy with the legacy's spellcasting ability. Real-catalog character battle tests cover each Fiendish Legacy's damage Resistance profile and the Wood Elf's 35-foot walk Speed.",
+      "profileIds": [
+        "character-creation.species-lineage-choice",
+        "character-sheet.species-lineage-trait-projection",
+        "unit-feature.passive-damage-resistance"
+      ],
+      "taskId": "SPECIES-LINEAGES"
     }
   ],
   "unitGroupDenominatorAudit": {
@@ -24242,10 +24315,11 @@
             "packages/character-creation-runtime/src/finalization.ts",
             "packages/character-creation-runtime/src/support-gates.ts"
           ],
-          "sourceBoundary": "Character Creation consumes selected Species authored trait Unit refs and the trait's species_lineage_choice Surface shape. It admits Gnome through the SRD species option set, discovers a Gnomish Lineage choice hole from the selected trait Unit, discovers the associated spellcasting ability choice from the same trait mechanics, admits only the Surface-listed Forest/Rock lineage and Intelligence/Wisdom/Charisma ability options, and public finalization retains the selected lineage plus ability as CharacterBuild speciesChoiceFacts. Spell access, free-cast resources, and Rock clockwork-device behavior remain derived by future owners from the retained lineage source fact and Surface trait mechanics rather than stored in character creation.",
+          "sourceBoundary": "Character Creation consumes selected Species authored trait Unit refs and the trait's species_lineage_choice Surface shape. It discovers one lineage choice hole from the selected trait Unit, keyed by the trait's own choice key, discovers the associated spellcasting ability choice from the same trait mechanics, admits only the Surface-listed lineage and spellcasting ability options, and public finalization retains the selected lineage plus ability as CharacterBuild speciesChoiceFacts. Spell access, free-cast resources, passive lineage grants, and Rock clockwork-device behavior remain derived by later owners from the retained lineage source fact and Surface trait mechanics rather than stored in character creation.",
           "taskRefs": [
             "LT4-B02-GNOMISH-LINEAGE-CHOICE-OWNER",
-            "LT4-B04-GNOME-SPECIES-ADMISSION-EVIDENCE"
+            "LT4-B04-GNOME-SPECIES-ADMISSION-EVIDENCE",
+            "SPECIES-LINEAGES"
           ],
           "title": "Character Creation finalizes species lineage choices as retained build source facts",
           "verificationOwners": [
@@ -36477,6 +36551,116 @@
         "status": "installed"
       },
       "claim": {
+        "battleReadinessClosure": {
+          "kind": "selection-grant-container",
+          "owner": "character-creation-runtime selected lineage owner plus character-sheet selected trait projection owner",
+          "reason": "Character creation owns the lineage and spellcasting ability selection; the selected trait projection owns derivation of the lineage's spell access and free casts."
+        },
+        "deferredMechanics": [
+          {
+            "battleReadinessClosure": {
+              "kind": "character-fact-and-runtime-detached-split",
+              "owner": "future character-battle species trait spell access owner",
+              "reason": "The Character Sheet projection is the canonical owner of the derived lineage spell grants and free-cast resources. Battle spell access currently admits only Magic Initiate spell sources, so battle casting must consume these derived species trait grants at the battle spell-access boundary rather than storing them again."
+            },
+            "mechanic": "Casting the derived lineage spells in battle, spending their free casts or spell slots"
+          },
+          {
+            "battleReadinessClosure": {
+              "kind": "table-perception-exploration",
+              "owner": "table sight observer owner",
+              "reason": "Battle sight observers are supplied by the table, including Darkvision range, so the Drow's longer Darkvision is a table perception fact rather than battle state."
+            },
+            "mechanic": "Drow Darkvision range of 120 feet"
+          },
+          {
+            "battleReadinessClosure": {
+              "kind": "outside-battle-runtime",
+              "owner": "future rest-time spell replacement owner",
+              "reason": "The replacement happens when a Long Rest ends, outside battle; the projection surfaces it as an unowned lineage fact."
+            },
+            "mechanic": "High Elf replacement of the Prestidigitation cantrip with another Wizard cantrip after a Long Rest"
+          }
+        ],
+        "profileIds": [
+          "character-creation.species-lineage-choice",
+          "character-sheet.species-lineage-trait-projection"
+        ],
+        "supportedMechanics": [
+          "Surface authors Elven Lineage as a species_lineage_choice with Drow, High Elf, and Wood Elf options, their level 1 grants, their character level 3 and 5 spell tiers, the High Elf's long-rest Wizard cantrip replacement, and a closed Intelligence/Wisdom/Charisma spellcasting ability choice",
+          "Character Creation discovers one lineage option hole and one spellcasting ability hole from the selected Elven Lineage trait Unit and retains the selection on CharacterBuild.speciesChoiceFacts",
+          "Character Sheet-facing projection derives the selected lineage's level 1 cantrip and the spells of each tier at or below the character's level, prepared with one free cast per Long Rest, cast with the chosen spellcasting ability",
+          "Battle initialization takes a lineage option's set_speed grant as the character's walk Speed, so a Wood Elf moves 35 feet, without dispatching on Elf or lineage identity"
+        ],
+        "tag": "profile-subset-supported"
+      },
+      "collectionId": "srd-5.2.1",
+      "evidence": [
+        {
+          "ownerPath": "packages/character-battle-runtime/src/species-lineage-battle.test.ts",
+          "tag": "deterministic-admission-projection",
+          "taskId": "SPECIES-LINEAGES"
+        }
+      ],
+      "executableMechanics": true,
+      "kind": "species_trait",
+      "profiles": [
+        {
+          "id": "character-creation.species-lineage-choice",
+          "profileKind": "character-creation",
+          "qntOwners": [],
+          "runtimeOwners": [
+            "packages/character-creation-runtime/src/discovery.ts",
+            "packages/character-creation-runtime/src/finalization.ts",
+            "packages/character-creation-runtime/src/support-gates.ts"
+          ],
+          "sourceBoundary": "Character Creation consumes selected Species authored trait Unit refs and the trait's species_lineage_choice Surface shape. It discovers one lineage choice hole from the selected trait Unit, keyed by the trait's own choice key, discovers the associated spellcasting ability choice from the same trait mechanics, admits only the Surface-listed lineage and spellcasting ability options, and public finalization retains the selected lineage plus ability as CharacterBuild speciesChoiceFacts. Spell access, free-cast resources, passive lineage grants, and Rock clockwork-device behavior remain derived by later owners from the retained lineage source fact and Surface trait mechanics rather than stored in character creation.",
+          "taskRefs": [
+            "LT4-B02-GNOMISH-LINEAGE-CHOICE-OWNER",
+            "LT4-B04-GNOME-SPECIES-ADMISSION-EVIDENCE",
+            "SPECIES-LINEAGES"
+          ],
+          "title": "Character Creation finalizes species lineage choices as retained build source facts",
+          "verificationOwners": [
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-creation-runtime/src/index.test.ts"
+            }
+          ]
+        },
+        {
+          "id": "character-sheet.species-lineage-trait-projection",
+          "profileKind": "character-sheet",
+          "qntOwners": [],
+          "runtimeOwners": [
+            "packages/character-creation-runtime/src/species-lineage.ts",
+            "packages/character-sheet-runtime/src/class-feature-spells.ts",
+            "packages/character-sheet-runtime/src/resources.ts"
+          ],
+          "sourceBoundary": "Character Sheet-facing composition consumes CharacterBuild.speciesChoiceFacts.speciesLineage and the selected species trait Unit's species_lineage_choice Surface option. The projection returns the selected option's authored spell-access/free-cast grants, including character-level tiers at or below the character's level, spells of linked species_lineage_ability_spell_access traits cast with the lineage's spellcasting ability, and the Rock Gnome clockwork-device source facts on demand from the Unit catalog, while CharacterBuild stores only the lineage and spellcasting ability selection. Rock clockwork-device creation, activation, concurrent limit, duration, and dismantling are surfaced as runtime-detached table/object facts rather than battle state.",
+          "taskRefs": [
+            "LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION",
+            "SPECIES-LINEAGES"
+          ],
+          "title": "Character Sheet derives selected species lineage spell and table-object facts",
+          "verificationOwners": [
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-creation-runtime/src/index.test.ts"
+            }
+          ]
+        }
+      ],
+      "sourceRecordPath": "packages/surface/content/species_elf_elven_lineage.json",
+      "unitId": "species_elf_elven_lineage"
+    },
+    {
+      "authoredSurfaceDuplicateIdCount": 1,
+      "catalogAdmission": {
+        "collectionId": "srd-5.2.1",
+        "status": "installed"
+      },
+      "claim": {
         "profileIds": [
           "unit-feature.passive-saving-throw-roll-mode"
         ],
@@ -36817,10 +37001,11 @@
             "packages/battle-runtime/src/battle-reducer/damage-helpers.ts",
             "packages/character-battle-runtime/src/battle-support-profiles.ts"
           ],
-          "sourceBoundary": "Character creation preserves selected source facts when a passive Resistance depends on a species-owned choice table, such as Draconic Ancestry. Fixed passive Resistance facts, such as Dwarven Resilience's Poison damage Resistance, derive their damage type directly from the passive grant_resistance Surface shape. Battle damage adjustment consumes the admitted character Unit support profile directly from characterUnitRefs without storing a separate resistance-only damage type field.",
+          "sourceBoundary": "Character creation preserves selected source facts when a passive Resistance depends on a species-owned choice table, such as Draconic Ancestry. A species lineage choice trait's passive Resistance comes from the passive grants of the lineage option retained on the build, such as a Fiendish Legacy's damage type. Fixed passive Resistance facts, such as Dwarven Resilience's Poison damage Resistance, derive their damage type directly from the passive grant_resistance Surface shape. Battle damage adjustment consumes the admitted character Unit support profile directly from characterUnitRefs without storing a separate resistance-only damage type field.",
           "taskRefs": [
             "L3MSPEC-04-DRAGONBORN-DAMAGE-RESISTANCE",
-            "L3MSPEC-05-DWARVEN-RESILIENCE-RESISTANCE"
+            "L3MSPEC-05-DWARVEN-RESILIENCE-RESISTANCE",
+            "SPECIES-LINEAGES"
           ],
           "title": "Unit feature passively grants target-side Resistance keyed to a typed or fixed damage fact",
           "verificationOwners": [
@@ -36831,6 +37016,10 @@
             {
               "kind": "runtime-test",
               "ownerPath": "packages/character-battle-runtime/src/index.test.ts"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-battle-runtime/src/species-lineage-battle.test.ts"
             }
           ]
         }
@@ -36933,10 +37122,11 @@
             "packages/battle-runtime/src/battle-reducer/damage-helpers.ts",
             "packages/character-battle-runtime/src/battle-support-profiles.ts"
           ],
-          "sourceBoundary": "Character creation preserves selected source facts when a passive Resistance depends on a species-owned choice table, such as Draconic Ancestry. Fixed passive Resistance facts, such as Dwarven Resilience's Poison damage Resistance, derive their damage type directly from the passive grant_resistance Surface shape. Battle damage adjustment consumes the admitted character Unit support profile directly from characterUnitRefs without storing a separate resistance-only damage type field.",
+          "sourceBoundary": "Character creation preserves selected source facts when a passive Resistance depends on a species-owned choice table, such as Draconic Ancestry. A species lineage choice trait's passive Resistance comes from the passive grants of the lineage option retained on the build, such as a Fiendish Legacy's damage type. Fixed passive Resistance facts, such as Dwarven Resilience's Poison damage Resistance, derive their damage type directly from the passive grant_resistance Surface shape. Battle damage adjustment consumes the admitted character Unit support profile directly from characterUnitRefs without storing a separate resistance-only damage type field.",
           "taskRefs": [
             "L3MSPEC-04-DRAGONBORN-DAMAGE-RESISTANCE",
-            "L3MSPEC-05-DWARVEN-RESILIENCE-RESISTANCE"
+            "L3MSPEC-05-DWARVEN-RESILIENCE-RESISTANCE",
+            "SPECIES-LINEAGES"
           ],
           "title": "Unit feature passively grants target-side Resistance keyed to a typed or fixed damage fact",
           "verificationOwners": [
@@ -36947,6 +37137,10 @@
             {
               "kind": "runtime-test",
               "ownerPath": "packages/character-battle-runtime/src/index.test.ts"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-battle-runtime/src/species-lineage-battle.test.ts"
             }
           ]
         },
@@ -37228,10 +37422,11 @@
             "packages/character-creation-runtime/src/finalization.ts",
             "packages/character-creation-runtime/src/support-gates.ts"
           ],
-          "sourceBoundary": "Character Creation consumes selected Species authored trait Unit refs and the trait's species_lineage_choice Surface shape. It admits Gnome through the SRD species option set, discovers a Gnomish Lineage choice hole from the selected trait Unit, discovers the associated spellcasting ability choice from the same trait mechanics, admits only the Surface-listed Forest/Rock lineage and Intelligence/Wisdom/Charisma ability options, and public finalization retains the selected lineage plus ability as CharacterBuild speciesChoiceFacts. Spell access, free-cast resources, and Rock clockwork-device behavior remain derived by future owners from the retained lineage source fact and Surface trait mechanics rather than stored in character creation.",
+          "sourceBoundary": "Character Creation consumes selected Species authored trait Unit refs and the trait's species_lineage_choice Surface shape. It discovers one lineage choice hole from the selected trait Unit, keyed by the trait's own choice key, discovers the associated spellcasting ability choice from the same trait mechanics, admits only the Surface-listed lineage and spellcasting ability options, and public finalization retains the selected lineage plus ability as CharacterBuild speciesChoiceFacts. Spell access, free-cast resources, passive lineage grants, and Rock clockwork-device behavior remain derived by later owners from the retained lineage source fact and Surface trait mechanics rather than stored in character creation.",
           "taskRefs": [
             "LT4-B02-GNOMISH-LINEAGE-CHOICE-OWNER",
-            "LT4-B04-GNOME-SPECIES-ADMISSION-EVIDENCE"
+            "LT4-B04-GNOME-SPECIES-ADMISSION-EVIDENCE",
+            "SPECIES-LINEAGES"
           ],
           "title": "Character Creation finalizes species lineage choices as retained build source facts",
           "verificationOwners": [
@@ -37246,11 +37441,14 @@
           "profileKind": "character-sheet",
           "qntOwners": [],
           "runtimeOwners": [
-            "packages/character-creation-runtime/src/gnomish-lineage.ts"
+            "packages/character-creation-runtime/src/species-lineage.ts",
+            "packages/character-sheet-runtime/src/class-feature-spells.ts",
+            "packages/character-sheet-runtime/src/resources.ts"
           ],
-          "sourceBoundary": "Character Sheet-facing composition consumes CharacterBuild.speciesChoiceFacts.gnomishLineage and the selected species trait Unit's species_lineage_choice Surface option. The projection returns the selected option's authored spell-access/free-cast grants and the Rock Gnome clockwork-device source facts on demand from the Unit catalog, while CharacterBuild stores only the lineage and spellcasting ability selection. Rock clockwork-device creation, activation, concurrent limit, duration, and dismantling are surfaced as runtime-detached table/object facts rather than battle state.",
+          "sourceBoundary": "Character Sheet-facing composition consumes CharacterBuild.speciesChoiceFacts.speciesLineage and the selected species trait Unit's species_lineage_choice Surface option. The projection returns the selected option's authored spell-access/free-cast grants, including character-level tiers at or below the character's level, spells of linked species_lineage_ability_spell_access traits cast with the lineage's spellcasting ability, and the Rock Gnome clockwork-device source facts on demand from the Unit catalog, while CharacterBuild stores only the lineage and spellcasting ability selection. Rock clockwork-device creation, activation, concurrent limit, duration, and dismantling are surfaced as runtime-detached table/object facts rather than battle state.",
           "taskRefs": [
-            "LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION"
+            "LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION",
+            "SPECIES-LINEAGES"
           ],
           "title": "Character Sheet derives selected species lineage spell and table-object facts",
           "verificationOwners": [
@@ -37934,6 +38132,197 @@
       "profiles": [],
       "sourceRecordPath": "packages/surface/content/species_tiefling_darkvision.json",
       "unitId": "species_tiefling_darkvision"
+    },
+    {
+      "authoredSurfaceDuplicateIdCount": 1,
+      "catalogAdmission": {
+        "collectionId": "srd-5.2.1",
+        "status": "installed"
+      },
+      "claim": {
+        "battleReadinessClosure": {
+          "kind": "selection-grant-container",
+          "owner": "character-creation-runtime selected lineage owner plus character-sheet selected trait projection owner",
+          "reason": "Character creation owns the lineage and spellcasting ability selection; the selected trait projection owns derivation of the lineage's spell access and free casts."
+        },
+        "deferredMechanics": [
+          {
+            "battleReadinessClosure": {
+              "kind": "character-fact-and-runtime-detached-split",
+              "owner": "future character-battle species trait spell access owner",
+              "reason": "The Character Sheet projection is the canonical owner of the derived lineage spell grants and free-cast resources. Battle spell access currently admits only Magic Initiate spell sources, so battle casting must consume these derived species trait grants at the battle spell-access boundary rather than storing them again."
+            },
+            "mechanic": "Casting the derived lineage spells in battle, spending their free casts or spell slots"
+          }
+        ],
+        "profileIds": [
+          "character-creation.species-lineage-choice",
+          "character-sheet.species-lineage-trait-projection",
+          "unit-feature.passive-damage-resistance"
+        ],
+        "supportedMechanics": [
+          "Surface authors Fiendish Legacy as a species_lineage_choice with Abyssal, Chthonic, and Infernal options, each a damage Resistance, a known cantrip, and character level 3 and 5 spell tiers, plus a closed Intelligence/Wisdom/Charisma spellcasting ability choice",
+          "Character Creation discovers one legacy option hole and one spellcasting ability hole from the selected Fiendish Legacy trait Unit and retains the selection on CharacterBuild.speciesChoiceFacts",
+          "Character Sheet-facing projection derives the legacy cantrip and the spells of each tier at or below the character's level, prepared with one free cast per Long Rest, cast with the chosen spellcasting ability",
+          "Battle Unit admission derives the passive damage Resistance profile from the grant_resistance in the passive grants of the legacy retained on the build, without dispatching on Tiefling or legacy identity"
+        ],
+        "tag": "profile-subset-supported"
+      },
+      "collectionId": "srd-5.2.1",
+      "evidence": [
+        {
+          "ownerPath": "packages/character-battle-runtime/src/species-lineage-battle.test.ts",
+          "tag": "deterministic-admission-projection",
+          "taskId": "SPECIES-LINEAGES"
+        }
+      ],
+      "executableMechanics": true,
+      "kind": "species_trait",
+      "profiles": [
+        {
+          "id": "character-creation.species-lineage-choice",
+          "profileKind": "character-creation",
+          "qntOwners": [],
+          "runtimeOwners": [
+            "packages/character-creation-runtime/src/discovery.ts",
+            "packages/character-creation-runtime/src/finalization.ts",
+            "packages/character-creation-runtime/src/support-gates.ts"
+          ],
+          "sourceBoundary": "Character Creation consumes selected Species authored trait Unit refs and the trait's species_lineage_choice Surface shape. It discovers one lineage choice hole from the selected trait Unit, keyed by the trait's own choice key, discovers the associated spellcasting ability choice from the same trait mechanics, admits only the Surface-listed lineage and spellcasting ability options, and public finalization retains the selected lineage plus ability as CharacterBuild speciesChoiceFacts. Spell access, free-cast resources, passive lineage grants, and Rock clockwork-device behavior remain derived by later owners from the retained lineage source fact and Surface trait mechanics rather than stored in character creation.",
+          "taskRefs": [
+            "LT4-B02-GNOMISH-LINEAGE-CHOICE-OWNER",
+            "LT4-B04-GNOME-SPECIES-ADMISSION-EVIDENCE",
+            "SPECIES-LINEAGES"
+          ],
+          "title": "Character Creation finalizes species lineage choices as retained build source facts",
+          "verificationOwners": [
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-creation-runtime/src/index.test.ts"
+            }
+          ]
+        },
+        {
+          "id": "character-sheet.species-lineage-trait-projection",
+          "profileKind": "character-sheet",
+          "qntOwners": [],
+          "runtimeOwners": [
+            "packages/character-creation-runtime/src/species-lineage.ts",
+            "packages/character-sheet-runtime/src/class-feature-spells.ts",
+            "packages/character-sheet-runtime/src/resources.ts"
+          ],
+          "sourceBoundary": "Character Sheet-facing composition consumes CharacterBuild.speciesChoiceFacts.speciesLineage and the selected species trait Unit's species_lineage_choice Surface option. The projection returns the selected option's authored spell-access/free-cast grants, including character-level tiers at or below the character's level, spells of linked species_lineage_ability_spell_access traits cast with the lineage's spellcasting ability, and the Rock Gnome clockwork-device source facts on demand from the Unit catalog, while CharacterBuild stores only the lineage and spellcasting ability selection. Rock clockwork-device creation, activation, concurrent limit, duration, and dismantling are surfaced as runtime-detached table/object facts rather than battle state.",
+          "taskRefs": [
+            "LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION",
+            "SPECIES-LINEAGES"
+          ],
+          "title": "Character Sheet derives selected species lineage spell and table-object facts",
+          "verificationOwners": [
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-creation-runtime/src/index.test.ts"
+            }
+          ]
+        },
+        {
+          "id": "unit-feature.passive-damage-resistance",
+          "profileKind": "passive",
+          "qntOwners": [
+            "packages/shared-algebras/proofs/rule-core/damage-component-adjustments.qnt",
+            "packages/battle-runtime/battle-runtime-damage-type-adjustment.qnt"
+          ],
+          "runtimeOwners": [
+            "packages/battle-runtime/src/unit-feature-support.ts",
+            "packages/battle-runtime/src/battle-reducer/damage-helpers.ts",
+            "packages/character-battle-runtime/src/battle-support-profiles.ts"
+          ],
+          "sourceBoundary": "Character creation preserves selected source facts when a passive Resistance depends on a species-owned choice table, such as Draconic Ancestry. A species lineage choice trait's passive Resistance comes from the passive grants of the lineage option retained on the build, such as a Fiendish Legacy's damage type. Fixed passive Resistance facts, such as Dwarven Resilience's Poison damage Resistance, derive their damage type directly from the passive grant_resistance Surface shape. Battle damage adjustment consumes the admitted character Unit support profile directly from characterUnitRefs without storing a separate resistance-only damage type field.",
+          "taskRefs": [
+            "L3MSPEC-04-DRAGONBORN-DAMAGE-RESISTANCE",
+            "L3MSPEC-05-DWARVEN-RESILIENCE-RESISTANCE",
+            "SPECIES-LINEAGES"
+          ],
+          "title": "Unit feature passively grants target-side Resistance keyed to a typed or fixed damage fact",
+          "verificationOwners": [
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/battle-runtime/src/unit-profile-admission-martial-action-features.test.ts"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-battle-runtime/src/index.test.ts"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-battle-runtime/src/species-lineage-battle.test.ts"
+            }
+          ]
+        }
+      ],
+      "sourceRecordPath": "packages/surface/content/species_tiefling_fiendish_legacy.json",
+      "unitId": "species_tiefling_fiendish_legacy"
+    },
+    {
+      "authoredSurfaceDuplicateIdCount": 1,
+      "catalogAdmission": {
+        "collectionId": "srd-5.2.1",
+        "status": "installed"
+      },
+      "claim": {
+        "battleReadinessClosure": {
+          "kind": "selection-grant-container",
+          "owner": "character-creation-runtime selected lineage owner plus character-sheet selected trait projection owner",
+          "reason": "Character creation owns the lineage and spellcasting ability selection; the selected trait projection owns derivation of the lineage's spell access and free casts."
+        },
+        "deferredMechanics": [
+          {
+            "battleReadinessClosure": {
+              "kind": "character-fact-and-runtime-detached-split",
+              "owner": "future character-battle species trait spell access owner",
+              "reason": "The Character Sheet projection is the canonical owner of the derived lineage spell grants and free-cast resources. Battle spell access currently admits only Magic Initiate spell sources, so battle casting must consume these derived species trait grants at the battle spell-access boundary rather than storing them again."
+            },
+            "mechanic": "Casting the derived lineage spells in battle, spending their free casts or spell slots"
+          }
+        ],
+        "profileIds": [
+          "character-sheet.species-lineage-trait-projection"
+        ],
+        "supportedMechanics": [
+          "Surface authors Otherworldly Presence as a species_lineage_ability_spell_access trait granting the Thaumaturgy cantrip, cast with the spellcasting ability chosen for the linked Fiendish Legacy trait",
+          "Character Sheet-facing projection derives Thaumaturgy as a known cantrip with the Fiendish Legacy spellcasting ability, without storing the spell on CharacterBuild"
+        ],
+        "tag": "profile-subset-supported"
+      },
+      "collectionId": "srd-5.2.1",
+      "evidence": [],
+      "executableMechanics": true,
+      "kind": "species_trait",
+      "profiles": [
+        {
+          "id": "character-sheet.species-lineage-trait-projection",
+          "profileKind": "character-sheet",
+          "qntOwners": [],
+          "runtimeOwners": [
+            "packages/character-creation-runtime/src/species-lineage.ts",
+            "packages/character-sheet-runtime/src/class-feature-spells.ts",
+            "packages/character-sheet-runtime/src/resources.ts"
+          ],
+          "sourceBoundary": "Character Sheet-facing composition consumes CharacterBuild.speciesChoiceFacts.speciesLineage and the selected species trait Unit's species_lineage_choice Surface option. The projection returns the selected option's authored spell-access/free-cast grants, including character-level tiers at or below the character's level, spells of linked species_lineage_ability_spell_access traits cast with the lineage's spellcasting ability, and the Rock Gnome clockwork-device source facts on demand from the Unit catalog, while CharacterBuild stores only the lineage and spellcasting ability selection. Rock clockwork-device creation, activation, concurrent limit, duration, and dismantling are surfaced as runtime-detached table/object facts rather than battle state.",
+          "taskRefs": [
+            "LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION",
+            "SPECIES-LINEAGES"
+          ],
+          "title": "Character Sheet derives selected species lineage spell and table-object facts",
+          "verificationOwners": [
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-creation-runtime/src/index.test.ts"
+            }
+          ]
+        }
+      ],
+      "sourceRecordPath": "packages/surface/content/species_tiefling_otherworldly_presence.json",
+      "unitId": "species_tiefling_otherworldly_presence"
     },
     {
       "authoredSurfaceDuplicateIdCount": 1,

@@ -68,6 +68,8 @@ export const CHARACTER_SHEET_FEATURE_EVIDENCE_BRANCHES = [
   "lineage option identity",
   "selected lineage grants",
   "clockwork-device procedure",
+  "character-level lineage grants",
+  "lineage cantrip replacement",
   "long-rest trigger",
   "heroic-inspiration grant",
 ] as const;
@@ -399,7 +401,22 @@ function lineageEvidence(
       ...(!("clockworkDevice" in option)
         ? []
         : [evidence("unowned", "procedure", 1, "clockwork-device procedure")]),
+      ...(!("cantripReplacement" in option)
+        ? []
+        : [evidence("unowned", "procedure", 1, "lineage cantrip replacement")]),
     ]),
+    ...mechanics.options
+      .flatMap((option) =>
+        "characterLevelGrants" in option ? option.characterLevelGrants : [],
+      )
+      .map((_, index) =>
+        evidence(
+          "consumed",
+          "effect",
+          mechanics.options.length + index + 1,
+          "character-level lineage grants",
+        ),
+      ),
   ];
 }
 

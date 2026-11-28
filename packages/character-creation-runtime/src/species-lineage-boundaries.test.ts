@@ -6,7 +6,7 @@ import {
 import { Option, Result } from "effect";
 import { describe, expect, test } from "vitest";
 
-import { characterBuildGnomishLineageTraitProjection } from "./index.ts";
+import { characterBuildSpeciesLineageTraitProjection } from "./index.ts";
 
 const catalogResult = buildUnitCatalog({ collections: [srdUnitCollection] });
 if (catalogResult.tag !== "ok") {
@@ -15,8 +15,8 @@ if (catalogResult.tag !== "ok") {
 const unitLibrary = catalogResult.catalog;
 
 const selectedLineage = {
-  gnomishLineage: {
-    kind: "gnomishLineage",
+  speciesLineage: {
+    kind: "speciesLineage",
     lineageId: "forest_gnome",
     spellcastingAbility: "int",
   },
@@ -25,14 +25,14 @@ const selectedLineage = {
 describe("Gnomish Lineage projection boundaries", () => {
   test("distinguishes absent lineage facts from a selected lineage", () => {
     expect(
-      characterBuildGnomishLineageTraitProjection({
+      characterBuildSpeciesLineageTraitProjection({
         build: { species: authoredUnitId("species_orc") },
         unitLibrary,
       }),
     ).toEqual(Result.succeed(undefined));
 
     expect(
-      characterBuildGnomishLineageTraitProjection({
+      characterBuildSpeciesLineageTraitProjection({
         build: {
           species: authoredUnitId("species_gnome"),
           speciesChoiceFacts: selectedLineage,
@@ -67,14 +67,14 @@ describe("Gnomish Lineage projection boundaries", () => {
 
     for (const { species, message } of speciesCases) {
       expect(
-        characterBuildGnomishLineageTraitProjection({
+        characterBuildSpeciesLineageTraitProjection({
           build: { species, speciesChoiceFacts: selectedLineage },
           unitLibrary,
         }),
       ).toMatchObject({
         _tag: "Failure",
         failure: {
-          tag: "gnomishLineageTraitProjectionIssue",
+          tag: "speciesLineageTraitProjectionIssue",
           message: expect.stringContaining(message),
         },
       });
@@ -103,7 +103,7 @@ describe("Gnomish Lineage projection boundaries", () => {
     };
 
     expect(
-      characterBuildGnomishLineageTraitProjection({
+      characterBuildSpeciesLineageTraitProjection({
         build: {
           species: authoredUnitId("species_gnome"),
           speciesChoiceFacts: selectedLineage,
@@ -113,9 +113,9 @@ describe("Gnomish Lineage projection boundaries", () => {
     ).toMatchObject({
       _tag: "Failure",
       failure: {
-        tag: "gnomishLineageTraitProjectionIssue",
+        tag: "speciesLineageTraitProjectionIssue",
         message:
-          "Selected Gnomish Lineage requires one species lineage choice trait Unit.",
+          "Selected species lineage requires one species lineage choice trait Unit.",
       },
     });
   });

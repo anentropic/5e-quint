@@ -242,8 +242,8 @@ describe("character finalization boundaries", () => {
     ...["forest_gnome", "rock_gnome"].map((lineageId) => ({
       species: "species_gnome",
       value: {
-        gnomishLineage: {
-          kind: "gnomishLineage",
+        speciesLineage: {
+          kind: "speciesLineage",
           lineageId,
           spellcastingAbility: "int",
         },
@@ -335,7 +335,7 @@ describe("character finalization boundaries", () => {
       species: "species_gnome",
       speciesChoiceFacts: undefined,
       expected:
-        "Character Build requires selected Gnomish Lineage fact for species with a Gnomish Lineage source.",
+        "Character Build requires selected species lineage fact for species with a species lineage source.",
     },
     {
       name: "missing required ancestry",
@@ -348,27 +348,27 @@ describe("character finalization boundaries", () => {
       name: "lineage on a species without its source",
       species: "species_dwarf",
       speciesChoiceFacts: {
-        gnomishLineage: {
-          kind: "gnomishLineage",
+        speciesLineage: {
+          kind: "speciesLineage",
           lineageId: "forest_gnome",
           spellcastingAbility: "int",
         },
       },
       expected:
-        "Character Build cannot carry Gnomish Lineage fact for species without a Gnomish Lineage source.",
+        "Character Build cannot carry species lineage fact for species without a species lineage source.",
     },
     {
       name: "lineage on an ancestry species",
       species: "species_dragonborn",
       speciesChoiceFacts: {
-        gnomishLineage: {
-          kind: "gnomishLineage",
+        speciesLineage: {
+          kind: "speciesLineage",
           lineageId: "forest_gnome",
           spellcastingAbility: "int",
         },
       },
       expected:
-        "Character Build cannot carry Gnomish Lineage fact for species without a Gnomish Lineage source.",
+        "Character Build cannot carry species lineage fact for species without a species lineage source.",
     },
     {
       name: "ancestry on a lineage species",
@@ -381,38 +381,38 @@ describe("character finalization boundaries", () => {
     },
     ...[
       {
-        gnomishLineage: {
-          kind: "gnomishLineage",
+        speciesLineage: {
+          kind: "speciesLineage",
           lineageId: "synthetic_unknown_lineage",
           spellcastingAbility: "int",
         },
       },
       {
-        gnomishLineage: {
-          kind: "gnomishLineage",
+        speciesLineage: {
+          kind: "speciesLineage",
           lineageId: "forest_gnome",
           spellcastingAbility: "str",
         },
       },
       {
-        gnomishLineage: {
-          kind: "gnomishLineage",
+        speciesLineage: {
+          kind: "speciesLineage",
           lineageId: "forest_gnome",
           spellcastingAbility: "int",
           extra: true,
         },
       },
       {
-        gnomishLineage: {
-          kind: "gnomishLineage",
+        speciesLineage: {
+          kind: "speciesLineage",
           lineageId: "forest_gnome",
           spellcastingAbility: "int",
         },
         extra: true,
       },
       {
-        gnomishLineage: {
-          kind: "gnomishLineage",
+        speciesLineage: {
+          kind: "speciesLineage",
           lineageId: "forest_gnome",
           spellcastingAbility: "int",
         },

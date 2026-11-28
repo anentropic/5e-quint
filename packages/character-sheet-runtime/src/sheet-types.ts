@@ -11,6 +11,7 @@ import {
   type CharacterBuildHitDiePool,
   type CharacterBuildMonkUncannyMetabolismFacts,
   type CharacterBuildResource,
+  type CharacterBuildSpeciesTraitSpellGrant,
   type MagicInitiateSpellcastingAbility,
   type UnitCatalog,
 } from "@dnd/character-creation-runtime/consumer-protocol";
@@ -3791,6 +3792,13 @@ export type CharacterSheetSpellAccess =
       readonly spellId: UnitRecord["id"];
       readonly spellcastingAbility: MagicInitiateSpellcastingAbility;
       readonly preparation: "learnedCantrip" | "alwaysPrepared";
+    }
+  | {
+      readonly source: "speciesTrait";
+      readonly sourceUnitId: UnitRecord["id"];
+      readonly spellId: UnitRecord["id"];
+      readonly spellcastingAbility: CharacterBuildSpeciesTraitSpellGrant["spellcastingAbility"];
+      readonly preparation: CharacterBuildSpeciesTraitSpellGrant["preparation"];
     };
 
 export type CharacterSheetSpellInvocation =

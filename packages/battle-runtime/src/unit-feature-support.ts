@@ -44,6 +44,8 @@ import type {
   EffectAtom,
   EquipmentPredicate,
   DragonbornSpeciesSource,
+  PassiveMechanics,
+  SpeciesLineageChoiceMechanics,
   StandardActionKind,
   AuthoredUnitSource,
   DcSource,
@@ -235,9 +237,22 @@ type DraconicAncestryDamageTypeSource =
 type DraconicAncestryDamageType =
   DraconicAncestryDamageTypeSource["options"][number]["damageType"];
 const DAMAGE_TYPE_VALUES = new Set<string>(DAMAGE_TYPES);
-export type BattleUnitSupportProfileSourceFacts = {
-  readonly draconicAncestryDamageType: DraconicAncestryDamageType;
-};
+/** The species lineage a character chose, as an option id of its lineage trait. */
+export type BattleSpeciesLineageId =
+  SpeciesLineageChoiceMechanics["options"][number]["id"];
+/**
+ * Facts a character's species choices supply to its trait profiles. A species
+ * offers at most one of these choices.
+ */
+export type BattleUnitSupportProfileSourceFacts =
+  | {
+      readonly draconicAncestryDamageType: DraconicAncestryDamageType;
+      readonly speciesLineageId?: never;
+    }
+  | {
+      readonly speciesLineageId: BattleSpeciesLineageId;
+      readonly draconicAncestryDamageType?: never;
+    };
 const BARDIC_INSPIRATION_DIE_TIERS = [
   { atLevel: 5, dieSize: 8 },
   { atLevel: 10, dieSize: 10 },
@@ -1671,7 +1686,7 @@ function battleUnitSupportProfilesForInputWithHuntersPreyAdmission(
   const passiveDamageResistanceSupport =
     battlePassiveDamageResistanceSupportForUnit({
       unit: input.unit,
-      draconicAncestryDamageType: input.sourceFacts?.draconicAncestryDamageType,
+      ...speciesChoiceSourceFactValues(input.sourceFacts),
     });
   /* v8 ignore start -- @preserve -- Each focused hook reader owns malformed-shape conformance; this branch only translates its unsupported sentinel into the aggregate typed issue. */
   if (passiveDamageResistanceSupport === "unsupported") {
@@ -3340,14 +3355,12 @@ export function battlePassiveAbilityCheckRollModeSupportForUnit(
 export function battlePassiveDamageResistanceSupportForUnit(input: {
   readonly unit: AuthoredUnitSource;
   readonly draconicAncestryDamageType?: DraconicAncestryDamageType | undefined;
+  readonly speciesLineageId?: BattleSpeciesLineageId | undefined;
 }): BattlePassiveDamageResistanceSupport {
-  if (!hasPassiveDamageResistanceMechanics(input.unit)) {
+  if (!hasPassiveDamageResistanceMechanics(input)) {
     return null;
   }
-  const resistance = passiveDamageResistanceProfileForUnit({
-    unit: input.unit,
-    draconicAncestryDamageType: input.draconicAncestryDamageType,
-  });
+  const resistance = passiveDamageResistanceProfileForUnit(input);
   return resistance === null
     ? "unsupported"
     : {
@@ -3937,12 +3950,10 @@ function hasPassiveAbilityCheckRollModeMechanics(
 }
 
 function hasPassiveDamageResistanceMechanics(
-  unit: AuthoredUnitSource,
+  input: SpeciesTraitPassiveGrantsInput,
 ): boolean {
-  if (unit.kind !== "species_trait" || unit.mechanics.family !== "passive") {
-    return false;
-  }
-  return unit.mechanics.grants.some(
+  const grants = speciesTraitPassiveGrants(input);
+  return (grants ?? []).some(
     (effect) =>
       effect.kind === "grant_resistance" &&
       passiveResistanceDamageTypeMechanicsAreSupported(effect.damageType),
@@ -5013,15 +5024,54 @@ function draconicAncestryResistanceDamageTypeMechanicsAreSupported(
   );
 }
 
+/** Each species choice fact, absent when the character made no such choice. */
+function speciesChoiceSourceFactValues(
+  sourceFacts: BattleUnitSupportProfileSourceFacts | undefined,
+): {
+  readonly draconicAncestryDamageType: DraconicAncestryDamageType | undefined;
+  readonly speciesLineageId: BattleSpeciesLineageId | undefined;
+} {
+  return {
+    draconicAncestryDamageType: sourceFacts?.draconicAncestryDamageType,
+    speciesLineageId: sourceFacts?.speciesLineageId,
+  };
+}
+
+type SpeciesTraitPassiveGrantsInput = {
+  readonly unit: AuthoredUnitSource;
+  readonly speciesLineageId?: BattleSpeciesLineageId | undefined;
+};
+
+type SpeciesTraitPassiveGrant = PassiveMechanics["grants"][number];
+
+/**
+ * The passive grants a species trait gives this character. A lineage choice
+ * trait gives the passive grants of the lineage the character chose; without
+ * that choice it gives none this reader can claim.
+ */
+function speciesTraitPassiveGrants(
+  input: SpeciesTraitPassiveGrantsInput,
+): readonly SpeciesTraitPassiveGrant[] | null {
+  const { unit } = input;
+  if (unit.kind !== "species_trait") return null;
+  if (unit.mechanics.family === "passive") return unit.mechanics.grants;
+  if (unit.mechanics.family !== "species_lineage_choice") return null;
+  const option = unit.mechanics.options.find(
+    (candidate) => candidate.id === input.speciesLineageId,
+  );
+  return option === undefined ? null : option.mechanics.grants;
+}
+
 export function passiveDamageResistanceProfileForUnit(input: {
   readonly unit: AuthoredUnitSource;
   readonly draconicAncestryDamageType?: DraconicAncestryDamageType | undefined;
+  readonly speciesLineageId?: BattleSpeciesLineageId | undefined;
 }): PassiveDamageResistanceProfile | null {
-  const { unit } = input;
-  if (unit.kind !== "species_trait" || unit.mechanics.family !== "passive") {
+  const grants = speciesTraitPassiveGrants(input);
+  if (grants === null) {
     return null;
   }
-  const resistanceGrants = unit.mechanics.grants.filter(
+  const resistanceGrants = grants.filter(
     (effect): effect is GrantResistanceEffectAtom =>
       effect.kind === "grant_resistance",
   );

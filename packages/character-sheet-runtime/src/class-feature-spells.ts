@@ -1,9 +1,11 @@
 // KERNEL-COVERAGE: runtime-owner SHEET.SPELL_ACCESS.CLASS_FEATURE_PREPARED_PROJECTION
 // KERNEL-COVERAGE: runtime-owner SHEET.SPELL_ACCESS.FREE_CAST_LIFECYCLE
 // UNIT-PROFILE-COVERAGE: runtime-owner character-sheet.class-feature-prepared-spell-access
+// UNIT-PROFILE-COVERAGE: runtime-owner character-sheet.species-lineage-trait-projection
 import { unitId as authoredUnitId } from "@dnd/shared/game-facts";
 import {
   characterBuildFeatureUnitIds,
+  characterBuildSpeciesTraitSpellGrants,
   classLevelForUnit,
   progressionClassUnitIds,
   type CharacterBuild,
@@ -14,7 +16,7 @@ import type {
   PassiveMechanics,
   UnitRecord,
 } from "@dnd/surface/surface/types";
-import { Option } from "effect";
+import { Option, Result } from "effect";
 
 import {
   projectCharacterSheetClassFeature,
@@ -142,7 +144,24 @@ export function characterSheetSpellAccessesForBuild(input: {
       },
     ],
   );
-  return [...classFeatureAccesses, ...magicInitiateAccesses];
+  const speciesTraitGrants = characterBuildSpeciesTraitSpellGrants(input);
+  /* v8 ignore next -- @preserve -- Finalization retained the species lineage fact only after matching the installed trait's rosters. */
+  const speciesTraitAccesses = Result.isSuccess(speciesTraitGrants)
+    ? speciesTraitGrants.success.map(
+        (grant): CharacterSheetSpellAccess => ({
+          source: "speciesTrait",
+          sourceUnitId: grant.sourceUnitId,
+          spellId: grant.spellId,
+          spellcastingAbility: grant.spellcastingAbility,
+          preparation: grant.preparation,
+        }),
+      )
+    : [];
+  return [
+    ...classFeatureAccesses,
+    ...magicInitiateAccesses,
+    ...speciesTraitAccesses,
+  ];
 }
 
 export function characterSheetClassFeatureSelectedReferenceProjection(input: {

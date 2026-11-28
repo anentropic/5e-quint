@@ -735,8 +735,8 @@ describe("stored Character Build parser", () => {
     "parses the recorded %s lineage without changing its choices",
     (lineageId) => {
       const speciesChoiceFacts = {
-        gnomishLineage: {
-          kind: "gnomishLineage" as const,
+        speciesLineage: {
+          kind: "speciesLineage" as const,
           lineageId,
           spellcastingAbility: "int" as const,
         },

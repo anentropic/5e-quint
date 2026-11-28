@@ -15,6 +15,19 @@
   Sleep's saves automatically, without the table's non-sleeper fact. Its
   4-hour Long Rest is recorded but not yet used by the character sheet.
 
+- Add the Elf's Elven Lineage and the Tiefling's Fiendish Legacy and
+  Otherworldly Presence. Both lineage traits use the `species_lineage_choice`
+  shape Gnomish Lineage uses, each with its own choice key (`elven_lineage`,
+  `fiendish_legacy`), and add character level 3 and 5 spell tiers. The
+  lineage spellcasting ability choice key is now
+  `species_lineage_spellcasting_ability` (was
+  `gnomish_lineage_spellcasting_ability`), and
+  `CharacterBuild.speciesChoiceFacts.gnomishLineage` is now `speciesLineage`.
+  The character sheet lists each lineage's spells, with one free cast per Long
+  Rest for the leveled ones, and Otherworldly Presence's Thaumaturgy. In
+  battle, a Fiendish Legacy gives its damage Resistance and a Wood Elf has a
+  35-foot Speed. Casting lineage spells in battle is not yet supported.
+
 - Start the battle's opening turn like every other turn, so the first
   participant gets its start-of-turn effects, such as a Death Saving Throw at
   0 Hit Points or Heroic Warrior's Heroic Inspiration. When that start needs a

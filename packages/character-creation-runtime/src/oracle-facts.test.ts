@@ -545,16 +545,16 @@ describe("Character Creation owner facts", () => {
     const gnomishFact = characterBuildFact({
       ...build,
       speciesChoiceFacts: {
-        gnomishLineage: {
-          kind: "gnomishLineage",
+        speciesLineage: {
+          kind: "speciesLineage",
           lineageId: "rock_gnome",
           spellcastingAbility: "int",
         },
       },
     });
     expect(gnomishFact.speciesChoiceFacts).toEqual({
-      gnomishLineage: {
-        kind: "gnomishLineage",
+      speciesLineage: {
+        kind: "speciesLineage",
         lineageId: "rock_gnome",
         spellcastingAbility: "int",
       },
@@ -1241,7 +1241,7 @@ describe("Character Creation owner facts", () => {
           speciesUnitId: syntheticUnitId,
         },
         {
-          tag: "invalidGnomishLineageSelection",
+          tag: "invalidSpeciesLineageSelection",
           traitUnitId: syntheticUnitId,
         },
         { tag: "multipleSpellcastingSlotPools" },

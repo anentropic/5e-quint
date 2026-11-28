@@ -595,7 +595,7 @@
       "module/binding:battleRetaliationReactionAttackSupportForUnit": 25,
       "module/binding:battleTacticalMasterReplacementSupportForUnit": 9,
       "module/binding:battleUnitRefWithSupportProfiles": 10,
-      "module/binding:battleUnitSupportProfilesForInputWithHuntersPreyAdmission": 86,
+      "module/binding:battleUnitSupportProfilesForInputWithHuntersPreyAdmission": 85,
       "module/binding:bonusActionDashTemporaryHitPointsProfileForUnit": 19,
       "module/binding:breathWeaponDamageAmount": 15,
       "module/binding:enemyZeroHitPointTemporaryHitPointsProfileForUnit": 9,

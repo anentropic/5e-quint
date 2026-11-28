@@ -14,8 +14,10 @@ const partialRootIds = [
   "monk_monks_focus",
   "sorcerer_font_of_magic",
   "sorcerer_metamagic",
+  "species_elf_elven_lineage",
   "species_gnome_gnomish_lineage",
   "species_human_resourceful",
+  "species_tiefling_fiendish_legacy",
 ] as const;
 type PartialRootId = (typeof partialRootIds)[number];
 
@@ -51,6 +53,35 @@ const expectedEvidenceByRootId = {
       `unowned|option spell execution|recordMechanics/effect:${index + 1}`,
     ]).flat(),
     "consumed|point-pool composition reference|recordMechanics/dependency:1",
+  ],
+  species_elf_elven_lineage: [
+    "unowned|lineage and ability selection|recordMechanics/generalFact:1",
+    "consumed|lineage option identity|recordMechanics/generalFact:2",
+    "consumed|selected lineage grants|recordMechanics/effect:1",
+    "consumed|lineage option identity|recordMechanics/generalFact:3",
+    "consumed|selected lineage grants|recordMechanics/effect:2",
+    "unowned|lineage cantrip replacement|recordMechanics/procedure:1",
+    "consumed|lineage option identity|recordMechanics/generalFact:4",
+    "consumed|selected lineage grants|recordMechanics/effect:3",
+    ...Array.from(
+      { length: 6 },
+      (_, index) =>
+        `consumed|character-level lineage grants|recordMechanics/effect:${index + 4}`,
+    ),
+  ],
+  species_tiefling_fiendish_legacy: [
+    "unowned|lineage and ability selection|recordMechanics/generalFact:1",
+    "consumed|lineage option identity|recordMechanics/generalFact:2",
+    "consumed|selected lineage grants|recordMechanics/effect:1",
+    "consumed|lineage option identity|recordMechanics/generalFact:3",
+    "consumed|selected lineage grants|recordMechanics/effect:2",
+    "consumed|lineage option identity|recordMechanics/generalFact:4",
+    "consumed|selected lineage grants|recordMechanics/effect:3",
+    ...Array.from(
+      { length: 6 },
+      (_, index) =>
+        `consumed|character-level lineage grants|recordMechanics/effect:${index + 4}`,
+    ),
   ],
   species_gnome_gnomish_lineage: [
     "unowned|lineage and ability selection|recordMechanics/generalFact:1",

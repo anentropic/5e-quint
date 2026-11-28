@@ -36,7 +36,7 @@ import type {
   EffectAtom,
   FeatRecord,
   FeatureChoiceMechanics,
-  GnomishLineageMechanics,
+  SpeciesLineageChoiceMechanics,
   ProficiencyGrant,
   ProficiencyGrantSubject,
   Skill,
@@ -67,7 +67,7 @@ import {
   CLASS_SKILL_PROFICIENCY_CHOICE_KEY,
   CLASS_TOOL_PROFICIENCY_CHOICE_KEY,
   WEAPON_MASTERY_OPTIONS_CHOICE_KEY,
-  GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+  SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
   HUNTERS_PREY_CHOICE_KEY,
   ORIGIN_FEAT_PROFICIENCY_CHOICE_KEY,
   ORIGIN_FEAT_MAGIC_INITIATE_CANTRIP_CHOICE_KEY,
@@ -1234,7 +1234,7 @@ function speciesTraitGrantChoiceHoles(input: {
 
 export function speciesLineageChoiceHoles(
   traitUnitId: UnitRecord["id"],
-  mechanics: GnomishLineageMechanics,
+  mechanics: SpeciesLineageChoiceMechanics,
 ): readonly ChoiceCreationHole[] {
   return [
     choiceHole({
@@ -1248,7 +1248,7 @@ export function speciesLineageChoiceHoles(
     choiceHole({
       source: unitSource(
         traitUnitId,
-        GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+        SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
       ),
       cardinality: EXACTLY_ONE_CHOICE,
       options: mechanics.spellcastingAbilityChoice.abilities.map((ability) => ({

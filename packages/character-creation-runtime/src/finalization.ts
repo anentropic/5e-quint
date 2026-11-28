@@ -53,7 +53,7 @@ import type {
   Skill,
   StartingEquipmentChoice,
   EffectAtom,
-  GnomishLineageMechanics,
+  SpeciesLineageChoiceMechanics,
   PassiveMechanics,
   DragonbornSpeciesRecord,
   UnitRecord,
@@ -156,7 +156,7 @@ import {
   WIZARD_PREPARED_SPELL_CHOICE_KEY,
   WIZARD_SPELLBOOK_CHOICE_KEY,
   ELDRITCH_INVOCATIONS_CHOICE_KEY,
-  GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+  SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
   SORCERER_METAMAGIC_OPTIONS_CHOICE_KEY,
   HUNTERS_PREY_CHOICE_KEY,
 } from "./phase1-manifest.ts";
@@ -212,8 +212,8 @@ import {
   type CharacterEquipmentItemSlot,
   type CharacterBuildClassFeatureLanguage,
   type CharacterBuildSpeciesChoiceFacts,
-  type CharacterBuildGnomishLineageId,
-  type CharacterBuildGnomishLineageSpellcastingAbility,
+  type CharacterBuildSpeciesLineageId,
+  type CharacterBuildSpeciesLineageSpellcastingAbility,
   type CharacterBuildFeature,
   type CharacterBuildMagicInitiateSpellAccess,
   type MagicInitiateSpellcastingAbility,
@@ -1154,7 +1154,7 @@ export function parseCharacterBuildSpeciesChoiceFacts(input: {
         : lineageSource !== undefined
           ? Result.fail(
               speciesChoiceFactsIssue(
-                "Character Build requires selected Gnomish Lineage fact for species with a Gnomish Lineage source.",
+                "Character Build requires selected species lineage fact for species with a species lineage source.",
               ),
             )
           : Result.succeed(undefined);
@@ -1190,24 +1190,24 @@ export function parseCharacterBuildSpeciesChoiceFacts(input: {
               );
         },
       ),
-      Match.when({ gnomishLineage: { kind: "gnomishLineage" } }, (facts) => {
+      Match.when({ speciesLineage: { kind: "speciesLineage" } }, (facts) => {
         if (lineageSource === undefined) {
           return Result.fail(
             speciesChoiceFactsIssue(
-              "Character Build cannot carry Gnomish Lineage fact for species without a Gnomish Lineage source.",
+              "Character Build cannot carry species lineage fact for species without a species lineage source.",
             ),
           );
         }
         return lineageSource.mechanics.options.some(
-          (option) => option.id === facts.gnomishLineage.lineageId,
+          (option) => option.id === facts.speciesLineage.lineageId,
         ) &&
           lineageSource.mechanics.spellcastingAbilityChoice.abilities.some(
-            (ability) => ability === facts.gnomishLineage.spellcastingAbility,
+            (ability) => ability === facts.speciesLineage.spellcastingAbility,
           )
           ? Result.succeed(facts)
           : Result.fail(
               speciesChoiceFactsIssue(
-                "Character Build Gnomish Lineage fact must reference the selected species trait option and spellcasting ability rosters.",
+                "Character Build species lineage fact must reference the selected species trait option and spellcasting ability rosters.",
               ),
             );
       }),
@@ -1254,7 +1254,7 @@ function finalizedSpeciesChoiceFacts(
     );
   }
   if (lineageSource.success !== undefined) {
-    return finalizedGnomishLineageChoiceFacts(
+    return finalizedSpeciesLineageChoiceFacts(
       selections,
       lineageSource.success,
     );
@@ -1300,7 +1300,7 @@ function finalizedDraconicAncestryChoiceFacts(
 
 type SpeciesLineageChoiceSource = {
   readonly traitUnitId: UnitRecord["id"];
-  readonly mechanics: GnomishLineageMechanics;
+  readonly mechanics: SpeciesLineageChoiceMechanics;
 };
 
 function speciesLineageChoiceSource(
@@ -1334,7 +1334,7 @@ function speciesLineageChoiceSource(
       ? [{ traitUnitId: trait.traitUnitId, mechanics: trait.facts.mechanics }]
       : [],
   );
-  /* v8 ignore start -- @preserve -- The supported species catalog admits at most one trait carrying Gnomish Lineage mechanics. */
+  /* v8 ignore start -- @preserve -- The supported species catalog admits at most one trait carrying species lineage mechanics. */
   if (sources.length > 1) {
     return Result.fail([
       illegalFinalizationIssue({
@@ -1348,12 +1348,12 @@ function speciesLineageChoiceSource(
   return Result.succeed(sources[0]);
 }
 
-function finalizedGnomishLineageChoiceFacts(
+function finalizedSpeciesLineageChoiceFacts(
   selections: Pick<FinalizedCharacterSelections, "choices">,
   source: SpeciesLineageChoiceSource,
 ): Result.Result<CharacterBuildSpeciesChoiceFacts, FinalizationIssues> {
-  const lineageId = selectedGnomishLineageId(selections, source);
-  const spellcastingAbility = selectedGnomishLineageSpellcastingAbility(
+  const lineageId = selectedSpeciesLineageId(selections, source);
+  const spellcastingAbility = selectedSpeciesLineageSpellcastingAbility(
     selections,
     source,
   );
@@ -1361,7 +1361,7 @@ function finalizedGnomishLineageChoiceFacts(
   if (lineageId === undefined || spellcastingAbility === undefined) {
     return Result.fail([
       illegalFinalizationIssue({
-        tag: "invalidGnomishLineageSelection",
+        tag: "invalidSpeciesLineageSelection",
         traitUnitId: source.traitUnitId,
       }),
     ]);
@@ -1369,18 +1369,18 @@ function finalizedGnomishLineageChoiceFacts(
   /* v8 ignore stop -- @preserve */
 
   return Result.succeed({
-    gnomishLineage: {
-      kind: "gnomishLineage",
+    speciesLineage: {
+      kind: "speciesLineage",
       lineageId,
       spellcastingAbility,
     },
   });
 }
 
-function selectedGnomishLineageId(
+function selectedSpeciesLineageId(
   selections: Pick<FinalizedCharacterSelections, "choices">,
   source: SpeciesLineageChoiceSource,
-): CharacterBuildGnomishLineageId | undefined {
+): CharacterBuildSpeciesLineageId | undefined {
   const selectedOptionId = selectedSingleUnitChoiceOptionId(
     selections,
     source.traitUnitId,
@@ -1391,14 +1391,14 @@ function selectedGnomishLineageId(
   )?.id;
 }
 
-function selectedGnomishLineageSpellcastingAbility(
+function selectedSpeciesLineageSpellcastingAbility(
   selections: Pick<FinalizedCharacterSelections, "choices">,
   source: SpeciesLineageChoiceSource,
-): CharacterBuildGnomishLineageSpellcastingAbility | undefined {
+): CharacterBuildSpeciesLineageSpellcastingAbility | undefined {
   const selectedOptionId = selectedSingleUnitChoiceOptionId(
     selections,
     source.traitUnitId,
-    GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+    SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
   );
   return source.mechanics.spellcastingAbilityChoice.abilities.find(
     (ability) => ability === selectedOptionId,
@@ -1505,9 +1505,9 @@ function illegalFinalizationCauseMessage(
         `Cannot project multiple species lineage choice source facts for species: ${speciesUnitId}.`,
     ),
     Match.when(
-      { tag: "invalidGnomishLineageSelection" },
+      { tag: "invalidSpeciesLineageSelection" },
       ({ traitUnitId }) =>
-        `Cannot project selected Gnomish Lineage for species trait: ${traitUnitId}.`,
+        `Cannot project selected species lineage for species trait: ${traitUnitId}.`,
     ),
     Match.when(
       { tag: "multipleSpellcastingSlotPools" },

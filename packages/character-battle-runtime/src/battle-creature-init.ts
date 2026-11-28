@@ -37,6 +37,7 @@ import {
   characterBuildProficiencies,
   characterBuildSorcererFontOfMagicFacts,
   characterBuildSorcererMetamagicFacts,
+  characterBuildSpeciesLineageTraitProjection,
   characterBuildUnitRefs,
   computeTotalLevel,
   progressionClassLevels,
@@ -375,6 +376,11 @@ export function battleCreatureInitFromCharacterBuild(
       input.build,
       species,
     );
+    const walkFeet = yield* characterBattleWalkFeet(
+      input.build,
+      input.unitLibrary,
+      species,
+    );
 
     const currentLoadoutUsesShield =
       input.build.equipment.loadout.shield !== undefined;
@@ -534,7 +540,7 @@ export function battleCreatureInitFromCharacterBuild(
         armorClass,
         unarmoredArmorClassBases,
         size: characterSize,
-        speed: { walkFeet: movementFeet(species.speed.walkFeet) },
+        speed: { walkFeet: movementFeet(walkFeet) },
         currentHp,
         maxHp,
         tempHp: input.tempHp ?? Hp(0),
@@ -719,6 +725,30 @@ function characterBattleSpeciesSize(
   }
 
   return Result.succeed(build.speciesSize);
+}
+
+/**
+ * The character's walk Speed. A chosen species lineage that sets the Speed
+ * replaces the species Speed.
+ */
+function characterBattleWalkFeet(
+  build: Pick<CharacterBuild, "species" | "speciesChoiceFacts">,
+  unitLibrary: UnitCatalog,
+  species: SpeciesRecord,
+): Result.Result<number, BattleCreatureInitIssue> {
+  const lineage = characterBuildSpeciesLineageTraitProjection({
+    build,
+    unitLibrary,
+  });
+  /* v8 ignore start -- @preserve -- Finalization admitted the lineage from this installed species trait roster. */
+  if (Result.isFailure(lineage)) {
+    return battleCreatureInitIssue(lineage.failure.message);
+  }
+  /* v8 ignore stop -- @preserve */
+  const setSpeed = lineage.success?.option.mechanics.grants.find(
+    (grant) => grant.kind === "set_speed",
+  );
+  return Result.succeed(setSpeed?.feet ?? species.speed.walkFeet);
 }
 
 function characterBattleClassLevels(

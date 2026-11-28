@@ -57,7 +57,7 @@ import {
   characterBuildUnitRefs,
   characterBuildSorcererFontOfMagicFacts,
   characterBuildSorcererMetamagicFacts,
-  characterBuildGnomishLineageTraitProjection,
+  characterBuildSpeciesLineageTraitProjection,
   classSpellcastingCreationAtLevel,
   computeTotalLevel,
   CHARACTER_EQUIPMENT_ITEM_SLOTS,
@@ -104,6 +104,7 @@ import {
   type CharacterDraft,
   type CharacterChoiceSelection,
   type CharacterBuild,
+  type CreationFill,
   type CharacterBuildEldritchInvocationRepeatableChoice,
   type CharacterBuildListPreparedSpellcastingLevelGain,
   type CharacterBuildWarlockEldritchInvocationSelectionInput,
@@ -155,7 +156,9 @@ import {
   CLASS_PREPARED_SPELL_CHOICE_KEY,
   CLASS_SKILL_PROFICIENCY_CHOICE_KEY,
   GNOMISH_LINEAGE_CHOICE_KEY,
-  GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+  ELVEN_LINEAGE_CHOICE_KEY,
+  FIENDISH_LEGACY_CHOICE_KEY,
+  SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
   PALADIN_FIGHTING_STYLE_CHOICE_KEY,
   RANGER_FIGHTING_STYLE_CHOICE_KEY,
   HUNTERS_PREY_CHOICE_KEY,
@@ -196,33 +199,33 @@ import {
 
 const SRD_SORCERY_POINTS_POOL_ID = "sorcery_points";
 const SRD_GNOMISH_LINEAGE_TRAIT_UNIT_ID = "species_gnome_gnomish_lineage";
-type GnomishLineageReplayAction =
-  | "doReplayGnomishLineageChoice"
-  | "doReplayGnomishLineageTraitProjection";
+type SpeciesLineageReplayAction =
+  | "doReplaySpeciesLineageChoice"
+  | "doReplaySpeciesLineageTraitProjection";
 const selectedUnitIdentityReplays = [
   {
     taskId: "LT4-B02-GNOMISH-LINEAGE-CHOICE-OWNER",
     unitId: SRD_GNOMISH_LINEAGE_TRAIT_UNIT_ID,
-    actions: ["doReplayGnomishLineageChoice"],
-    sequences: [["doReplayGnomishLineageChoice"]],
+    actions: ["doReplaySpeciesLineageChoice"],
+    sequences: [["doReplaySpeciesLineageChoice"]],
   },
   {
     taskId: "LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION",
     unitId: SRD_GNOMISH_LINEAGE_TRAIT_UNIT_ID,
-    actions: ["doReplayGnomishLineageTraitProjection"],
-    sequences: [["doReplayGnomishLineageTraitProjection"]],
+    actions: ["doReplaySpeciesLineageTraitProjection"],
+    sequences: [["doReplaySpeciesLineageTraitProjection"]],
   },
 ] as const satisfies ReadonlyArray<{
   readonly taskId: string;
   readonly unitId: string;
-  readonly actions: readonly GnomishLineageReplayAction[];
-  readonly sequences: readonly (readonly GnomishLineageReplayAction[])[];
+  readonly actions: readonly SpeciesLineageReplayAction[];
+  readonly sequences: readonly (readonly SpeciesLineageReplayAction[])[];
 }>;
 const selectedIdentityReplayDrivers = {
-  doReplayGnomishLineageChoice: replayGnomishLineageChoice,
-  doReplayGnomishLineageTraitProjection: replayGnomishLineageTraitProjection,
+  doReplaySpeciesLineageChoice: replaySpeciesLineageChoice,
+  doReplaySpeciesLineageTraitProjection: replaySpeciesLineageTraitProjection,
 } satisfies Record<
-  GnomishLineageReplayAction,
+  SpeciesLineageReplayAction,
   () => {
     readonly unitId: typeof SRD_GNOMISH_LINEAGE_TRAIT_UNIT_ID;
     readonly procedure:
@@ -274,8 +277,8 @@ const selectedIdentityReplayDrivers = {
 // UNIT-IDENTITY-EVIDENCE: deterministic-admission-projection LT4-B02-GNOMISH-LINEAGE-CHOICE-OWNER species_gnome_gnomish_lineage
 // UNIT-IDENTITY-EVIDENCE: deterministic-admission-projection LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION species_gnome_gnomish_lineage
 // UNIT-IDENTITY-EVIDENCE: deterministic-admission-projection LT4-B04-GNOME-SPECIES-ADMISSION-EVIDENCE species_gnome species_gnome_gnomish_lineage
-// UNIT-IDENTITY-REPLAY: LT4-B02-GNOMISH-LINEAGE-CHOICE-OWNER species_gnome_gnomish_lineage doReplayGnomishLineageChoice
-// UNIT-IDENTITY-REPLAY: LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION species_gnome_gnomish_lineage doReplayGnomishLineageTraitProjection
+// UNIT-IDENTITY-REPLAY: LT4-B02-GNOMISH-LINEAGE-CHOICE-OWNER species_gnome_gnomish_lineage doReplaySpeciesLineageChoice
+// UNIT-IDENTITY-REPLAY: LT4-B03-GNOME-LINEAGE-TRAIT-PROJECTION species_gnome_gnomish_lineage doReplaySpeciesLineageTraitProjection
 
 const unitCatalogResult = buildUnitCatalog({
   collections: [srdUnitCollection],
@@ -2950,7 +2953,7 @@ describe("character creation hole discovery", () => {
           holes,
           testUnitHoleId(
             SRD_GNOMISH_LINEAGE_TRAIT_UNIT_ID,
-            GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+            SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
           ),
         ),
       ),
@@ -2971,7 +2974,7 @@ describe("character creation hole discovery", () => {
         choiceFill(
           testUnitHoleId(
             SRD_GNOMISH_LINEAGE_TRAIT_UNIT_ID,
-            GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+            SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
           ),
           "int",
         ),
@@ -3944,6 +3947,7 @@ describe("character creation finalization", () => {
         speciesUnitId: "species_elf",
         expectedTraitUnitIds: [
           "elf_darkvision",
+          "species_elf_elven_lineage",
           "species_elf_fey_ancestry",
           "species_elf_keen_senses",
           "species_elf_trance",
@@ -3965,31 +3969,96 @@ describe("character creation finalization", () => {
       {
         speciesUnitId: "species_tiefling",
         speciesSize: "medium",
-        expectedTraitUnitIds: ["species_tiefling_darkvision"],
+        expectedTraitUnitIds: [
+          "species_tiefling_darkvision",
+          "species_tiefling_fiendish_legacy",
+          "species_tiefling_otherworldly_presence",
+        ],
       },
     ] as const;
 
+    const speciesTraitFills: Partial<
+      Record<(typeof cases)[number]["speciesUnitId"], readonly CreationFill[]>
+    > = {
+      species_elf: [
+        choiceFill(
+          testUnitHoleId(
+            "species_elf_keen_senses",
+            SPECIES_TRAIT_PROFICIENCY_CHOICE_KEY,
+          ),
+          "insight",
+        ),
+        choiceFill(
+          testUnitHoleId("species_elf_elven_lineage", ELVEN_LINEAGE_CHOICE_KEY),
+          "wood_elf",
+        ),
+        choiceFill(
+          testUnitHoleId(
+            "species_elf_elven_lineage",
+            SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+          ),
+          "wis",
+        ),
+      ],
+      species_tiefling: [
+        choiceFill(
+          testUnitHoleId(
+            "species_tiefling_fiendish_legacy",
+            FIENDISH_LEGACY_CHOICE_KEY,
+          ),
+          "infernal",
+        ),
+        choiceFill(
+          testUnitHoleId(
+            "species_tiefling_fiendish_legacy",
+            SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+          ),
+          "cha",
+        ),
+      ],
+    };
+    const expectedSpeciesChoiceFacts: Partial<
+      Record<
+        (typeof cases)[number]["speciesUnitId"],
+        CharacterBuild["speciesChoiceFacts"]
+      >
+    > = {
+      species_dragonborn: {
+        draconicAncestry: {
+          kind: "draconicAncestry",
+          ancestorId: characterDraconicAncestrySelection("red"),
+        },
+      },
+      species_elf: {
+        speciesLineage: {
+          kind: "speciesLineage",
+          lineageId: "wood_elf",
+          spellcastingAbility: "wis",
+        },
+      },
+      species_tiefling: {
+        speciesLineage: {
+          kind: "speciesLineage",
+          lineageId: "infernal",
+          spellcastingAbility: "cha",
+        },
+      },
+    };
+
     for (const testCase of cases) {
       const complete = completeManifestDraftForSpecies(testCase);
+      const fills = speciesTraitFills[testCase.speciesUnitId];
       const draft =
-        testCase.speciesUnitId === "species_elf"
-          ? requireAcceptedBatch(
+        fills === undefined
+          ? complete
+          : requireAcceptedBatch(
               fillCreationHoles({
                 draft: complete,
                 unitLibrary,
                 expectedRevision: complete.revision,
-                fills: [
-                  choiceFill(
-                    testUnitHoleId(
-                      "species_elf_keen_senses",
-                      SPECIES_TRAIT_PROFICIENCY_CHOICE_KEY,
-                    ),
-                    "insight",
-                  ),
-                ],
+                fills,
               }),
-            )
-          : complete;
+            );
       const result = finalizeCharacterDraft({ draft, unitLibrary });
 
       expect(result.tag, testCase.speciesUnitId).toBe("ready");
@@ -4001,16 +4070,9 @@ describe("character creation finalization", () => {
       } else {
         expect(result.build.speciesSize).toBeUndefined();
       }
-      if (testCase.speciesUnitId === "species_dragonborn") {
-        expect(result.build.speciesChoiceFacts).toEqual({
-          draconicAncestry: {
-            kind: "draconicAncestry",
-            ancestorId: "red",
-          },
-        });
-      } else {
-        expect(result.build.speciesChoiceFacts).toBeUndefined();
-      }
+      expect(result.build.speciesChoiceFacts, testCase.speciesUnitId).toEqual(
+        expectedSpeciesChoiceFacts[testCase.speciesUnitId],
+      );
       const unitRefIds = characterBuildUnitRefs(result.build, unitLibrary).map(
         (ref) => ref.unitId,
       );
@@ -4024,7 +4086,7 @@ describe("character creation finalization", () => {
   });
 
   test("projects selected Gnomish Lineage without spell access or device state", () => {
-    const draft = completeManifestDraftForGnomishLineage("rock_gnome", "wis");
+    const draft = completeManifestDraftForSpeciesLineage("rock_gnome", "wis");
     const finalization = finalizeCharacterDraft({ draft, unitLibrary });
 
     expect(finalization.tag).toBe("ready");
@@ -4035,8 +4097,8 @@ describe("character creation finalization", () => {
     const build = finalization.build;
     expect(build.species).toBe(SRD_GNOME_SPECIES_UNIT_ID);
     expect(build.speciesChoiceFacts).toEqual({
-      gnomishLineage: {
-        kind: "gnomishLineage",
+      speciesLineage: {
+        kind: "speciesLineage",
         lineageId: "rock_gnome",
         spellcastingAbility: "wis",
       },
@@ -4056,11 +4118,11 @@ describe("character creation finalization", () => {
 
   test("derives selected Gnomish Lineage spell and device facts from Surface", () => {
     const forestFinalization = finalizeCharacterDraft({
-      draft: completeManifestDraftForGnomishLineage("forest_gnome", "int"),
+      draft: completeManifestDraftForSpeciesLineage("forest_gnome", "int"),
       unitLibrary,
     });
     const rockFinalization = finalizeCharacterDraft({
-      draft: completeManifestDraftForGnomishLineage("rock_gnome", "cha"),
+      draft: completeManifestDraftForSpeciesLineage("rock_gnome", "cha"),
       unitLibrary,
     });
 
@@ -4074,13 +4136,13 @@ describe("character creation finalization", () => {
     }
 
     const forestProjection = expectRight(
-      characterBuildGnomishLineageTraitProjection({
+      characterBuildSpeciesLineageTraitProjection({
         build: forestFinalization.build,
         unitLibrary,
       }),
     );
     const rockProjection = expectRight(
-      characterBuildGnomishLineageTraitProjection({
+      characterBuildSpeciesLineageTraitProjection({
         build: rockFinalization.build,
         unitLibrary,
       }),
@@ -4174,7 +4236,7 @@ describe("character creation finalization", () => {
   it("replays selected Unit identities deterministically", () => {
     for (const replay of selectedUnitIdentityReplays) {
       for (const sequence of replay.sequences) {
-        const replayed = new Set<GnomishLineageReplayAction>();
+        const replayed = new Set<SpeciesLineageReplayAction>();
         for (const action of sequence) {
           const projection = selectedIdentityReplayDrivers[action]();
           expect(projection.unitId).toBe(replay.unitId);
@@ -12927,7 +12989,7 @@ function completeManifestDraftForSpecies(
   return completeManifestDraftAfterProgression(afterDraconicAncestry);
 }
 
-function completeManifestDraftForGnomishLineage(
+function completeManifestDraftForSpeciesLineage(
   lineageId: "forest_gnome" | "rock_gnome",
   spellcastingAbility: "int" | "wis" | "cha",
 ): CharacterDraft {
@@ -12949,7 +13011,7 @@ function completeManifestDraftForGnomishLineage(
         ),
         selectedChoice(
           SRD_GNOMISH_LINEAGE_TRAIT_UNIT_ID,
-          GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+          SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
           spellcastingAbility,
         ),
       ],
@@ -12957,7 +13019,7 @@ function completeManifestDraftForGnomishLineage(
   };
 }
 
-function replayGnomishLineageChoice(): {
+function replaySpeciesLineageChoice(): {
   readonly unitId: typeof SRD_GNOMISH_LINEAGE_TRAIT_UNIT_ID;
   readonly procedure: "species-lineage-choice";
   readonly result: "accepted";
@@ -12992,7 +13054,7 @@ function replayGnomishLineageChoice(): {
       choiceFill(
         testUnitHoleId(
           SRD_GNOMISH_LINEAGE_TRAIT_UNIT_ID,
-          GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+          SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
         ),
         "int",
       ),
@@ -13008,20 +13070,20 @@ function replayGnomishLineageChoice(): {
   };
 }
 
-function replayGnomishLineageTraitProjection(): {
+function replaySpeciesLineageTraitProjection(): {
   readonly unitId: typeof SRD_GNOMISH_LINEAGE_TRAIT_UNIT_ID;
   readonly procedure: "species-lineage-trait-projection";
   readonly result: "rock_gnome";
 } {
   const finalization = finalizeCharacterDraft({
-    draft: completeManifestDraftForGnomishLineage("rock_gnome", "cha"),
+    draft: completeManifestDraftForSpeciesLineage("rock_gnome", "cha"),
     unitLibrary,
   });
   if (finalization.tag !== "ready") {
     throw new Error("Expected selected Gnomish Lineage finalization replay.");
   }
   const projection = expectRight(
-    characterBuildGnomishLineageTraitProjection({
+    characterBuildSpeciesLineageTraitProjection({
       build: finalization.build,
       unitLibrary,
     }),

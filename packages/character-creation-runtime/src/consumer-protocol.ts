@@ -67,6 +67,11 @@ export {
   parseCharacterBuildMagicInitiateSpellAccesses,
   type CharacterBuildMagicInitiateSpellAccessIssue,
 } from "./magic-initiate-spell-access.ts";
+export {
+  characterBuildSpeciesLineageTraitProjection,
+  characterBuildSpeciesTraitSpellGrants,
+  type CharacterBuildSpeciesTraitSpellGrant,
+} from "./species-lineage.ts";
 export { classUnitIdToClassName } from "./character-progression-algebra.ts";
 export {
   classLevelForUnit,

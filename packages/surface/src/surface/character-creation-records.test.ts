@@ -2032,6 +2032,7 @@ describe("character-creation Surface records", () => {
           speed: { walkFeet: 30 },
           traits: {
             darkvision: "elf_darkvision",
+            elvenLineage: "species_elf_elven_lineage",
             feyAncestry: "species_elf_fey_ancestry",
             keenSenses: "species_elf_keen_senses",
             trance: "species_elf_trance",
@@ -2103,7 +2104,11 @@ describe("character-creation Surface records", () => {
           creatureType: "humanoid",
           size: { kind: "choice", options: ["medium", "small"] },
           speed: { walkFeet: 30 },
-          traits: { darkvision: "species_tiefling_darkvision" },
+          traits: {
+            darkvision: "species_tiefling_darkvision",
+            fiendishLegacy: "species_tiefling_fiendish_legacy",
+            otherworldlyPresence: "species_tiefling_otherworldly_presence",
+          },
         },
       },
     ] as const;

@@ -11,7 +11,11 @@ let tiefling =
       , size = { kind = "choice", options = [ "medium", "small" ] }
       , species = "tiefling"
       , speed.walkFeet = 30
-      , traits = { darkvision = "species_tiefling_darkvision" }
+      , traits =
+        { darkvision = "species_tiefling_darkvision"
+        , fiendishLegacy = "species_tiefling_fiendish_legacy"
+        , otherworldlyPresence = "species_tiefling_otherworldly_presence"
+        }
       }
 
 in  tiefling

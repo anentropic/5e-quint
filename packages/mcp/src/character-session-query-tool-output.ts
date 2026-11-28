@@ -207,7 +207,7 @@ const CharacterSheetArmorClassProjectionSchema = Schema.Struct({
 });
 const CharacterSheetSpellAccessProjectionSchema = Schema.Array(
   Schema.Struct({
-    source: Schema.Literals(["classFeature", "magicInitiate"]),
+    source: Schema.Literals(["classFeature", "magicInitiate", "speciesTrait"]),
     sourceUnitId: UnitId,
     spellId: UnitId,
     spellcastingAbility: AbilitySchema,

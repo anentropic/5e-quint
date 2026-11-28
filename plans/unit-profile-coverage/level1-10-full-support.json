@@ -23415,8 +23415,8 @@
         "group": "species-trait-refs",
         "label": "SRD species trait refs",
         "metrics": {
-          "denominator": 25,
-          "numerator": 25,
+          "denominator": 28,
+          "numerator": 28,
           "percent": "100%"
         },
         "rows": [
@@ -23482,6 +23482,15 @@
             "sourceRecordPath": "packages/surface/content/darkvision_elf.json",
             "status": "installed",
             "unitId": "elf_darkvision"
+          },
+          {
+            "kind": "species_trait",
+            "ownerUnitId": "species_elf",
+            "ready": true,
+            "relation": "species.traits.elvenLineage",
+            "sourceRecordPath": "packages/surface/content/species_elf_elven_lineage.json",
+            "status": "installed",
+            "unitId": "species_elf_elven_lineage"
           },
           {
             "kind": "species_trait",
@@ -23644,10 +23653,28 @@
             "sourceRecordPath": "packages/surface/content/species_tiefling_darkvision.json",
             "status": "installed",
             "unitId": "species_tiefling_darkvision"
+          },
+          {
+            "kind": "species_trait",
+            "ownerUnitId": "species_tiefling",
+            "ready": true,
+            "relation": "species.traits.fiendishLegacy",
+            "sourceRecordPath": "packages/surface/content/species_tiefling_fiendish_legacy.json",
+            "status": "installed",
+            "unitId": "species_tiefling_fiendish_legacy"
+          },
+          {
+            "kind": "species_trait",
+            "ownerUnitId": "species_tiefling",
+            "ready": true,
+            "relation": "species.traits.otherworldlyPresence",
+            "sourceRecordPath": "packages/surface/content/species_tiefling_otherworldly_presence.json",
+            "status": "installed",
+            "unitId": "species_tiefling_otherworldly_presence"
           }
         ],
         "rowsByStatus": {
-          "installed": 25
+          "installed": 28
         }
       },
       {
@@ -24800,8 +24827,8 @@
       }
     ],
     "metrics": {
-      "denominator": 166,
-      "numerator": 166,
+      "denominator": 169,
+      "numerator": 169,
       "percent": "100%"
     },
     "openBlockerCount": 0

@@ -1,0 +1,183 @@
+{
+  "id": "species_elf_elven_lineage",
+  "kind": "species_trait",
+  "mechanics": {
+    "choiceKey": "elven_lineage",
+    "family": "species_lineage_choice",
+    "options": [
+      {
+        "characterLevelGrants": [
+          {
+            "characterLevel": 3,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "faerie_fire"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "faerie_fire"
+              }
+            ]
+          },
+          {
+            "characterLevel": 5,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "darkness"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "darkness"
+              }
+            ]
+          }
+        ],
+        "displayName": "Drow",
+        "id": "drow",
+        "mechanics": {
+          "family": "passive",
+          "grants": [
+            {
+              "kind": "grant_sense",
+              "rangeFeet": 120,
+              "sense": "darkvision"
+            },
+            {
+              "kind": "grant_spell_access",
+              "mode": "known",
+              "spellId": "dancing_lights"
+            }
+          ]
+        }
+      },
+      {
+        "cantripReplacement": {
+          "kind": "replace_lineage_cantrip",
+          "spellList": "wizard",
+          "trigger": "long_rest"
+        },
+        "characterLevelGrants": [
+          {
+            "characterLevel": 3,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "detect_magic"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "detect_magic"
+              }
+            ]
+          },
+          {
+            "characterLevel": 5,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "misty_step"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "misty_step"
+              }
+            ]
+          }
+        ],
+        "displayName": "High Elf",
+        "id": "high_elf",
+        "mechanics": {
+          "family": "passive",
+          "grants": [
+            {
+              "kind": "grant_spell_access",
+              "mode": "known",
+              "spellId": "prestidigitation"
+            }
+          ]
+        }
+      },
+      {
+        "characterLevelGrants": [
+          {
+            "characterLevel": 3,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "longstrider"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "longstrider"
+              }
+            ]
+          },
+          {
+            "characterLevel": 5,
+            "grants": [
+              {
+                "kind": "grant_spell_access",
+                "mode": "prepared",
+                "spellId": "pass_without_trace"
+              },
+              {
+                "count": 1,
+                "kind": "grant_spell_free_casts",
+                "resetCadence": "long_rest",
+                "spellId": "pass_without_trace"
+              }
+            ]
+          }
+        ],
+        "displayName": "Wood Elf",
+        "id": "wood_elf",
+        "mechanics": {
+          "family": "passive",
+          "grants": [
+            {
+              "feet": 35,
+              "kind": "set_speed"
+            },
+            {
+              "kind": "grant_spell_access",
+              "mode": "known",
+              "spellId": "druidcraft"
+            }
+          ]
+        }
+      }
+    ],
+    "spellcastingAbilityChoice": {
+      "abilities": [
+        "int",
+        "wis",
+        "cha"
+      ],
+      "kind": "spellcasting_ability_choice"
+    },
+    "timing": "species_selection"
+  },
+  "name": "Elven Lineage",
+  "provenance": {
+    "kind": "srd-5.2.1",
+    "section": "character-origins.md#Elf"
+  },
+  "species": "elf"
+}

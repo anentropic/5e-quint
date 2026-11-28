@@ -2802,6 +2802,17 @@ async function createAndFinalizeElfWizardTwoWithSpells(
         "perception",
       ),
       choiceFill(
+        unitHoleId("species_elf_elven_lineage", "elven_lineage"),
+        "drow",
+      ),
+      choiceFill(
+        unitHoleId(
+          "species_elf_elven_lineage",
+          "species_lineage_spellcasting_ability",
+        ),
+        "int",
+      ),
+      choiceFill(
         unitHoleId("class_wizard", "class_skill_proficiency_choice"),
         "arcana",
         "history",
@@ -2922,6 +2933,17 @@ async function createAndFinalizeElfWizardThree(
           "species_trait_proficiency_choice",
         ),
         "perception",
+      ),
+      choiceFill(
+        unitHoleId("species_elf_elven_lineage", "elven_lineage"),
+        "drow",
+      ),
+      choiceFill(
+        unitHoleId(
+          "species_elf_elven_lineage",
+          "species_lineage_spellcasting_ability",
+        ),
+        "int",
       ),
       choiceFill(
         unitHoleId("class_wizard", "class_skill_proficiency_choice"),
@@ -3517,6 +3539,11 @@ async function createAndFinalizeElfSoldierWizardWithAsi(
     unitHoleId("background_soldier", "background_tool_choice"),
     unitHoleId("background_soldier", "background_equipment_choice"),
     unitHoleId("species_elf_keen_senses", "species_trait_proficiency_choice"),
+    unitHoleId("species_elf_elven_lineage", "elven_lineage"),
+    unitHoleId(
+      "species_elf_elven_lineage",
+      "species_lineage_spellcasting_ability",
+    ),
   ]);
 
   const classFill = await callTool(client, "apply_character_creation_choices", {
@@ -3587,6 +3614,19 @@ async function createAndFinalizeElfSoldierWizardWithAsi(
           "species_trait_proficiency_choice",
         ),
         "perception",
+      ),
+      choiceFillFromReturnedHole(
+        classChoices,
+        unitHoleId("species_elf_elven_lineage", "elven_lineage"),
+        "drow",
+      ),
+      choiceFillFromReturnedHole(
+        classChoices,
+        unitHoleId(
+          "species_elf_elven_lineage",
+          "species_lineage_spellcasting_ability",
+        ),
+        "int",
       ),
     ],
   });

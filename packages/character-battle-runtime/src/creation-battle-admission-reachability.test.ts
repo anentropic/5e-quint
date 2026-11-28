@@ -14,8 +14,10 @@ import {
   characterBuildUnitRefs,
   creationChoiceOptionId,
   finalizeCharacterDraft,
+  ELVEN_LINEAGE_CHOICE_KEY,
+  FIENDISH_LEGACY_CHOICE_KEY,
   GNOMISH_LINEAGE_CHOICE_KEY,
-  GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+  SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
   PHASE1_CLASS_FIGHTER_UNIT_ID,
   PHASE1_WEAPON_MASTERY_UNIT_IDS,
   SPECIES_ORIGIN_FEAT_CHOICE_KEY,
@@ -85,7 +87,7 @@ const SPECIES_REACHABILITY_OPTIONS = {
       )]: [creationChoiceOptionId("forest_gnome")],
       [testUnitChoiceSourceKey(
         authoredUnitId("species_gnome_gnomish_lineage"),
-        GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+        SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
       )]: [creationChoiceOptionId("int")],
     },
   },
@@ -118,12 +120,31 @@ const SPECIES_REACHABILITY_OPTIONS = {
         authoredUnitId("species_elf_keen_senses"),
         SPECIES_TRAIT_PROFICIENCY_CHOICE_KEY,
       )]: [creationChoiceOptionId("insight")],
+      [testUnitChoiceSourceKey(
+        authoredUnitId("species_elf_elven_lineage"),
+        ELVEN_LINEAGE_CHOICE_KEY,
+      )]: [creationChoiceOptionId("wood_elf")],
+      [testUnitChoiceSourceKey(
+        authoredUnitId("species_elf_elven_lineage"),
+        SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+      )]: [creationChoiceOptionId("wis")],
     },
   },
   species_halfling: {},
   species_goliath: {},
   species_orc: {},
-  species_tiefling: {},
+  species_tiefling: {
+    preferredOptionIdsBySource: {
+      [testUnitChoiceSourceKey(
+        authoredUnitId("species_tiefling_fiendish_legacy"),
+        FIENDISH_LEGACY_CHOICE_KEY,
+      )]: [creationChoiceOptionId("infernal")],
+      [testUnitChoiceSourceKey(
+        authoredUnitId("species_tiefling_fiendish_legacy"),
+        SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+      )]: [creationChoiceOptionId("cha")],
+    },
+  },
 } satisfies Readonly<Record<string, SpeciesReachabilityChoiceOptions>>;
 
 const speciesReachabilityOptions: Readonly<

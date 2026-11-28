@@ -91,6 +91,8 @@ export const CHARACTER_CREATION_FEATURE_EVIDENCE_BRANCHES = [
   "lineage option identity",
   "selected lineage grants",
   "clockwork-device procedure",
+  "character-level lineage grants",
+  "lineage cantrip replacement",
 ] as const;
 export type CharacterCreationFeatureEvidenceBranch =
   (typeof CHARACTER_CREATION_FEATURE_EVIDENCE_BRANCHES)[number];
@@ -498,10 +500,45 @@ function partialSpeciesTraitEvidence(
           : [
               evidence("unowned", "procedure", 1, "clockwork-device procedure"),
             ]),
+        ...(!("cantripReplacement" in option)
+          ? []
+          : [
+              evidence(
+                "unowned",
+                "procedure",
+                1,
+                "lineage cantrip replacement",
+              ),
+            ]),
       ]),
+      ...lineageCharacterLevelGrantOrdinals(mechanics).map((ordinal) =>
+        evidence(
+          "unowned",
+          "effect",
+          ordinal,
+          "character-level lineage grants",
+        ),
+      ),
     ];
   }
   return undefined;
+}
+
+/**
+ * Effect ordinals for a lineage's character-level grant tiers, numbered after
+ * the options' level 1 grants.
+ */
+function lineageCharacterLevelGrantOrdinals(
+  mechanics: Extract<
+    CharacterCreationSpeciesTraitFacts["mechanics"],
+    { readonly family: "species_lineage_choice" }
+  >,
+): readonly number[] {
+  return mechanics.options
+    .flatMap((option) =>
+      "characterLevelGrants" in option ? option.characterLevelGrants : [],
+    )
+    .map((_, index) => mechanics.options.length + index + 1);
 }
 
 function evidence(

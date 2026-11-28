@@ -1273,6 +1273,20 @@ export type ElfSpeciesRecord = Schema.Schema.Type<
 export type GnomishLineageMechanics = Schema.Schema.Type<
   typeof SurfaceSchema.GnomishLineageMechanicsSchema
 >;
+export type ElvenLineageMechanics = Schema.Schema.Type<
+  typeof SurfaceSchema.ElvenLineageMechanicsSchema
+>;
+export type FiendishLegacyMechanics = Schema.Schema.Type<
+  typeof SurfaceSchema.FiendishLegacyMechanicsSchema
+>;
+/** Any species trait that offers a lineage or legacy choice. */
+export type SpeciesLineageChoiceMechanics =
+  | GnomishLineageMechanics
+  | ElvenLineageMechanics
+  | FiendishLegacyMechanics;
+export type SpeciesLineageAbilitySpellAccessMechanics = Schema.Schema.Type<
+  typeof SurfaceSchema.SpeciesLineageAbilitySpellAccessMechanicsSchema
+>;
 export type GnomeSpeciesTraits = Schema.Schema.Type<
   typeof SurfaceSchema.GnomeSpeciesTraitsSchema
 >;

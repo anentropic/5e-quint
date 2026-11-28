@@ -33,6 +33,7 @@ import {
   parseCreationHoleId,
   type CharacterBuild,
   type CharacterBuildProjectionCause,
+  type CharacterBuildSpeciesLineageId,
   type CharacterEquipmentItemSlot,
   type CreationChoiceOptionDecodeCause,
   type CreationBatchFillIssue,
@@ -251,6 +252,18 @@ const OriginLanguagesSchema = Schema.Tuple([
     },
   ),
 );
+// Projecting a CharacterBuild lineage fact into this schema checks that every
+// Surface lineage option id is listed; `satisfies` checks the converse.
+const ORACLE_SPECIES_LINEAGE_IDS = [
+  "forest_gnome",
+  "rock_gnome",
+  "drow",
+  "high_elf",
+  "wood_elf",
+  "abyssal",
+  "chthonic",
+  "infernal",
+] as const satisfies readonly CharacterBuildSpeciesLineageId[];
 const SpeciesChoiceFactsSchema = Schema.Union([
   Schema.Struct({
     draconicAncestry: Schema.Struct({
@@ -261,9 +274,9 @@ const SpeciesChoiceFactsSchema = Schema.Union([
     }),
   }),
   Schema.Struct({
-    gnomishLineage: Schema.Struct({
-      kind: Schema.Literal("gnomishLineage"),
-      lineageId: Schema.Literals(["forest_gnome", "rock_gnome"]),
+    speciesLineage: Schema.Struct({
+      kind: Schema.Literal("speciesLineage"),
+      lineageId: Schema.Literals(ORACLE_SPECIES_LINEAGE_IDS),
       spellcastingAbility: Schema.Literals(["int", "wis", "cha"]),
     }),
   }),
@@ -563,7 +576,7 @@ const CreationFinalizationIllegalCauseFactSchema = Schema.Union([
     speciesUnitId: UnitIdSchema,
   }),
   Schema.Struct({
-    tag: Schema.Literal("invalidGnomishLineageSelection"),
+    tag: Schema.Literal("invalidSpeciesLineageSelection"),
     traitUnitId: UnitIdSchema,
   }),
   Schema.Struct({ tag: Schema.Literal("multipleSpellcastingSlotPools") }),
@@ -1123,7 +1136,7 @@ function speciesChoiceFactsFact(
   if (facts.draconicAncestry !== undefined) {
     const {
       draconicAncestry,
-      gnomishLineage: _gnomishLineage,
+      speciesLineage: _speciesLineage,
       ...unprojected
     } = facts;
     noUnprojectedFields(unprojected);
@@ -1133,15 +1146,15 @@ function speciesChoiceFactsFact(
   }
 
   const {
-    gnomishLineage,
+    speciesLineage,
     draconicAncestry: _draconicAncestry,
     ...unprojected
   } = facts;
   noUnprojectedFields(unprojected);
   const { kind, lineageId, spellcastingAbility, ...unprojectedLineage } =
-    gnomishLineage;
+    speciesLineage;
   noUnprojectedFields(unprojectedLineage);
-  return { gnomishLineage: { kind, lineageId, spellcastingAbility } };
+  return { speciesLineage: { kind, lineageId, spellcastingAbility } };
 }
 
 function classFeatureLanguageFact(
@@ -1623,7 +1636,7 @@ function creationFinalizationIllegalCauseFact(
       },
     ),
     byTag(
-      "invalidGnomishLineageSelection",
+      "invalidSpeciesLineageSelection",
       ({ tag, traitUnitId, ...unprojected }) => {
         noUnprojectedFields(unprojected);
         return { tag, traitUnitId };

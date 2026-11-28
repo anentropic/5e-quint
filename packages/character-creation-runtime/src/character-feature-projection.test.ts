@@ -16,7 +16,9 @@ const partialRootIds = [
   "sorcerer_font_of_magic",
   "sorcerer_metamagic",
   "wizard_evocation_savant",
+  "species_elf_elven_lineage",
   "species_gnome_gnomish_lineage",
+  "species_tiefling_fiendish_legacy",
 ] as const;
 
 describe("Character Creation feature projection", () => {
@@ -136,7 +138,7 @@ describe("Character Creation feature projection", () => {
     });
   });
 
-  test("classifies exactly the seven structurally partial SRD roots", () => {
+  test("classifies exactly the nine structurally partial SRD roots", () => {
     expect(
       srdUnitCollection.units.flatMap((unit) =>
         projectPartialCharacterCreationFeature(unit).tag === "readable"

@@ -278,8 +278,11 @@ export const SPECIES_TRAIT_PROFICIENCY_CHOICE_KEY =
   "species_trait_proficiency_choice" satisfies UnitChoiceKey;
 export const GNOMISH_LINEAGE_CHOICE_KEY =
   "gnome_lineage" satisfies UnitChoiceKey;
-export const GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY =
-  "gnomish_lineage_spellcasting_ability" satisfies UnitChoiceKey;
+export const ELVEN_LINEAGE_CHOICE_KEY = "elven_lineage" satisfies UnitChoiceKey;
+export const FIENDISH_LEGACY_CHOICE_KEY =
+  "fiendish_legacy" satisfies UnitChoiceKey;
+export const SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY =
+  "species_lineage_spellcasting_ability" satisfies UnitChoiceKey;
 export const SPECIES_ORIGIN_FEAT_CHOICE_KEY =
   "species_origin_feat_choice" satisfies UnitChoiceKey;
 export const SPECIES_ORIGIN_FEAT_PROFICIENCY_CHOICE_KEY =

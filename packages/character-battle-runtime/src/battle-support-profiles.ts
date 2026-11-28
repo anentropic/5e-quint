@@ -353,6 +353,10 @@ export function battleSupportProfileSourceFactsForBuild(
   BattleUnitSupportProfileSourceFacts | undefined,
   BattleSupportProfileIssue
 > {
+  const speciesLineage = build.speciesChoiceFacts?.speciesLineage;
+  if (speciesLineage !== undefined) {
+    return Result.succeed({ speciesLineageId: speciesLineage.lineageId });
+  }
   const draconicAncestry = build.speciesChoiceFacts?.draconicAncestry;
   if (draconicAncestry === undefined) return Result.succeed(undefined);
 

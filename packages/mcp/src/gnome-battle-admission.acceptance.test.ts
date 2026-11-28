@@ -14,7 +14,7 @@ import {
   discoverCreationHoles,
   fillCreationHoles,
   GNOMISH_LINEAGE_CHOICE_KEY,
-  GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
+  SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY,
   progressionOptionId,
 } from "@dnd/character-creation-runtime";
 import {
@@ -81,7 +81,7 @@ test("a finalized Forest Gnome Wizard retains Gnomish Cunning and enters Battle 
           source.choiceKey === GNOMISH_LINEAGE_CHOICE_KEY
             ? [creationChoiceOptionId("forest_gnome")]
             : source.choiceKey ===
-                GNOMISH_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY
+                SPECIES_LINEAGE_SPELLCASTING_ABILITY_CHOICE_KEY
               ? [creationChoiceOptionId("int")]
               : manifestFixtureOptionIds(source),
       }),
@@ -106,7 +106,7 @@ test("a finalized Forest Gnome Wizard retains Gnomish Cunning and enters Battle 
   expect(finalized).toMatchObject({ finalization: { tag: "ready" } });
   const sheet = root.sessionStore.characters.get(characterId);
   if (sheet?.tag !== "available") throw new Error("Expected finalized sheet.");
-  expect(sheet.build.speciesChoiceFacts?.gnomishLineage).toMatchObject({
+  expect(sheet.build.speciesChoiceFacts?.speciesLineage).toMatchObject({
     lineageId: "forest_gnome",
     spellcastingAbility: "int",
   });

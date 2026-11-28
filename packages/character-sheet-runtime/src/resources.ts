@@ -1,5 +1,6 @@
 // KERNEL-COVERAGE: runtime-owner SHEET.FEATURE_RESOURCES.USE_COUNT_RECOVERY
 // UNIT-PROFILE-COVERAGE: runtime-owner character-sheet.use-count-resource-recovery
+// UNIT-PROFILE-COVERAGE: runtime-owner character-sheet.species-lineage-trait-projection
 // KERNEL-COVERAGE: runtime-owner SHEET.FEATURE_RESOURCES.TRANSITIONS
 // KERNEL-COVERAGE: runtime-owner SHEET.SPELL_ACCESS.FREE_CAST_LIFECYCLE
 // UNIT-PROFILE-COVERAGE: runtime-owner character-sheet.class-feature-use-count-resource
@@ -25,6 +26,8 @@ import {
   thresholdTierValueAtClassLevel,
   type CharacterBuild,
   type CharacterBuildResource,
+  characterBuildSpeciesTraitSpellGrants,
+  type CharacterBuildSpeciesTraitSpellGrant,
   type UnitCatalog,
 } from "@dnd/character-creation-runtime/consumer-protocol";
 import { abilityScoreToMod } from "@dnd/shared-algebras/ability-score-algebra";
@@ -803,6 +806,21 @@ function layOnHandsHealingPoolResourceForUnit(
   /* v8 ignore stop -- @preserve */
 }
 
+function speciesTraitFreeCastCount(
+  count: NonNullable<
+    CharacterBuildSpeciesTraitSpellGrant["freeCasts"]
+  >["count"],
+  build: CharacterBuild,
+): number {
+  return typeof count === "number"
+    ? count
+    : Number(
+        characterSheetProficiencyBonusForCharacterLevel(
+          characterLevel(computeTotalLevel(build.progression)),
+        ),
+      );
+}
+
 function spellAccessFreeCastResourcesForBuild(
   build: CharacterBuild,
   unitLibrary: UnitCatalog,
@@ -840,7 +858,46 @@ function spellAccessFreeCastResourcesForBuild(
       });
     }
   }
-  return Result.succeed(resources);
+  const speciesTraitResources = speciesTraitSpellFreeCastResourcesForBuild(
+    build,
+    unitLibrary,
+  );
+  /* v8 ignore next 3 -- @preserve -- Finalization retained the species lineage fact only after matching the installed trait's rosters. */
+  if (Result.isFailure(speciesTraitResources)) {
+    return Result.fail(speciesTraitResources.failure);
+  }
+  return Result.succeed([...resources, ...speciesTraitResources.success]);
+}
+
+/** The free casts of spells the character's species traits grant. */
+function speciesTraitSpellFreeCastResourcesForBuild(
+  build: CharacterBuild,
+  unitLibrary: UnitCatalog,
+): Result.Result<
+  readonly CharacterSheetSpellAccessFreeCastResource[],
+  CharacterSheetIssue
+> {
+  const grants = characterBuildSpeciesTraitSpellGrants({ build, unitLibrary });
+  /* v8 ignore next 3 -- @preserve -- Finalization retained the species lineage fact only after matching the installed trait's rosters. */
+  if (Result.isFailure(grants)) {
+    return characterSheetIssue(grants.failure.message);
+  }
+  return Result.succeed(
+    grants.success.flatMap((grant) =>
+      grant.freeCasts === undefined
+        ? []
+        : [
+            {
+              tag: "spellAccessFreeCast" as const,
+              sourceUnitId: grant.sourceUnitId,
+              spellId: grant.spellId,
+              count: resourceCount(
+                speciesTraitFreeCastCount(grant.freeCasts.count, build),
+              ),
+            },
+          ],
+    ),
+  );
 }
 
 function classFeatureSpellFreeCastResourcesForUnit(

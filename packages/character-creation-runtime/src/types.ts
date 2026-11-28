@@ -52,7 +52,7 @@ import type {
   ActivationResource,
   ArmorTrainingCategory,
   ClassSpellcastingCreation,
-  GnomishLineageMechanics,
+  SpeciesLineageChoiceMechanics,
   PointPoolResource,
   Skill,
   Size,
@@ -151,7 +151,9 @@ export const UNIT_CHOICE_KEYS = [
   "origin_feat_magic_initiate_spellcasting_ability_choice",
   "species_trait_proficiency_choice",
   "gnome_lineage",
-  "gnomish_lineage_spellcasting_ability",
+  "elven_lineage",
+  "fiendish_legacy",
+  "species_lineage_spellcasting_ability",
   "species_origin_feat_choice",
   "species_origin_feat_proficiency_choice",
   "divine_order",
@@ -940,24 +942,24 @@ export type CharacterBuildDraconicAncestryFact = {
   readonly ancestorId: CharacterDraconicAncestrySelection;
 };
 
-export type CharacterBuildGnomishLineageId =
-  GnomishLineageMechanics["options"][number]["id"];
-export type CharacterBuildGnomishLineageSpellcastingAbility =
-  GnomishLineageMechanics["spellcastingAbilityChoice"]["abilities"][number];
+export type CharacterBuildSpeciesLineageId =
+  SpeciesLineageChoiceMechanics["options"][number]["id"];
+export type CharacterBuildSpeciesLineageSpellcastingAbility =
+  SpeciesLineageChoiceMechanics["spellcastingAbilityChoice"]["abilities"][number];
 
-export type CharacterBuildGnomishLineageFact = {
-  readonly kind: "gnomishLineage";
-  readonly lineageId: CharacterBuildGnomishLineageId;
-  readonly spellcastingAbility: CharacterBuildGnomishLineageSpellcastingAbility;
+export type CharacterBuildSpeciesLineageFact = {
+  readonly kind: "speciesLineage";
+  readonly lineageId: CharacterBuildSpeciesLineageId;
+  readonly spellcastingAbility: CharacterBuildSpeciesLineageSpellcastingAbility;
 };
 
 export type CharacterBuildSpeciesChoiceFacts =
   | {
       readonly draconicAncestry: CharacterBuildDraconicAncestryFact;
-      readonly gnomishLineage?: never;
+      readonly speciesLineage?: never;
     }
   | {
-      readonly gnomishLineage: CharacterBuildGnomishLineageFact;
+      readonly speciesLineage: CharacterBuildSpeciesLineageFact;
       readonly draconicAncestry?: never;
     };
 
@@ -1109,7 +1111,7 @@ export type CreationFinalizationIllegalCause =
       readonly speciesUnitId: UnitRecord["id"];
     }
   | {
-      readonly tag: "invalidGnomishLineageSelection";
+      readonly tag: "invalidSpeciesLineageSelection";
       readonly traitUnitId: UnitRecord["id"];
     }
   | { readonly tag: "multipleSpellcastingSlotPools" }
