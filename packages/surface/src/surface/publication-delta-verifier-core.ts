@@ -262,9 +262,13 @@ export type SurfacePublicationDeltaVerificationResult =
  * tree must also decode under the current Surface contract; a pinned
  * historical snapshot predates that contract, so only its own schema applies.
  */
+const SURFACE_PUBLICATION_CANDIDATE_AGGREGATE_CONTRACTS = [
+  "currentSurfaceContract",
+  "ownPublishedSchema",
+] as const;
+
 export type SurfacePublicationCandidateAggregateContract =
-  | "currentSurfaceContract"
-  | "ownPublishedSchema";
+  (typeof SURFACE_PUBLICATION_CANDIDATE_AGGREGATE_CONTRACTS)[number];
 
 export type SurfacePublicationDeltaCoreOptions = {
   readonly repoRoot: string;
@@ -3125,12 +3129,16 @@ function compareAggregateSnapshots(
 ): void {
   const artifacts = validAggregateArtifacts(issues, baseline, candidate);
   if (artifacts === undefined) return;
-  if (candidateAggregateContract === "currentSurfaceContract") {
-    appendCandidateAggregateDecodeIssue(
-      issues,
-      candidateAggregateDecode(artifacts.candidate.value),
-    );
-  }
+  Match.value(candidateAggregateContract).pipe(
+    Match.when("currentSurfaceContract", () =>
+      appendCandidateAggregateDecodeIssue(
+        issues,
+        candidateAggregateDecode(artifacts.candidate.value),
+      ),
+    ),
+    Match.when("ownPublishedSchema", () => undefined),
+    Match.exhaustive,
+  );
   const projections = aggregateSnapshotProjections(
     issues,
     artifacts.baseline.value,
