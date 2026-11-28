@@ -52,6 +52,9 @@ function fighterSession(species: "species_halfling" | "species_orc") {
         srdStatBlock(statBlockId("stat_block_skeleton")),
       ),
     ],
+    hidePrerequisites: new Map([
+      [halflingId, { kind: "heavilyObscuredOutOfEnemyLineOfSight" }],
+    ]),
   });
 }
 
@@ -141,6 +144,39 @@ describe("Halfling Luck real-catalog SDK handoff", () => {
         "rolledDice",
       ),
     ).toMatchObject({ critical: false });
+  });
+
+  test("a Halfling built from a sheet is offered Luck on a natural 1 on an ability check", () => {
+    const session = fighterSession("species_halfling");
+    const hide = {
+      tag: "action",
+      actorId: halflingId,
+      action: "hide",
+    } as const;
+    const check = requireHole(
+      resolveBattleSubject({ state: session.state, subject: hide, fills: [] }),
+      "abilityCheck",
+    );
+    const offered = requireHole(
+      resolveBattleSubject({
+        state: session.state,
+        subject: hide,
+        fills: [
+          {
+            kind: "abilityCheck",
+            holeId: check.holeId,
+            value: {
+              total: 3,
+              d20TestRoll: { tag: "single", naturalD20: DieRollResult(1) },
+            },
+          },
+        ],
+      }),
+      "abilityCheck",
+    );
+    expect(offered.d20TestNaturalOneRerolls).toEqual([
+      expect.objectContaining({ effectKind: "d20_test_natural_one_reroll" }),
+    ]);
   });
 
   test("an Orc built from the same sheet is not offered Luck", () => {
