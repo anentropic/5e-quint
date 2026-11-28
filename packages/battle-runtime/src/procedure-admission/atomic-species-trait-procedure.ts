@@ -6,17 +6,26 @@ import type { AuthoredUnitSource } from "@dnd/surface/surface/types";
 import type { ReadonlyNonEmptyArray } from "@dnd/shared/types";
 import { Match } from "effect";
 
-import type { UnitFeatureProcedureExecution } from "../character-execution-vocabulary.ts";
-
-export type AtomicSpeciesTraitProcedureFacts = Extract<
+import type {
   UnitFeatureProcedureExecution,
-  {
-    readonly kind:
-      | "creatureSpaceMovementPermission"
-      | "d20TestNaturalOneReroll"
-      | "hideActionObscurementPermission";
-  }
->;
+  UnitSupportProcedureExecution,
+} from "../character-execution-vocabulary.ts";
+
+/**
+ * The facts an atomic species trait admits. Trance binds only as a support
+ * profile, so its fact comes from the support execution vocabulary.
+ */
+export type AtomicSpeciesTraitProcedureFacts =
+  | Extract<
+      UnitFeatureProcedureExecution,
+      {
+        readonly kind:
+          | "creatureSpaceMovementPermission"
+          | "d20TestNaturalOneReroll"
+          | "hideActionObscurementPermission";
+      }
+    >
+  | Extract<UnitSupportProcedureExecution, { readonly kind: "sleepless" }>;
 
 const ATOMIC_SPECIES_TRAIT_ROOT_MECHANICS_PATH = unitMechanicsPath([
   { kind: "singleton", role: "recordMechanics" },
@@ -43,6 +52,9 @@ const HIDE_OBSCUREMENT_FAILED_FACTS = [
 ] as const;
 type HideObscurementFailedFact = (typeof HIDE_OBSCUREMENT_FAILED_FACTS)[number];
 
+const SLEEPLESS_FAILED_FACTS = ["sleepNeed", "magicalSleep"] as const;
+type SleeplessFailedFact = (typeof SLEEPLESS_FAILED_FACTS)[number];
+
 type AtomicSpeciesTraitProcedureAdmissionIssueFields = {
   readonly tag: "atomicSpeciesTraitProcedureAdmissionIssue";
   readonly mechanicsPath: UnitMechanicsPath;
@@ -61,6 +73,10 @@ export type AtomicSpeciesTraitProcedureAdmissionIssue =
   | (AtomicSpeciesTraitProcedureAdmissionIssueFields & {
       readonly procedure: "hideActionObscurementPermission";
       readonly failedFact: HideObscurementFailedFact;
+    })
+  | (AtomicSpeciesTraitProcedureAdmissionIssueFields & {
+      readonly procedure: "sleepless";
+      readonly failedFact: SleeplessFailedFact;
     });
 
 export type AdmittedAtomicSpeciesTraitProcedure = {
@@ -101,6 +117,7 @@ export function admitAtomicSpeciesTraitProcedure(
     inspectCreatureSpaceMovementPermission(unit),
     inspectD20TestNaturalOneReroll(unit),
     inspectHideActionObscurementPermission(unit),
+    inspectSleepless(unit),
   ];
   const represented = inspections.find(isRepresentedProcedureInspection);
   if (represented === undefined) return { tag: "notBattleOwned" };
@@ -178,6 +195,16 @@ function hideObscurementIssue(
   return {
     ...unsupportedProcedureIssueFields(),
     procedure: "hideActionObscurementPermission",
+    failedFact,
+  };
+}
+
+function sleeplessIssue(
+  failedFact: SleeplessFailedFact,
+): AtomicSpeciesTraitProcedureAdmissionIssue {
+  return {
+    ...unsupportedProcedureIssueFields(),
+    procedure: "sleepless",
     failedFact,
   };
 }
@@ -322,6 +349,35 @@ function inspectHideActionObscurementPermission(
           },
         },
       }
+    : {
+        tag: "unsupported",
+        issues: [firstIssue, ...remainingIssues],
+      };
+}
+
+/**
+ * A creature that needs no sleep and that magic can't put to sleep is one
+ * that "doesn't sleep" for a spell's automatic success. The trait's Long Rest
+ * duration is a between-battle fact, which Battle does not consume.
+ */
+function inspectSleepless(unit: AuthoredUnitSource): ProcedureInspection {
+  if (
+    unit.kind !== "species_trait" ||
+    unit.mechanics.family !== "sleepless_trance"
+  ) {
+    return { tag: "notRepresented" };
+  }
+  const mechanics = unit.mechanics;
+  const supportByFailedFact = {
+    sleepNeed: mechanics.sleep.needed === false,
+    magicalSleep: mechanics.sleep.magicCanImpose === false,
+  } satisfies Record<SleeplessFailedFact, boolean>;
+  const issues = SLEEPLESS_FAILED_FACTS.filter(
+    (failedFact) => !supportByFailedFact[failedFact],
+  ).map(sleeplessIssue);
+  const [firstIssue, ...remainingIssues] = issues;
+  return firstIssue === undefined
+    ? { tag: "supported", facts: { kind: "sleepless" } }
     : {
         tag: "unsupported",
         issues: [firstIssue, ...remainingIssues],

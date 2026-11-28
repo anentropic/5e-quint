@@ -1698,6 +1698,14 @@ function createAndFinalizeElfWizardTwo(
       ),
       choiceFillFromHole(
         creationHoles(classHoles),
+        unitHoleId(
+          "species_elf_keen_senses",
+          "species_trait_proficiency_choice",
+        ),
+        "perception",
+      ),
+      choiceFillFromHole(
+        creationHoles(classHoles),
         unitHoleId("class_wizard", "wizard_cantrip_choices"),
         "light",
         "fire_bolt",

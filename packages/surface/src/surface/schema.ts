@@ -486,6 +486,7 @@ export {
   OrcSpeciesRecordSchema,
   OrcSpeciesTraitsSchema,
   RestTriggeredHeroicInspirationMechanicsSchema,
+  SleeplessTranceMechanicsSchema,
   SpeciesRecordSchema,
   SpeciesTraitMechanicsSchema,
   SpeciesTraitRecordSchema,

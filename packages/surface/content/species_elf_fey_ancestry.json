@@ -1,0 +1,25 @@
+{
+  "id": "species_elf_fey_ancestry",
+  "kind": "species_trait",
+  "mechanics": {
+    "family": "passive",
+    "grants": [
+      {
+        "conditionFilter": [
+          "charmed"
+        ],
+        "kind": "modify_roll_advantage",
+        "mode": "advantage",
+        "on": [
+          "saving_throw"
+        ]
+      }
+    ]
+  },
+  "name": "Fey Ancestry",
+  "provenance": {
+    "kind": "srd-5.2.1",
+    "section": "character-origins.md#Elf"
+  },
+  "species": "elf"
+}

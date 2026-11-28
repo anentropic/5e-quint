@@ -4777,6 +4777,24 @@ type RestTriggeredHeroicInspirationMechanicsCodec = Schema.Struct<
 export const RestTriggeredHeroicInspirationMechanicsSchema: RestTriggeredHeroicInspirationMechanicsCodec =
   Schema.Struct(restTriggeredHeroicInspirationMechanicsFields);
 
+const sleeplessTranceMechanicsFields = codecFields({
+  family: Schema.Literal("sleepless_trance"),
+  sleep: Schema.Struct({
+    needed: Schema.Literal(false),
+    magicCanImpose: Schema.Literal(false),
+  }),
+  longRest: Schema.Struct({
+    kind: Schema.Literal("trancelike_meditation"),
+    minimumHours: Schema.Literal(4),
+    consciousness: Schema.Literal("retained"),
+  }),
+});
+type SleeplessTranceMechanicsCodec = Schema.Struct<
+  typeof sleeplessTranceMechanicsFields
+>;
+export const SleeplessTranceMechanicsSchema: SleeplessTranceMechanicsCodec =
+  Schema.Struct(sleeplessTranceMechanicsFields);
+
 const speciesTraitMechanicsMembers = codecMembers(
   PassiveMechanicsSchema,
   ActivatedAbilityMechanicsSchema,
@@ -4786,6 +4804,7 @@ const speciesTraitMechanicsMembers = codecMembers(
   CreatureSpaceMovementPermissionMechanicsSchema,
   HideActionObscurementPermissionMechanicsSchema,
   RestTriggeredHeroicInspirationMechanicsSchema,
+  SleeplessTranceMechanicsSchema,
 );
 type SpeciesTraitMechanicsCodec = Schema.Union<
   typeof speciesTraitMechanicsMembers
@@ -4962,6 +4981,9 @@ export const DwarfSpeciesRecordSchema = Schema.Struct({
 
 export const ElfSpeciesTraitsSchema = Schema.Struct({
   darkvision: Schema.Literal("elf_darkvision"),
+  feyAncestry: Schema.Literal("species_elf_fey_ancestry"),
+  keenSenses: Schema.Literal("species_elf_keen_senses"),
+  trance: Schema.Literal("species_elf_trance"),
 });
 
 export const ElfSpeciesRecordSchema = Schema.Struct({

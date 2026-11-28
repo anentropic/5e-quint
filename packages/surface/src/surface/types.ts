@@ -1252,6 +1252,9 @@ export type HideActionObscurementPermissionMechanics = Schema.Schema.Type<
 export type RestTriggeredHeroicInspirationMechanics = Schema.Schema.Type<
   typeof SurfaceSchema.RestTriggeredHeroicInspirationMechanicsSchema
 >;
+export type SleeplessTranceMechanics = Schema.Schema.Type<
+  typeof SurfaceSchema.SleeplessTranceMechanicsSchema
+>;
 export type DragonbornSpeciesTraits = Schema.Schema.Type<
   typeof SurfaceSchema.DragonbornSpeciesTraitsSchema
 >;

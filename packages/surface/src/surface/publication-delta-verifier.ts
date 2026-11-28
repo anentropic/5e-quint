@@ -26,6 +26,7 @@ export function verifySurfacePublicationDelta(
       path: join(options.repoRoot, SURFACE_PUBLICATION_DELTA_CERTIFICATE_PATH),
       sha256: SURFACE_PUBLICATION_DELTA_CERTIFICATE_SHA256,
     },
+    candidateAggregateContract: "currentSurfaceContract",
   });
 }
 

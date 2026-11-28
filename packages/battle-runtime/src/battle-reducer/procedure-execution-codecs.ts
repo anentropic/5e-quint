@@ -19,6 +19,7 @@ import {
   BATTLE_CUNNING_STRIKE_OPTION_SELECTION_IDS,
   DRACONIC_ANCESTRY_DAMAGE_TYPES,
   DRACONIC_ANCESTRY_DAMAGE_TYPE_HOLE_ID,
+  PASSIVE_CONDITION_SAVING_THROW_ROLL_MODE_CONDITIONS,
 } from "../unit-feature-execution-constants.ts";
 import {
   BattleProcedureExecutionRef,
@@ -232,6 +233,10 @@ export const HideActionObscurementPermissionProcedureExecutionSchema =
     }),
   });
 
+export const SleeplessProcedureExecutionSchema = Schema.Struct({
+  kind: Schema.Literal("sleepless"),
+});
+
 export const RogueSteadyAimProcedureExecutionSchema = Schema.Struct({
   kind: Schema.Literal("rogueSteadyAim"),
   steadyAim: Schema.Struct({
@@ -376,7 +381,9 @@ export const PassiveSavingThrowRollModeProcedureExecutionSchema = Schema.Struct(
         mode: Schema.Literal("advantage"),
         scope: Schema.Struct({
           kind: Schema.Literal("condition"),
-          condition: Schema.Literals(["poisoned", "frightened"]),
+          condition: Schema.Literals(
+            PASSIVE_CONDITION_SAVING_THROW_ROLL_MODE_CONDITIONS,
+          ),
         }),
       }),
     ]),
@@ -1365,6 +1372,7 @@ export const UnitSupportProcedureExecutionSchema = Schema.Union([
   EnemyZeroHitPointTemporaryHitPointsProcedureExecutionSchema,
   CreatureSpaceMovementPermissionProcedureExecutionSchema,
   HideActionObscurementPermissionProcedureExecutionSchema,
+  SleeplessProcedureExecutionSchema,
   RogueSteadyAimProcedureExecutionSchema,
   PotentCantripProcedureExecutionSchema,
   GrapplerProcedureExecutionSchema,

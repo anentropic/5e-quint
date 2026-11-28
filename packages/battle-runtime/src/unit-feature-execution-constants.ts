@@ -27,6 +27,7 @@ export const MONK_FOCUS_BATTLE_OPTIONS_SUPPORT_PROFILE =
   "monkFocusBattleOptions";
 export const HIDE_ACTION_OBSCUREMENT_PERMISSION_SUPPORT_PROFILE =
   "hideActionObscurementPermission";
+export const SLEEPLESS_SUPPORT_PROFILE = "sleepless";
 export const PASSIVE_SPEED_BONUS_SUPPORT_PROFILE = "passiveSpeedBonus";
 export const PASSIVE_SPEED_KIND_GRANTS_SUPPORT_PROFILE =
   "passiveSpeedKindGrants";
@@ -194,6 +195,18 @@ export type OngoingFeatureLifecycleProfile =
       readonly earlyEndArmorCategories: readonly ["heavy"] | readonly [];
       readonly extensionTriggers: readonly [];
     };
+/**
+ * The conditions a species trait's passive saving throw Advantage can name:
+ * Poisoned (Dwarven Resilience), Frightened (Brave) and Charmed (Fey
+ * Ancestry). Each covers saves to avoid or end the condition.
+ */
+export const PASSIVE_CONDITION_SAVING_THROW_ROLL_MODE_CONDITIONS = [
+  "poisoned",
+  "frightened",
+  "charmed",
+] as const satisfies ReadonlyArray<Condition>;
+export type PassiveConditionSavingThrowRollModeCondition =
+  (typeof PASSIVE_CONDITION_SAVING_THROW_ROLL_MODE_CONDITIONS)[number];
 export type PassiveSavingThrowRollModeProfile =
   | {
       readonly mode: "advantage";
@@ -214,7 +227,7 @@ export type PassiveSavingThrowRollModeProfile =
       readonly mode: "advantage";
       readonly scope: {
         readonly kind: "condition";
-        readonly condition: "poisoned" | "frightened";
+        readonly condition: PassiveConditionSavingThrowRollModeCondition;
       };
     };
 export function passiveSavingThrowRollModeDisposition(

@@ -8,6 +8,13 @@
   Build read only Unit feature bindings, so a sheet-built character lost them.
   They now read either binding.
 
+- Add the Elf's Fey Ancestry, Keen Senses and Trance. Fey Ancestry gives
+  Advantage on saves to avoid or end Charmed. Keen Senses is a skill
+  proficiency choice of Insight, Perception or Survival. Trance is a new
+  `sleepless_trance` species trait shape: a character with it succeeds on
+  Sleep's saves automatically, without the table's non-sleeper fact. Its
+  4-hour Long Rest is recorded but not yet used by the character sheet.
+
 - Start the battle's opening turn like every other turn, so the first
   participant gets its start-of-turn effects, such as a Death Saving Throw at
   0 Hit Points or Heroic Warrior's Heroic Inspiration. When that start needs a

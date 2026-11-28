@@ -33,6 +33,7 @@ const UNIT_PROCEDURE_EXPOSURE = {
   cunningStrikeOptionGrant: boundContinuation(),
   d20TestDieMinimum: boundContinuation(),
   d20TestNaturalOneReroll: boundContinuation(),
+  sleepless: internal(),
   druidWildCompanionSpellCast: tool("cast_spell"),
   druidWildShapeKnownForm: tools("assume_beast_form", "revert_beast_form"),
   enemyZeroHitPointTemporaryHitPoints: internal(),
@@ -197,6 +198,7 @@ export const UNIT_SUPPORT_EXPOSURE = {
   druidWildCompanionSpellCast:
     UNIT_PROCEDURE_EXPOSURE["druidWildCompanionSpellCast"],
   huntersPrey: UNIT_PROCEDURE_EXPOSURE["huntersPrey"],
+  sleepless: UNIT_PROCEDURE_EXPOSURE["sleepless"],
   markedCreatureDefensesDisclosure:
     UNIT_PROCEDURE_EXPOSURE["markedCreatureDefensesDisclosure"],
   passiveDamageResistance: UNIT_PROCEDURE_EXPOSURE["passiveDamageResistance"],

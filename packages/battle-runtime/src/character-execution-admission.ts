@@ -1648,6 +1648,7 @@ export function unitSupportProcedureExecution(
         kind: value.kind,
         permission: value.permission,
       }),
+      sleepless: (value) => ({ kind: value.kind }),
       attackActionAttackCountScaling: (value) => ({
         kind: value.kind,
         additionalAttacks: value.additionalAttacks,

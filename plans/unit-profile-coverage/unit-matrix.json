@@ -43,14 +43,14 @@
   "generatedBy": "scripts/unit-profile-coverage-check.cjs",
   "metrics": {
     "authoredSurfaceExecutableCatalogAdmissionCoverage": {
-      "denominator": 545,
-      "numerator": 400,
-      "percent": "73.4%"
+      "denominator": 548,
+      "numerator": 403,
+      "percent": "73.5%"
     },
     "authoredSurfaceUnitCatalogAdmissionCoverage": {
-      "denominator": 633,
-      "numerator": 455,
-      "percent": "71.9%"
+      "denominator": 636,
+      "numerator": 458,
+      "percent": "72%"
     },
     "classicNonSrdExpressionGate": {
       "denominator": 1,
@@ -59,16 +59,16 @@
     },
     "collectionInventoryCount": {
       "unit": "Units",
-      "value": 456
+      "value": 459
     },
     "deterministicAdmissionProjectionCoverage": {
-      "denominator": 246,
-      "numerator": 238,
-      "percent": "96.7%"
+      "denominator": 248,
+      "numerator": 239,
+      "percent": "96.4%"
     },
     "profileClassificationCoverage": {
-      "denominator": 456,
-      "numerator": 456,
+      "denominator": 459,
+      "numerator": 459,
       "percent": "100%"
     },
     "qntProfileModelingCoverage": {
@@ -92,9 +92,9 @@
       "percent": "99.1%"
     },
     "rulesKernelSupportedUnitCoverage": {
-      "denominator": 230,
-      "numerator": 188,
-      "percent": "81.7%"
+      "denominator": 231,
+      "numerator": 189,
+      "percent": "81.8%"
     },
     "runtimeMappingCoverage": {
       "denominator": 173,
@@ -107,14 +107,14 @@
       "percent": "97.1%"
     },
     "selectedIdentityReplayCoverage": {
-      "denominator": 209,
+      "denominator": 210,
       "numerator": 204,
-      "percent": "97.6%"
+      "percent": "97.1%"
     },
     "supportedProfileCoverage": {
-      "denominator": 401,
-      "numerator": 246,
-      "percent": "61.3%"
+      "denominator": 404,
+      "numerator": 248,
+      "percent": "61.4%"
     }
   },
   "metricSemantics": [
@@ -1940,7 +1940,7 @@
         "packages/battle-runtime/src/battle-reducer/spell-procedure-profiles/hit-point-budget-condition-admission.ts",
         "packages/battle-runtime/src/battle-state-execution.ts"
       ],
-      "sourceBoundary": "Caller-supplied Sleep Sphere membership, caller-supplied non-sleeper facts, and retained Stat Block Exhaustion Immunity facts",
+      "sourceBoundary": "Caller-supplied Sleep Sphere membership, caller-supplied non-sleeper facts, retained character does-not-sleep support facts, and retained Stat Block Exhaustion Immunity facts",
       "taskRefs": [
         "SRDINV38A",
         "SRDINV87D"
@@ -12264,9 +12264,9 @@
       "denominatorRule": "supported Unit ids with at least one rules-kernel-applicable profile",
       "metrics": {
         "rulesKernelSupportedUnitCoverage": {
-          "denominator": 230,
-          "numerator": 188,
-          "percent": "81.7%"
+          "denominator": 231,
+          "numerator": 189,
+          "percent": "81.8%"
         }
       },
       "units": [
@@ -18097,6 +18097,28 @@
               ]
             }
           ],
+          "unitId": "species_elf_fey_ancestry"
+        },
+        {
+          "joinStatus": "covered",
+          "profiles": [
+            {
+              "joinStatus": "covered",
+              "obligations": [
+                {
+                  "obligationId": "BATTLE.FEATURE.PROCEDURE_PROFILE_SEMANTICS",
+                  "runtime": "battle",
+                  "status": "covered",
+                  "title": "Battle Unit feature procedure profiles for supported action, bonus action, reaction, passive, resource, and active-effect shapes"
+                }
+              ],
+              "profileId": "unit-feature.passive-saving-throw-roll-mode",
+              "profileKind": "passive",
+              "qntOwners": [
+                "packages/shared-algebras/proofs/rule-core/unit-feature-save-damage-core.qnt"
+              ]
+            }
+          ],
           "unitId": "species_gnome_gnomish_cunning"
         },
         {
@@ -18701,7 +18723,7 @@
       "evidenceTag": "selected-identity-replay"
     },
     "deferredNonApplicableRows": [],
-    "rowCount": 6,
+    "rowCount": 8,
     "rows": [
       {
         "catalogAdmissionStatus": "installed",
@@ -18787,6 +18809,40 @@
           "tag": "supported-profile"
         },
         "unitId": "mastery_slow"
+      },
+      {
+        "catalogAdmissionStatus": "installed",
+        "collectionId": "srd-5.2.1",
+        "kind": "species_trait",
+        "selectedIdentity": {
+          "reason": "The Unit has no selected-identity-replay evidence.",
+          "status": "missing-witness"
+        },
+        "sourceRecordPath": "packages/surface/content/species_elf_fey_ancestry.json",
+        "support": {
+          "profileIds": [
+            "unit-feature.passive-saving-throw-roll-mode"
+          ],
+          "tag": "supported-profile"
+        },
+        "unitId": "species_elf_fey_ancestry"
+      },
+      {
+        "catalogAdmissionStatus": "installed",
+        "collectionId": "srd-5.2.1",
+        "kind": "species_trait",
+        "selectedIdentity": {
+          "reason": "The Unit has no selected-identity-replay evidence.",
+          "status": "missing-witness"
+        },
+        "sourceRecordPath": "packages/surface/content/species_elf_trance.json",
+        "support": {
+          "profileIds": [
+            "spell.invocation-sleep-target-admission"
+          ],
+          "tag": "profile-subset-supported"
+        },
+        "unitId": "species_elf_trance"
       },
       {
         "catalogAdmissionStatus": "installed",
@@ -36519,6 +36575,225 @@
       },
       "claim": {
         "profileIds": [
+          "unit-feature.passive-saving-throw-roll-mode"
+        ],
+        "rawRequirementIds": [
+          "RAW-QCORE9-UNIT-FEATURE-PROFILES-001"
+        ],
+        "supportedMechanics": [
+          "Battle Unit admission derives the passive Saving Throw Advantage fact from the Surface modify_roll_advantage shape with saving_throw target and Charmed condition filter, without dispatching on Elf or Fey Ancestry identity.",
+          "Battle runtime projects Advantage whenever a Saving Throw context is typed with condition charmed, covering both avoiding and ending the Charmed condition, and does not project for unrelated condition contexts."
+        ],
+        "tag": "supported-profile"
+      },
+      "collectionId": "srd-5.2.1",
+      "evidence": [
+        {
+          "ownerPath": "packages/character-battle-runtime/src/elf-species-traits-sdk-handoff.test.ts",
+          "tag": "deterministic-admission-projection",
+          "taskId": "SPECIES-ELF-TRAITS"
+        }
+      ],
+      "executableMechanics": true,
+      "kind": "species_trait",
+      "profiles": [
+        {
+          "id": "unit-feature.passive-saving-throw-roll-mode",
+          "profileKind": "passive",
+          "qntOwners": [
+            "packages/shared-algebras/proofs/rule-core/unit-feature-save-damage-core.qnt"
+          ],
+          "runtimeOwners": [
+            "packages/battle-runtime/src/unit-feature-support.ts",
+            "packages/battle-runtime/src/battle-state-execution.ts",
+            "packages/battle-runtime/src/battle-reducer/saving-throw-modifier-collector.ts"
+          ],
+          "taskRefs": [
+            "QCORE9",
+            "L12G-CLASS-BARBARIAN-DANGER-SENSE",
+            "L3MSPEC-06-DWARVEN-RESILIENCE-SAVE-MODE",
+            "L3-FOLLOWUP-HALFLING-BRAVE-RUNTIME"
+          ],
+          "title": "Unit feature passively grants Saving Throw roll mode by ability or condition scope",
+          "verificationOwners": [
+            {
+              "kind": "qnt-proof",
+              "ownerPath": "packages/shared-algebras/proofs/rule-core/unit-feature-procedure-profiles-inductive.qnt"
+            },
+            {
+              "kind": "qnt-proof",
+              "ownerPath": "packages/battle-runtime/battle-runtime-feature-bridge.qnt"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/battle-runtime/src/unit-profile-admission-danger-sense.test.ts"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/battle-runtime/src/unit-profile-admission-martial-action-features.test.ts"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-battle-runtime/src/index.test.ts"
+            }
+          ]
+        }
+      ],
+      "sourceRecordPath": "packages/surface/content/species_elf_fey_ancestry.json",
+      "unitId": "species_elf_fey_ancestry"
+    },
+    {
+      "authoredSurfaceDuplicateIdCount": 1,
+      "catalogAdmission": {
+        "collectionId": "srd-5.2.1",
+        "status": "installed"
+      },
+      "claim": {
+        "battleReadinessClosure": {
+          "kind": "character-fact-and-runtime-detached-split",
+          "owner": "character-creation-runtime plus character-sheet proficiency projection",
+          "reason": "Keen Senses mutates durable character proficiency facts during character creation; battle runtime consumes derived skill proficiency facts where relevant rather than executing the trait as a battle Unit."
+        },
+        "profileIds": [
+          "character-creation.species-trait-proficiency-choice"
+        ],
+        "selectedIdentityEvidenceDisposition": {
+          "owner": "character-creation deterministic proficiency projection owner",
+          "reason": "Keen Senses support is a durable CharacterBuild proficiency projection from a selected Elf species trait. It has no battle-runtime selected Unit identity replay boundary; deterministic character-creation tests bind the authored trait Unit identity to the executable Surface proficiency facts.",
+          "tag": "not-applicable"
+        },
+        "supportedMechanics": [
+          "Surface authors Keen Senses as an SRD Elf species trait with a passive grant_proficiency choice of exactly one of the Insight, Perception, or Survival skill subjects",
+          "Character Creation discovers the species trait proficiency hole from the selected Elf species trait refs and the trait's typed passive proficiency grant shape",
+          "Character Creation admits supported skill option ids through species_trait_proficiency_choice and filters already-owned skill proficiencies",
+          "Character Creation finalizes the selected Keen Senses subject into CharacterBuild.proficiencyChoices and the existing derived skill proficiency projection without storing duplicate proficiency state"
+        ],
+        "tag": "supported-profile"
+      },
+      "collectionId": "srd-5.2.1",
+      "evidence": [],
+      "executableMechanics": true,
+      "kind": "species_trait",
+      "profiles": [
+        {
+          "id": "character-creation.species-trait-proficiency-choice",
+          "profileKind": "character-creation",
+          "qntOwners": [],
+          "runtimeOwners": [
+            "packages/character-creation-runtime/src/discovery.ts",
+            "packages/character-creation-runtime/src/finalization.ts",
+            "packages/character-creation-runtime/src/choice-option-codecs.ts",
+            "packages/character-creation-runtime/src/support-gates.ts"
+          ],
+          "sourceBoundary": "Character Creation consumes selected Species authored trait Unit refs, the trait's passive grant_proficiency choice shape, and the existing CharacterBuild proficiency projection. It discovers species-trait proficiency choice holes from selected species trait Units, filters already-owned skill proficiencies, admits supported skill option ids through species_trait_proficiency_choice, and finalizes the selected subjects into CharacterBuild.proficiencyChoices without storing duplicate proficiency state. Battle execution remains detached; downstream sheets and battle init consume the derived character proficiency facts.",
+          "taskRefs": [
+            "L14G-B08-SPECIES-HUMAN"
+          ],
+          "title": "Character Creation finalizes species trait proficiency choices into build proficiency facts",
+          "verificationOwners": [
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/character-creation-runtime/src/index.test.ts"
+            }
+          ]
+        }
+      ],
+      "sourceRecordPath": "packages/surface/content/species_elf_keen_senses.json",
+      "unitId": "species_elf_keen_senses"
+    },
+    {
+      "authoredSurfaceDuplicateIdCount": 1,
+      "catalogAdmission": {
+        "collectionId": "srd-5.2.1",
+        "status": "installed"
+      },
+      "claim": {
+        "battleReadinessClosure": {
+          "kind": "character-fact-and-runtime-detached-split",
+          "owner": "battle-runtime Sleep target admission plus character-sheet rest owner",
+          "reason": "Battle consumes only the does-not-sleep fact. The 4-hour trancelike-meditation Long Rest is a between-battle rest fact owned by the character-sheet rest runtime."
+        },
+        "deferredMechanics": [
+          {
+            "battleReadinessClosure": {
+              "kind": "outside-battle-runtime",
+              "owner": "future character-sheet Long Rest activity owner",
+              "reason": "Character Sheet Long Rest timing requires the base 8-hour duration and has no rest-activity input yet. Surface retains the trancelike_meditation duration and consciousness facts for that owner without duplicating them in battle state."
+            },
+            "mechanic": "finishing a Long Rest in 4 hours of trancelike meditation while retaining consciousness"
+          }
+        ],
+        "profileIds": [
+          "spell.invocation-sleep-target-admission"
+        ],
+        "rawRequirementIds": [
+          "RAW-QCORE10-SPELL-PROCEDURE-PROFILES-001"
+        ],
+        "supportedMechanics": [
+          "Battle Unit admission derives a does-not-sleep support fact from the Surface sleepless_trance shape with no sleep need and no magically imposed sleep, without dispatching on Elf or Trance identity.",
+          "Sleep target admission treats a character with that retained support fact as a creature that doesn't sleep, so its Saving Throw against Sleep succeeds automatically without a table-supplied non-sleeper fact and a rolled outcome for it is rejected."
+        ],
+        "tag": "profile-subset-supported"
+      },
+      "collectionId": "srd-5.2.1",
+      "evidence": [
+        {
+          "ownerPath": "packages/character-battle-runtime/src/elf-species-traits-sdk-handoff.test.ts",
+          "tag": "deterministic-admission-projection",
+          "taskId": "SPECIES-ELF-TRAITS"
+        },
+        {
+          "ownerPath": "packages/battle-runtime/src/unit-profile-admission-elf-trance.test.ts",
+          "tag": "deterministic-admission-projection",
+          "taskId": "SPECIES-ELF-TRAITS"
+        }
+      ],
+      "executableMechanics": true,
+      "kind": "species_trait",
+      "profiles": [
+        {
+          "id": "spell.invocation-sleep-target-admission",
+          "profileKind": "table-caller",
+          "qntOwners": [
+            "packages/shared-algebras/proofs/rule-core/spell-staged-save-condition-lifecycle-core.qnt"
+          ],
+          "runtimeOwners": [
+            "packages/battle-runtime/src/battle-reducer/spell-procedure-profiles/hit-point-budget-condition-admission.ts",
+            "packages/battle-runtime/src/battle-state-execution.ts"
+          ],
+          "sourceBoundary": "Caller-supplied Sleep Sphere membership, caller-supplied non-sleeper facts, retained character does-not-sleep support facts, and retained Stat Block Exhaustion Immunity facts",
+          "taskRefs": [
+            "SRDINV38A",
+            "SRDINV87D"
+          ],
+          "title": "Spell invocation admits Sleep's point-origin target set and automatic-save boundary",
+          "verificationOwners": [
+            {
+              "kind": "qnt-proof",
+              "ownerPath": "packages/battle-runtime/battle-runtime-sleep-tests.qnt"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/battle-runtime/src/battle-runtime.test-support.ts"
+            },
+            {
+              "kind": "runtime-test",
+              "ownerPath": "packages/battle-runtime/src/unit-profile-admission-save-condition-spells.test.ts"
+            }
+          ]
+        }
+      ],
+      "sourceRecordPath": "packages/surface/content/species_elf_trance.json",
+      "unitId": "species_elf_trance"
+    },
+    {
+      "authoredSurfaceDuplicateIdCount": 1,
+      "catalogAdmission": {
+        "collectionId": "srd-5.2.1",
+        "status": "installed"
+      },
+      "claim": {
+        "profileIds": [
           "unit-feature.attack-action-area-save-damage-replacement"
         ],
         "rawRequirementIds": [
@@ -51691,7 +51966,7 @@
             "packages/battle-runtime/src/battle-reducer/spell-procedure-profiles/hit-point-budget-condition-admission.ts",
             "packages/battle-runtime/src/battle-state-execution.ts"
           ],
-          "sourceBoundary": "Caller-supplied Sleep Sphere membership, caller-supplied non-sleeper facts, and retained Stat Block Exhaustion Immunity facts",
+          "sourceBoundary": "Caller-supplied Sleep Sphere membership, caller-supplied non-sleeper facts, retained character does-not-sleep support facts, and retained Stat Block Exhaustion Immunity facts",
           "taskRefs": [
             "SRDINV38A",
             "SRDINV87D"

@@ -1,0 +1,22 @@
+{
+  "id": "species_elf_trance",
+  "kind": "species_trait",
+  "mechanics": {
+    "family": "sleepless_trance",
+    "longRest": {
+      "consciousness": "retained",
+      "kind": "trancelike_meditation",
+      "minimumHours": 4
+    },
+    "sleep": {
+      "magicCanImpose": false,
+      "needed": false
+    }
+  },
+  "name": "Trance",
+  "provenance": {
+    "kind": "srd-5.2.1",
+    "section": "character-origins.md#Elf"
+  },
+  "species": "elf"
+}

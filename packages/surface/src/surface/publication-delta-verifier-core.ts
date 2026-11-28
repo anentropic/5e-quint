@@ -256,6 +256,22 @@ export type SurfacePublicationDeltaVerificationResult =
       readonly issues: readonly PublicationDeltaVerificationIssue[];
     };
 
+/**
+ * The contract the candidate aggregate must satisfy. Every candidate must
+ * validate under its own published JSON Schema. A candidate from the working
+ * tree must also decode under the current Surface contract; a pinned
+ * historical snapshot predates that contract, so only its own schema applies.
+ */
+const SURFACE_PUBLICATION_CANDIDATE_AGGREGATE_CONTRACTS = [
+  "currentSurfaceContract",
+  "ownPublishedSchema",
+] as const;
+const [CURRENT_SURFACE_CONTRACT, OWN_PUBLISHED_SCHEMA] =
+  SURFACE_PUBLICATION_CANDIDATE_AGGREGATE_CONTRACTS;
+
+export type SurfacePublicationCandidateAggregateContract =
+  (typeof SURFACE_PUBLICATION_CANDIDATE_AGGREGATE_CONTRACTS)[number];
+
 export type SurfacePublicationDeltaCoreOptions = {
   readonly repoRoot: string;
   readonly publicationDir?: string;
@@ -263,6 +279,7 @@ export type SurfacePublicationDeltaCoreOptions = {
     readonly path: string;
     readonly sha256: string;
   };
+  readonly candidateAggregateContract: SurfacePublicationCandidateAggregateContract;
 };
 
 type ArtifactBytes =
@@ -3110,12 +3127,19 @@ function compareAggregateSnapshots(
   baseline: ParsedArtifact,
   candidate: ParsedArtifact,
   expected: SurfacePublicationDeltaCertificate["artifacts"]["aggregate"]["evidence"],
+  candidateAggregateContract: SurfacePublicationCandidateAggregateContract,
 ): void {
   const artifacts = validAggregateArtifacts(issues, baseline, candidate);
   if (artifacts === undefined) return;
-  appendCandidateAggregateDecodeIssue(
-    issues,
-    candidateAggregateDecode(artifacts.candidate.value),
+  Match.value(candidateAggregateContract).pipe(
+    Match.when(CURRENT_SURFACE_CONTRACT, () =>
+      appendCandidateAggregateDecodeIssue(
+        issues,
+        candidateAggregateDecode(artifacts.candidate.value),
+      ),
+    ),
+    Match.when(OWN_PUBLISHED_SCHEMA, () => undefined),
+    Match.exhaustive,
   );
   const projections = aggregateSnapshotProjections(
     issues,
@@ -3729,6 +3753,7 @@ export function verifySurfacePublicationDeltaWithAuthority(
     baselineAggregate,
     candidateAggregate,
     expected.artifacts.aggregate.evidence,
+    options.candidateAggregateContract,
   );
   validateSchemaPair(
     issues,
